@@ -65,7 +65,10 @@ def _score(res: fit.FitResult, pts_all, ids, flat, band, c_local, model_kw=None)
     r = obj.residuals(res.theta)
     inl = r < 3 * c_local
     ts = fit.track_score(pts_all, ids, flat, inl)
-    return float(ts - 0.02 * len(res.params)), inl
+    # complexity penalty + precision tie-break: a model that explains the same features with a 4 MHz residual
+    # beats a look-alike that needs 15 MHz
+    rms_pen = min(float(np.nan_to_num(res.rms_inliers, nan=0.03)) * 1e3, 30.0) / 300.0
+    return float(ts - 0.02 * len(res.params) - rms_pen), inl
 
 
 def unexplained_features(pts_all, ids, inlier_all, flat) -> list[dict]:
@@ -121,6 +124,7 @@ def next_measurements(res: fit.FitResult, pts_all, band, x_grid, c_local, line_w
     for n, s in res.sigma.items():
         v = res.params.get(n, np.nan)
         if np.isfinite(s) and abs(v) > 0 and s / abs(v) > 0.1:
+            s = min(s, 10 * abs(v))  # cap: 'unconstrained' rather than an absurd percentage
             hint = {"EC": "EC is set by the anharmonicity: the 0-2/2ph (f01 - EC/2) or 1-2 (f01 - EC) lines pin it",
                     "EJ": "EJ is degenerate with EC along constant f01; the 0-2/2ph line breaks the degeneracy",
                     "EJmax": "EJmax is degenerate with EC along constant f01; the 0-2/2ph line breaks the degeneracy",
@@ -218,13 +222,16 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
             score, inl = _score(res, points, ids, flat, band, cfg.c_local)
             if score > best_sc:
                 best_res, best_sc, best_inl = res, score, inl
+        best_res.lines = fit.predict_lines(h, best_res.params, x_grid)
         results.append((best_res, best_sc, best_inl))
         _emit(progress, "fit_done", hypothesis=h.label, score=best_sc, summary=best_res.summary(), lines={k: v.tolist() for k, v in best_res.lines.items()})
         return best_res, best_sc
 
+    n_dyn = int((~flat).sum())
     for h, p in bare:
-        if h.flux_dependent and (~flat).sum() < 10:
-            continue  # nothing flux-dependent to fit
+        if h.flux_dependent and n_dyn < max(10, 0.2 * len(points)):
+            _emit(progress, "skip", hypothesis=h.label, reason=f"only {n_dyn} of {len(points)} features vary with flux")
+            continue  # (almost) everything is flux-independent: a flux-tunable circuit cannot be the explanation
         init = None
         if p is not None:
             init = {k: v for k, v in p["seed"].items() if k in h.names}
@@ -276,6 +283,7 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
             score, inl = _score(res, points, ids, flat, band, cfg.c_local)
             if score > csc:
                 cbest, csc, cinl = res, score, inl
+        cbest.lines = fit.predict_lines(hc, cbest.params, x_grid)
         results.append((cbest, csc, cinl))
         _emit(progress, "fit_done", hypothesis=hc.label, score=csc, summary=cbest.summary(), lines={k: v.tolist() for k, v in cbest.lines.items()})
         results.sort(key=lambda r: -r[1])

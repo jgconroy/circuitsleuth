@@ -66,6 +66,18 @@ def from_theta(theta: np.ndarray, names: list[str]) -> dict:
     return {n: (float(np.exp(t)) if n in LOG_PARAMS else float(t)) for n, t in zip(names, theta)}
 
 
+def to_theta_partial(init: dict | None, names: list[str], tb: list[tuple[float, float]]) -> np.ndarray:
+    """theta from a possibly partial init; missing entries start at the middle of their bounds."""
+    th = []
+    for n, (lo, hi) in zip(names, tb):
+        if init is not None and n in init:
+            v = np.log(init[n]) if n in LOG_PARAMS else init[n]
+        else:
+            v = 0.5 * (lo + hi)
+        th.append(float(np.clip(v, lo, hi)))
+    return np.array(th)
+
+
 def theta_bounds(bounds: dict, names: list[str]) -> list[tuple[float, float]]:
     out = []
     for n in names:
@@ -227,7 +239,7 @@ def fit_hypothesis(
             de_kw = dict(bounds=tb, maxiter=it, popsize=popsize, tol=1e-8, seed=seed, polish=False)
             de_kw["init"] = "sobol" if population is None else population
             if init is not None and population is None:
-                de_kw["x0"] = np.clip(to_theta(init, names), lo_b, hi_b)
+                de_kw["x0"] = to_theta_partial(init, names, tb)
             if workers != 1:
                 de_kw.update(workers=workers, updating="deferred")
 
@@ -242,7 +254,7 @@ def fit_hypothesis(
             theta0 = res.x
             n_evals += int(res.nfev)
     else:
-        theta0 = to_theta(init, names)
+        theta0 = to_theta_partial(init, names, tb)
         n_evals = 0
 
     # ---- local refinement on all points

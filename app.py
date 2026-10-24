@@ -156,7 +156,7 @@ with left:
     st.pyplot(draw_map(image, x, f, points=pts_preview, title=f"input map · {len(pts_preview)} detected features"), clear_figure=True)
 with right:
     st.subheader("Run")
-    run = st.button("Identify circuit", type="primary", use_container_width=True)
+    run = st.button("Identify circuit", type="primary", width="stretch")
     status = st.empty()
     live = st.empty()
     table = st.empty()
@@ -184,10 +184,12 @@ if run:
         elif kind == "fit_done":
             s = p["summary"]
             rows.append(dict(hypothesis=p["hypothesis"], score=round(p["score"], 3), explained=f"{100*s['inlier_frac']:.0f}%", rms_MHz=s["rms_inliers_MHz"]))
-            table.dataframe(rows, use_container_width=True, hide_index=True)
+            table.dataframe(rows, width="stretch", hide_index=True)
             overlay.pyplot(draw_map(image, x, f, points=pts_preview, lines=p["lines"], x_grid=x, title=f"{p['hypothesis']} · fitted · score {p['score']:.3f}"), clear_figure=True)
         elif kind == "calibration":
             status.info(f"Symmetry analysis: flux period ≈ {p['period']:.3g} control units; sweet spots at " + ", ".join(f"{a['x']:.3g} ({a['type']})" for a in p['axes'][:3]))
+        elif kind == "skip":
+            status.info(f"Skipping {p['hypothesis']}: {p['reason']}")
         elif kind == "revise":
             status.warning("Revision: " + p["reason"])
         elif kind == "verify":
@@ -229,7 +231,7 @@ if rep and rep.get("status") == "ok":
             st.table(rows)
             st.caption(f"truth: {truth['family']}{' + resonator' if truth['coupled'] else ''}; spurs at {[s['f'] for s in truth['spurs']]} GHz" + (f" · {truth['note']}" if truth.get("note") else ""))
         st.subheader("Hypotheses tested")
-        st.dataframe([{"hypothesis": h["hypothesis"], "score": h["track_score"], "explained": f"{100*h['inlier_frac']:.0f}%", "RMS MHz": h["rms_inliers_MHz"]} for h in rep["hypotheses"]], hide_index=True, use_container_width=True)
+        st.dataframe([{"hypothesis": h["hypothesis"], "score": h["track_score"], "explained": f"{100*h['inlier_frac']:.0f}%", "RMS MHz": h["rms_inliers_MHz"]} for h in rep["hypotheses"]], hide_index=True, width="stretch")
     st.subheader("What the model cannot explain")
     if rep["unexplained"]:
         for u in rep["unexplained"]:
@@ -244,7 +246,7 @@ if rep and rep.get("status") == "ok":
             elif n["kind"] == "extend_band":
                 st.markdown(f"- **Extend the band to {n['f_lo']:.2f}–{n['f_hi']:.2f} GHz**: {n['why']}")
             else:
-                st.markdown(f"- **Constrain {n['parameter']}** (currently ±{100*n['rel_sigma']:.0f}%): {n['why']}")
+                st.markdown(f"- **Constrain {n['parameter']}** (currently " + (f"±{100*n['rel_sigma']:.0f}%" if n['rel_sigma'] < 5 else "unconstrained") + f"): {n['why']}")
     else:
         st.markdown("No obvious gaps: every predicted line inside the band has data under it.")
     st.subheader("Plain-English summary")
