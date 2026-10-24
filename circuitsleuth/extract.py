@@ -83,7 +83,7 @@ def link_tracks(points: np.ndarray, df_tol: float = 0.08, slope_factor: float = 
         return ids
     cols = np.unique(points[:, 0])
     col_of = np.searchsorted(cols, points[:, 0])
-    step = np.zeros(n)  # last frequency step of the track ending at this point
+    step = np.full(n, np.nan)  # last frequency step of the track ending at this point (nan: single point)
     next_id = 0
     prev_idx: np.ndarray = np.array([], int)
     for c in range(len(cols)):
@@ -95,8 +95,11 @@ def link_tracks(points: np.ndarray, df_tol: float = 0.08, slope_factor: float = 
             for j in prev_idx:
                 if j in taken:
                     continue
-                pred = points[j, 1] + step[j]
-                tol = min(max_tol, max(df_tol, slope_factor * abs(step[j])))
+                if np.isnan(step[j]):  # no slope yet: accept any plausible continuation
+                    pred, tol = points[j, 1], max_tol
+                else:
+                    pred = points[j, 1] + step[j]
+                    tol = min(max_tol, max(df_tol, slope_factor * abs(step[j])))
                 d = abs(points[i, 1] - pred)
                 if d < tol and d < best_d:
                     best, best_d = j, d
