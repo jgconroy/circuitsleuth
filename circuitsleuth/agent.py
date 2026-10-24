@@ -34,6 +34,8 @@ class AgentConfig:
     families: tuple = ()  # restrict candidate families (empty = all)
     flux_calibrated: bool = False  # x axis already in flux quanta: period = 1, offset = 0 (tight bounds)
     n_starts: int = 2  # random restarts of the global search (best fine-scale loss wins)
+    coupled_margin: float = 0.05  # a resonator model must beat the bare circuit by this much to be accepted
+    prior_weight: float = 0.1  # weight of the CNN family probability in the score (0 = ignore)
 
 
 def _emit(progress: Progress | None, kind: str, **payload):
@@ -207,6 +209,14 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
     if cfg.families:
         bare = [(h, p) for h, p in bare if h.family in cfg.families] or [(fit.Hypothesis(f, False), None) for f in cfg.families]
     _emit(progress, "proposals", hypotheses=[dict(h=h.label, prob=(p or {}).get("prob")) for h, p in bare], p_coupled=p_coupled)
+    p_family: dict[str, float] = {}
+    for prop in proposals:
+        p_family[prop["family"]] = p_family.get(prop["family"], 0.0) + prop["prob"]
+
+    def prior(h: fit.Hypothesis) -> float:
+        if not p_family or cfg.prior_weight <= 0:
+            return 0.0
+        return cfg.prior_weight * (p_family.get(h.family, 1 / 3) - 1 / 3)
 
     # ---- 3. fit bare hypotheses
     results: list[tuple[fit.FitResult, float, np.ndarray]] = []
@@ -246,6 +256,7 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
         for b, ini, mi in candidates:
             res = run_one(h, pts_fit, ini, b, mi, n_starts=None if b is None else 1)
             score, inl = _score(res, points, ids, flat, band, cfg.c_local)
+            score += prior(h)
             if score > best_sc:
                 best_res, best_sc, best_inl = res, score, inl
         best_res.lines = fit.predict_lines(h, best_res.params, x_grid)
@@ -309,11 +320,18 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
             init = dict(best.params, fr=fr0, g=0.1)
             res = run_one(hc, pts_fit, init, b, cfg.maxiter, n_starts=1)
             score, inl = _score(res, points, ids, flat, band, cfg.c_local)
+            score += prior(hc)
             if score > csc:
                 cbest, csc, cinl = res, score, inl
         cbest.lines = fit.predict_lines(hc, cbest.params, x_grid)
-        results.append((cbest, csc, cinl))
-        _emit(progress, "fit_done", hypothesis=hc.label, score=csc, summary=cbest.summary(), lines={k: v.tolist() for k, v in cbest.lines.items()})
+        accepted = csc > best_score + cfg.coupled_margin
+        # a resonator the data does not need (coupling consistent with zero) is not evidence either
+        g_sig = cbest.sigma.get("g", float("nan"))
+        if np.isfinite(g_sig) and cbest.params.get("g", 0) < 2 * g_sig:
+            accepted = False
+        results.append((cbest, csc if accepted else min(csc, best_score - 1e-6), cinl))
+        _emit(progress, "fit_done", hypothesis=hc.label, score=csc, summary=cbest.summary(), lines={k: v.tolist() for k, v in cbest.lines.items()},
+              note=("accepted" if accepted else f"rejected: gain {csc - best_score:+.3f} < margin {cfg.coupled_margin} or coupling not significant"))
         results.sort(key=lambda r: -r[1])
         best, best_score, best_inl = results[0]
 
@@ -324,6 +342,9 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
         _emit(progress, "verify", holdout=best.holdout)
 
     # ---- 6. report
+    note = ""
+    if best.hyp.family == "tunable_transmon" and best.params.get("d", 0) > 0.95:
+        note = "junction asymmetry d > 0.95: the spectrum is effectively flux-insensitive, i.e. a fixed-frequency transmon with EJ = EJmax"
     unexpl = unexplained_features(points, ids, best_inl, flat)
     nxt = next_measurements(best, points, band, x_grid, cfg.c_local)
     report = dict(
@@ -335,7 +356,7 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
         flat_lines_GHz=[round(v, 3) for v in flat_lines],
         proposals=[dict(hypothesis=fit.Hypothesis(p["family"], p["coupled"]).label, prob=round(p["prob"], 3)) for p in proposals],
         hypotheses=[dict(res.summary(), track_score=round(sc, 4)) for res, sc, _ in results],
-        best=dict(res_summary(best), track_score=round(best_score, 4)),
+        best=dict(res_summary(best), track_score=round(best_score, 4), note=note),
         unexplained=unexpl,
         next_measurements=nxt,
         lines={k: [None if not np.isfinite(v) else round(float(v), 5) for v in arr] for k, arr in best.lines.items()},

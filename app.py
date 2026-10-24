@@ -191,7 +191,7 @@ if run:
                 overlay.pyplot(draw_map(image, x, f, points=pts_preview, lines=p["lines"], x_grid=x, title=f"{p['hypothesis']} · searching · loss {p['loss']:.3f}\n{pp}"), clear_figure=True)
         elif kind == "fit_done":
             s = p["summary"]
-            rows.append(dict(hypothesis=p["hypothesis"], score=round(p["score"], 3), explained=f"{100*s['inlier_frac']:.0f}%", rms_MHz=s["rms_inliers_MHz"]))
+            rows.append(dict(hypothesis=p["hypothesis"], score=round(p["score"], 3), explained=f"{100*s['inlier_frac']:.0f}%", rms_MHz=s["rms_inliers_MHz"], note=p.get("note", "")))
             table.dataframe(rows, width="stretch", hide_index=True)
             overlay.pyplot(draw_map(image, x, f, points=pts_preview, lines=p["lines"], x_grid=x, title=f"{p['hypothesis']} · fitted · score {p['score']:.3f}"), clear_figure=True)
         elif kind == "calibration":
@@ -221,6 +221,8 @@ if rep and rep.get("status") == "ok":
     ho = best.get("holdout") or {}
     c3.metric("Held-out columns explained", f"{100*ho['inlier_frac']:.0f}%" if ho else "n/a", help="Columns excluded from the fit, predicted by the model")
     c4.metric("Residual (RMS)", f"{best['rms_inliers_MHz']:.1f} MHz")
+    if best.get("note"):
+        st.info(best["note"])
     a, b = st.columns([1.15, 1])
     with a:
         boxes = [n for n in rep["next_measurements"] if n["kind"] == "look_here"]
