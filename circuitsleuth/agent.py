@@ -391,10 +391,18 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
     results.sort(key=lambda r: -r[1])
     best, best_score, best_inl = results[0]
 
-    # ---- 5. verify on held-out columns
+    # coherent line segments (>= 5 points): the features a physicist would count; isolated noise fragments are not
+    seg_ok = np.zeros(len(points), bool)
+    for t_id in np.unique(ids):
+        m = ids == t_id
+        if m.sum() >= 5:
+            seg_ok[m] = True
+
+    # ---- 5. verify on held-out columns (coherent segments only, so noise fragments do not dilute the score)
     if cfg.holdout:
         pts_fit = _fit_points_for(best.hyp, points, flat)
-        fit.holdout_check(pts_fit, best, band, c_local=cfg.c_local)
+        coh = pts_fit[np.isin(pts_fit[:, 0] * 1e6 + pts_fit[:, 1], (points[seg_ok, 0] * 1e6 + points[seg_ok, 1]))] if seg_ok.sum() >= 20 else pts_fit
+        fit.holdout_check(coh if len(coh) >= 20 else pts_fit, best, band, c_local=cfg.c_local)
         _emit(progress, "verify", holdout=best.holdout)
 
     # ---- 6. report
@@ -405,15 +413,21 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
     others = [sc for res, sc, _ in results[1:] if res.hyp.family != best.hyp.family]
     gap = best_score - max(others) if others else 1.0
     runner = next((res.hyp.label for res, sc, _ in results[1:] if res.hyp.family != best.hyp.family), None)
-    if gap > 0.15:
+    if not others:
+        confidence = dict(level="single family", gap=None, text="only one circuit family was considered, so no alternative was tested")
+    elif gap > 0.15:
         confidence = dict(level="high", gap=round(float(gap), 3), text="the best hypothesis beats every other circuit family clearly")
     elif gap > 0.05:
         confidence = dict(level="medium", gap=round(float(gap), 3), text=f"{runner} is a plausible alternative; the look-here suggestions would separate them")
     else:
         confidence = dict(level="low", gap=round(float(gap), 3), text=f"ambiguous between {best.hyp.label} and {runner}: more data is needed before trusting the parameters")
-    # user-facing: how much of the flux-dependent structure (spurs excluded) the model explains
-    dyn = ~flat
-    explained_dynamic = fit.track_score(points[dyn], ids[dyn], flat[dyn], best_inl[dyn]) if dyn.sum() >= 3 else fit.track_score(points, ids, flat, best_inl)
+    # user-facing: of the points that belong to coherent line segments (spurs excluded), the weighted
+    # fraction lying on a predicted transition
+    dyn = (~flat) & seg_ok
+    if dyn.sum() < 5:
+        dyn = seg_ok if seg_ok.sum() >= 5 else np.ones(len(points), bool)
+    w = points[dyn, 2]
+    explained_dynamic = float(np.sum(w * best_inl[dyn]) / max(np.sum(w), 1e-12))
     unexpl = unexplained_features(points, ids, best_inl, flat)
     nxt = next_measurements(best, points, band, x_grid, cfg.c_local)
     report = dict(
