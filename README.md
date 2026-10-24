@@ -17,6 +17,20 @@ from the paper's vector PDF. CircuitSleuth was told nothing except "this is a ma
 could not explain the bend near 7 GHz, so the agent hypothesised a resonator there: EJmax, EC, d, fr, g and
 the flux period all come back within 1 % (precomputed result shipped with the app).*
 
+## Not just circuit QED
+
+The pipeline is "spectrum versus a control knob, explained by a small Hamiltonian", so other platforms plug
+in as families. Two are included beyond superconducting circuits:
+
+| platform | measurement | model | parameters recovered |
+|---|---|---|---|
+| NV centres in diamond | ODMR lines vs coil current | S = 1 Hamiltonian D Sz² + E(Sx² − Sy²) + γ B·S for the four ⟨111⟩ orientations | D, E, field direction (θ, φ), gauss per unit current, zero-field current |
+| Semiconductor double quantum dot | charge-qubit spectroscopy vs detuning gate | f = √(ε² + (2 t_c)²), ε = lever arm × (V − V₀) | tunnel coupling t_c, lever arm, detuning zero |
+
+On hidden synthetic maps both come back to better than 1 % (`tests/test_platforms.py`). Adding a
+platform means writing its transition frequencies in `models.py` and declaring its control axis; the
+extraction, robust fitting, hold-out verification, unexplained-feature and next-measurement logic are shared.
+
 ## Why
 
 Every superconducting-qubit lab does this by hand: stare at a spectroscopy map, guess the circuit, open

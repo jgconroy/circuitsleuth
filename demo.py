@@ -15,13 +15,15 @@ def main():
     ap.add_argument("--maxiter", type=int, default=40)
     ap.add_argument("--no-classifier", action="store_true")
     ap.add_argument("--out", default="artifacts/blind_results.json")
+    ap.add_argument("--platform", default="circuit", choices=list(synth.models.PLATFORMS))
     a = ap.parse_args()
     cfg = synth.SynthConfig(nx=81, nf=400, noise_range=(0.03, 0.1))
-    acfg = agent.AgentConfig(maxiter=a.maxiter, workers=a.workers, use_classifier=not a.no_classifier)
+    fams = tuple(synth.models.PLATFORMS[a.platform]["families"])
+    acfg = agent.AgentConfig(maxiter=a.maxiter, workers=a.workers, use_classifier=not a.no_classifier, families=fams if a.platform != "circuit" else (), try_coupled="auto" if a.platform == "circuit" else "never")
     rows = []
     for i in range(a.n):
         rng = np.random.default_rng(a.seed + i)
-        t = synth.sample_truth(rng, cfg)
+        t = synth.sample_truth(rng, cfg, platform=a.platform)
         r = synth.render(t, cfg, rng)
         t0 = time.time()
         rep = agent.identify(r["image"], r["x"], r["f"], config=acfg)
@@ -34,7 +36,7 @@ def main():
             errs = {k: abs(b["params"][k] - v) / abs(v) for k, v in t["params"].items() if k in b["params"]}
             if "period" in b["params"] and synth.models.FAMILIES[t["family"]]["flux_dependent"]:
                 errs["period"] = abs(b["params"]["period"] - t["period"]) / t["period"]
-            circuit_errs = {k: v for k, v in errs.items() if k not in ("fr", "g")}  # resonator params are only determined when the qubit crosses it
+            circuit_errs = {k: v for k, v in errs.items() if k not in ("fr", "g", "x0", "phi")}  # resonator params need a crossing; x0/phi are offsets/angles, judged separately
             row["max_rel_err"] = round(max(circuit_errs.values()), 3) if circuit_errs else None
             row["max_rel_err_all"] = round(max(errs.values()), 3) if errs else None
             row["errs"] = {k: round(v, 3) for k, v in errs.items()}

@@ -18,6 +18,9 @@ Upload a map (image, NPZ, or a CSV of features). CircuitSleuth
 ## How we built it
 Python 3.12, NumPy/SciPy, scqubits (ground truth for the physics), PyTorch (proposer), Streamlit (UI), Claude Opus 5.5 (explanations). The build itself was agent-driven: a spec with pytest acceptance criteria, an implementation loop that only moves on when the tests are green, and an independent reviewer pass. On a published 2019 PRX fluxonium map digitised from the paper, with no tuning, it returns EJ 3.23 ± 0.20, EC 0.80 ± 0.05, EL 0.98 ± 0.04 GHz against the paper's 3.0 / 0.84 / 1.0. On hand-built hidden circuits it recovers every parameter, including resonator frequency and coupling and the flux period, to about 1 %.
 
+## Beyond circuit QED
+The method is "spectrum versus a control knob, explained by a small Hamiltonian", so other platforms are plug-in families. We added NV-centre ensembles in diamond (ODMR versus coil current: zero-field splitting, strain, field direction and the gauss-per-amp calibration all come out) and semiconductor double-quantum-dot charge qubits (tunnel coupling and lever arm from spectroscopy versus detuning). Same extraction, same robust fit, same verification and "look here" logic.
+
 ## Challenges
 - Flux-independent spurs with more pixels than the qubit line hijacked the fit until we scored *features* (line segments) instead of pixels and split off flat lines before fitting flux-tunable circuits.
 - EJ and EC are degenerate along constant f01; only the two-photon or 1-2 line breaks it. The fitter now reports that degeneracy as a large uncertainty and asks for exactly that line.

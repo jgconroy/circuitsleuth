@@ -40,6 +40,9 @@ def template(report: dict) -> dict:
          f"It accounts for {100*b['track_score']:.0f}% of the detected features"
          + (f" and {100*ho['inlier_frac']:.0f}% of features in flux columns held out of the fit (RMS {ho['rms_MHz']:.1f} MHz)." if ho else "."))
     caveats = []
+    conf = b.get("confidence") or {}
+    if conf and conf.get("level") != "high":
+        caveats.append(f"Confidence {conf['level']}: {conf['text']}.")
     for u in report.get("unexplained", [])[:4]:
         caveats.append(f"Unexplained {'flat' if u['flat'] else 'flux-dependent'} feature at {u['f_lo']:.2f}-{u['f_hi']:.2f} GHz: {u['interpretation']}.")
     for n in report.get("next_measurements", []):
