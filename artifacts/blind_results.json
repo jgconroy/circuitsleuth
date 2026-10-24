@@ -3,157 +3,167 @@
   "case": 0,
   "truth": "fluxonium",
   "n_points": 266,
-  "runtime_s": 126.9,
-  "found": "tunable_transmon+res",
+  "runtime_s": 300.8,
+  "found": "transmon+res",
   "family_ok": false,
-  "max_rel_err": 5.407,
+  "max_rel_err": 2.008,
+  "max_rel_err_all": 2.008,
   "errs": {
-   "EC": 0.304,
-   "period": 5.407
+   "EJ": 2.008,
+   "EC": 0.386
   },
-  "track_score": 0.0964,
-  "holdout": 0.2355298824274455
+  "track_score": -0.1222,
+  "holdout": 0.45597410957027956
  },
  {
   "case": 1,
   "truth": "transmon+res",
   "n_points": 261,
-  "runtime_s": 151.7,
-  "found": "tunable_transmon+res",
-  "family_ok": false,
-  "max_rel_err": 0.896,
+  "runtime_s": 759.2,
+  "found": "transmon+res",
+  "family_ok": true,
+  "max_rel_err": 0.632,
+  "max_rel_err_all": 0.706,
   "errs": {
-   "EC": 0.396,
-   "fr": 0.073,
-   "g": 0.896
+   "EJ": 0.632,
+   "EC": 0.616,
+   "fr": 0.354,
+   "g": 0.706
   },
-  "track_score": 0.3241,
-  "holdout": 0.7068303039928523
+  "track_score": 0.5683,
+  "holdout": 0.8589081268530934
  },
  {
   "case": 2,
   "truth": "tunable_transmon",
   "n_points": 139,
-  "runtime_s": 130.7,
+  "runtime_s": 313.3,
   "found": "tunable_transmon",
   "family_ok": true,
   "max_rel_err": 0.012,
+  "max_rel_err_all": 0.012,
   "errs": {
    "EJmax": 0.011,
    "EC": 0.012,
    "d": 0.0,
    "period": 0.0
   },
-  "track_score": 0.8745,
+  "track_score": 0.8561,
   "holdout": 0.9999999999999999
  },
  {
   "case": 3,
   "truth": "tunable_transmon+res",
   "n_points": 149,
-  "runtime_s": 372.4,
-  "found": "fluxonium+res",
+  "runtime_s": 1021.8,
+  "found": "fluxonium",
   "family_ok": false,
-  "max_rel_err": 2.883,
+  "max_rel_err": 2.584,
+  "max_rel_err_all": 2.584,
   "errs": {
-   "EC": 0.082,
-   "fr": 0.004,
-   "g": 1.734,
-   "period": 2.883
+   "EC": 0.036,
+   "period": 2.584
   },
-  "track_score": 0.3984,
-  "holdout": 0.5292563200368781
+  "track_score": 0.2727,
+  "holdout": 0.6650041923592791
  },
  {
   "case": 4,
   "truth": "fluxonium",
   "n_points": 255,
-  "runtime_s": 317.8,
+  "runtime_s": 665.2,
   "found": "fluxonium",
   "family_ok": true,
   "max_rel_err": 0.006,
+  "max_rel_err_all": 0.006,
   "errs": {
    "EJ": 0.005,
    "EC": 0.006,
    "EL": 0.001,
    "period": 0.0
   },
-  "track_score": 0.5453,
+  "track_score": 0.2206,
   "holdout": 0.943006646886397
  },
  {
   "case": 5,
   "truth": "transmon",
   "n_points": 200,
-  "runtime_s": 116.8,
+  "runtime_s": 180.4,
   "found": "transmon+res",
   "family_ok": true,
   "max_rel_err": 0.345,
+  "max_rel_err_all": 0.345,
   "errs": {
    "EJ": 0.345,
    "EC": 0.025
   },
-  "track_score": 0.7493,
+  "track_score": 0.7966,
   "holdout": 0.9804557285869981
  },
  {
   "case": 6,
   "truth": "tunable_transmon+res",
   "n_points": 117,
-  "runtime_s": 346.2,
+  "runtime_s": 714.5,
   "found": "fluxonium",
   "family_ok": false,
   "max_rel_err": 0.498,
+  "max_rel_err_all": 0.498,
   "errs": {
    "EC": 0.498,
    "period": 0.352
   },
-  "track_score": 0.3938,
+  "track_score": 0.1826,
   "holdout": 0.7119480336204158
  },
  {
   "case": 7,
   "truth": "transmon+res",
   "n_points": 118,
-  "runtime_s": 459.6,
-  "found": "fluxonium",
-  "family_ok": false,
-  "max_rel_err": 0.22,
+  "runtime_s": 496.2,
+  "found": "transmon+res",
+  "family_ok": true,
+  "max_rel_err": 0.433,
+  "max_rel_err_all": 0.717,
   "errs": {
-   "EJ": 0.22,
-   "EC": 0.191
+   "EJ": 0.317,
+   "EC": 0.433,
+   "fr": 0.138,
+   "g": 0.717
   },
-  "track_score": 0.5101,
-  "holdout": 0.8688266047581852
+  "track_score": 0.7431,
+  "holdout": 0.9136117159975462
  },
  {
   "case": 8,
   "truth": "transmon",
   "n_points": 212,
-  "runtime_s": 341.4,
-  "found": "fluxonium+res",
-  "family_ok": false,
-  "max_rel_err": 5.429,
+  "runtime_s": 328.2,
+  "found": "transmon+res",
+  "family_ok": true,
+  "max_rel_err": 2.617,
+  "max_rel_err_all": 2.617,
   "errs": {
-   "EJ": 0.12,
-   "EC": 5.429
+   "EJ": 2.617,
+   "EC": 0.23
   },
-  "track_score": 0.1462,
-  "holdout": 0.3318903389180018
+  "track_score": 0.5437,
+  "holdout": 0.8311198253892808
  },
  {
   "case": 9,
   "truth": "tunable_transmon",
   "n_points": 241,
-  "runtime_s": 349.2,
-  "found": "fluxonium+res",
+  "runtime_s": 723.1,
+  "found": "transmon",
   "family_ok": false,
-  "max_rel_err": 2.783,
+  "max_rel_err": 0.239,
+  "max_rel_err_all": 0.239,
   "errs": {
-   "EC": 2.783,
-   "period": 0.006
+   "EC": 0.239
   },
-  "track_score": 0.2382,
-  "holdout": 0.4206050727523877
+  "track_score": -0.0749,
+  "holdout": 0.45228456365601977
  }
 ]

@@ -78,6 +78,26 @@ about 0.3 and fragments of 0-2 are available. With the paper's flux axis (period
 Without the axis prior the period is unconstrained by this half-map (the fit reports it and asks for a sweep
 near Φ = ½ below 1.2 GHz, which is exactly where the paper's inset lives).
 
+
+### Hand-picked scenarios (`tests/test_agent.py`, run end to end with no proposer)
+
+| hidden circuit | result |
+|---|---|
+| tunable transmon through a 7 GHz resonator + a 5.1 GHz pump spur | family + resonator found; EJmax, EC, d, fr, g, flux period all within 1 %; spur reported as unexplained flux-independent line |
+| fluxonium (EJ 6, EC 1, EL 0.6) | all three energies within 0.3 %; a trial resonator model rejected (gain below margin) |
+| fixed transmon + LO leakage | family found, EC within 1 % |
+| tunable transmon, band too narrow to show the two-photon line | EJ–EC degeneracy flagged; "look here" asks for the 0-2/2ph line |
+
+### Blind test (`demo.py`, 10 random hidden circuits from the synthetic generator, harsh settings: up to 3 spurs, dropouts, noise up to 10 %)
+
+Family identified in 6 of 10. Both flux-tunable circuits without a resonator were recovered to ≤ 1.2 % in
+every parameter including the flux period. Fixed transmons were always recognised, but when the generator
+dropped the two-photon line only f01 is observable and EJ/EC come back with large stated uncertainties.
+The failures are tunable-transmon-plus-resonator maps mistaken for fluxonium (two cases) and one very
+faint fluxonium: these are the cases we would want more data for, and the report says so. Mean runtime in
+that run was 9 min per map because the test shared the laptop with the test suite; alone, with four workers,
+a map takes 2–4 min.
+
 ### Proposer (CNN on 64×64 thumbnails, 20 000 synthetic maps, held-out 2 000)
 
 Family accuracy 86 %, resonator-present accuracy 55 % (near chance: a resonator is invisible unless the

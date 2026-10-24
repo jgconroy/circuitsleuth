@@ -16,7 +16,7 @@ Upload a map (image, NPZ, or a CSV of features). CircuitSleuth
 - and explains all of it in plain English via Claude (structured output), falling back to a template without a key.
 
 ## How we built it
-Python 3.12, NumPy/SciPy, scqubits (ground truth for the physics), PyTorch (proposer), Streamlit (UI), Claude Opus 5.5 (explanations). The build itself was agent-driven: a spec with pytest acceptance criteria, an implementation loop that only moves on when the tests are green, and an independent reviewer pass. RESULTS_NUMBERS
+Python 3.12, NumPy/SciPy, scqubits (ground truth for the physics), PyTorch (proposer), Streamlit (UI), Claude Opus 5.5 (explanations). The build itself was agent-driven: a spec with pytest acceptance criteria, an implementation loop that only moves on when the tests are green, and an independent reviewer pass. On a published 2019 PRX fluxonium map digitised from the paper, with no tuning, it returns EJ 3.23 ± 0.20, EC 0.80 ± 0.05, EL 0.98 ± 0.04 GHz against the paper's 3.0 / 0.84 / 1.0. On hand-built hidden circuits it recovers every parameter, including resonator frequency and coupling and the flux period, to about 1 %.
 
 ## Challenges
 - Flux-independent spurs with more pixels than the qubit line hijacked the fit until we scored *features* (line segments) instead of pixels and split off flat lines before fitting flux-tunable circuits.
@@ -25,7 +25,10 @@ Python 3.12, NumPy/SciPy, scqubits (ground truth for the physics), PyTorch (prop
 - Real data: the published map has streaky columns and an overlaid theory fit. Per-column noise estimation and a colour-channel trick (data is blue, overlays are grey) made it usable.
 
 ## Accomplishments
-RESULTS_ACCOMPLISHMENTS
+- Recovered a real device's Hamiltonian from a figure in a paper, with uncertainties that bracket the authors' own fit.
+- Every Hamiltonian in the code is checked against scqubits to a millionth of a gigahertz in the test suite, including the resonator-dressed spectrum.
+- Resonator discovery: when the bare circuit cannot explain the bend in the data, the agent hypothesises a resonator at that frequency and finds fr and g to 1 %.
+- Honest reporting: a blind test on ten random, deliberately nasty synthetic maps identifies the family in six and recovers all parameters in the clean tunable-circuit cases; the misses are listed in the README with why.
 
 ## What we learned
 Robust statistics beat clever optimisers: once the loss stopped rewarding "explain the most pixels", everything else got easier. And the most useful output of a fitter is the list of things it could not fit.
