@@ -217,7 +217,7 @@ if rep and rep.get("status") == "ok":
     st.divider()
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Best hypothesis", best["hypothesis"])
-    c2.metric("Features explained", f"{100*best['track_score']:.0f}%")
+    c2.metric("Flux-dependent features explained", f"{100*best.get('explained_dynamic', best['track_score']):.0f}%", help="Fraction of detected line segments (spurs excluded) that lie on a predicted transition")
     ho = best.get("holdout") or {}
     c3.metric("Held-out columns explained", f"{100*ho['inlier_frac']:.0f}%" if ho else "n/a", help="Columns excluded from the fit, predicted by the model")
     c4.metric("Residual (RMS)", f"{best['rms_inliers_MHz']:.1f} MHz")

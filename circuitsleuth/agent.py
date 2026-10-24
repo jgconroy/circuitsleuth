@@ -371,6 +371,9 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
     note = ""
     if best.hyp.family == "tunable_transmon" and best.params.get("d", 0) > 0.95:
         note = "junction asymmetry d > 0.95: the spectrum is effectively flux-insensitive, i.e. a fixed-frequency transmon with EJ = EJmax"
+    # user-facing: how much of the flux-dependent structure (spurs excluded) the model explains
+    dyn = ~flat
+    explained_dynamic = fit.track_score(points[dyn], ids[dyn], flat[dyn], best_inl[dyn]) if dyn.sum() >= 3 else fit.track_score(points, ids, flat, best_inl)
     unexpl = unexplained_features(points, ids, best_inl, flat)
     nxt = next_measurements(best, points, band, x_grid, cfg.c_local)
     report = dict(
@@ -382,7 +385,7 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
         flat_lines_GHz=[round(v, 3) for v in flat_lines],
         proposals=[dict(hypothesis=fit.Hypothesis(p["family"], p["coupled"]).label, prob=round(p["prob"], 3)) for p in proposals],
         hypotheses=[dict(res.summary(), track_score=round(sc, 4)) for res, sc, _ in results],
-        best=dict(res_summary(best), track_score=round(best_score, 4), note=note),
+        best=dict(res_summary(best), track_score=round(best_score, 4), explained_dynamic=round(float(explained_dynamic), 4), note=note),
         unexplained=unexpl,
         next_measurements=nxt,
         lines={k: [None if not np.isfinite(v) else round(float(v), 5) for v in arr] for k, arr in best.lines.items()},
