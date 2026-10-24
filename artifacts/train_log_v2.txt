@@ -1,0 +1,5 @@
+[11:45:19] generated 43000 maps in 1517s
+[11:46:02] epoch 1/20 loss=2.3544 val_fam_acc=0.332 val_coupled_acc=0.487 param_rmse=0.287 nper_rmse=0.190 (1560s)
+[11:46:40] epoch 2/20 loss=2.1904 val_fam_acc=0.624 val_coupled_acc=0.493 param_rmse=0.273 nper_rmse=0.191 (1598s)
+[11:47:22] epoch 3/20 loss=1.8595 val_fam_acc=0.745 val_coupled_acc=0.501 param_rmse=0.261 nper_rmse=0.198 (1640s)
+[11:48:13] epoch 4/20 loss=1.6677 val_fam_acc=0.812 val_coupled_acc=0.508 param_rmse=0.252 nper_rmse=0.169 (1691s)

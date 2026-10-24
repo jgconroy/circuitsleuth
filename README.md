@@ -68,6 +68,16 @@ sees the data it is tested on.
    outside the band, and which transition would pin down a poorly determined parameter. Claude (Opus 5.5,
    structured output) turns the JSON into a plain-English summary; a template does the same without a key.
 
+## Interface
+
+![interface](artifacts/ui_results.png)
+
+Dark, single-accent interface: interactive map (hover for frequency and control value), live fit overlay with a
+search-loss sparkline, circuit schematic of the identified family, Hamiltonian table with uncertainties, hypothesis
+scores, and a physics panel (the potential well and its levels for circuits; spin-1 levels versus field for NV
+centres; the charge anticrossing for quantum dots). A platform selector switches between superconducting circuits,
+NV centres and quantum dots, each with hidden demo circuits and a "surprise" random one.
+
 ## Run it
 
 ```bash

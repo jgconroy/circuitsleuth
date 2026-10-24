@@ -1,0 +1,138 @@
+[
+ {
+  "case": 0,
+  "truth": "charge_qubit",
+  "n_points": 218,
+  "runtime_s": 6.1,
+  "found": "charge_qubit",
+  "family_ok": true,
+  "max_rel_err": 0.006,
+  "max_rel_err_all": 0.006,
+  "errs": {
+   "t_c": 0.001,
+   "lever_arm": 0.006,
+   "x0": 0.005
+  },
+  "track_score": 0.2046,
+  "holdout": 0.7813675336043316
+ },
+ {
+  "case": 1,
+  "truth": "charge_qubit",
+  "n_points": 190,
+  "runtime_s": 5.6,
+  "found": "charge_qubit",
+  "family_ok": true,
+  "max_rel_err": 0.002,
+  "max_rel_err_all": 0.002,
+  "errs": {
+   "t_c": 0.001,
+   "lever_arm": 0.002,
+   "x0": 0.002
+  },
+  "track_score": 0.062,
+  "holdout": 0.7480038497738539
+ },
+ {
+  "case": 2,
+  "truth": "charge_qubit",
+  "n_points": 49,
+  "runtime_s": 3.0,
+  "found": "charge_qubit",
+  "family_ok": true,
+  "max_rel_err": 0.007,
+  "max_rel_err_all": 0.007,
+  "errs": {
+   "t_c": 0.007,
+   "lever_arm": 0.001,
+   "x0": 0.001
+  },
+  "track_score": 0.7642,
+  "holdout": 1.0
+ },
+ {
+  "case": 3,
+  "truth": "charge_qubit",
+  "n_points": 358,
+  "runtime_s": 7.5,
+  "found": "charge_qubit",
+  "family_ok": true,
+  "max_rel_err": 2.883,
+  "max_rel_err_all": 2.883,
+  "errs": {
+   "t_c": 2.883,
+   "lever_arm": 0.909,
+   "x0": 0.284
+  },
+  "track_score": -0.271,
+  "holdout": 0.11881866103982192
+ },
+ {
+  "case": 4,
+  "truth": "charge_qubit",
+  "n_points": 29,
+  "runtime_s": 6.8,
+  "found": "charge_qubit",
+  "family_ok": true,
+  "max_rel_err": 0.021,
+  "max_rel_err_all": 0.021,
+  "errs": {
+   "t_c": 0.003,
+   "lever_arm": 0.021,
+   "x0": 0.008
+  },
+  "track_score": 0.7846,
+  "holdout": 0.804890198053485
+ },
+ {
+  "case": 5,
+  "truth": "charge_qubit",
+  "n_points": 20,
+  "runtime_s": 6.9,
+  "found": "charge_qubit",
+  "family_ok": true,
+  "max_rel_err": 1.009,
+  "max_rel_err_all": 1.009,
+  "errs": {
+   "t_c": 0.987,
+   "lever_arm": 1.009,
+   "x0": 0.001
+  },
+  "track_score": 0.6259,
+  "holdout": 0.8801711249769543
+ },
+ {
+  "case": 6,
+  "truth": "charge_qubit",
+  "n_points": 66,
+  "runtime_s": 3.0,
+  "found": "charge_qubit",
+  "family_ok": true,
+  "max_rel_err": 0.001,
+  "max_rel_err_all": 0.001,
+  "errs": {
+   "t_c": 0.001,
+   "lever_arm": 0.0,
+   "x0": 0.0
+  },
+  "track_score": 0.8554,
+  "holdout": 0.9852900990103634
+ },
+ {
+  "case": 7,
+  "truth": "charge_qubit",
+  "n_points": 75,
+  "runtime_s": 6.0,
+  "found": "charge_qubit",
+  "family_ok": true,
+  "max_rel_err": 0.886,
+  "max_rel_err_all": 0.886,
+  "errs": {
+   "t_c": 0.281,
+   "lever_arm": 0.886,
+   "x0": 0.094
+  },
+  "track_score": -0.1868,
+  "holdout": 0.2859269974232726
+ }
+]
