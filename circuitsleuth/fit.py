@@ -176,7 +176,8 @@ class FitResult:
         )
 
 
-def subsample(points: np.ndarray, max_cols: int = 41, max_points: int = 400) -> np.ndarray:
+def subsample(points: np.ndarray, max_cols: int = 41, max_points: int = 3000) -> np.ndarray:
+    """Thin the flux columns (cost scales with columns) but keep faint points: they pin EC and EL."""
     cols = np.unique(points[:, 0])
     if len(cols) > max_cols:
         keep = cols[np.linspace(0, len(cols) - 1, max_cols).round().astype(int)]
@@ -194,7 +195,7 @@ def fit_hypothesis(
     bounds: dict | None = None,
     init: dict | None = None,
     c_global: float = 0.08,
-    c_local: float = 0.03,
+    c_local: float = 0.012,
     maxiter: int = 60,
     popsize: int = 15,
     seed: int = 0,
@@ -211,16 +212,18 @@ def fit_hypothesis(
 
     # ---- global search on a subsample, annealing the robust scale (coarse -> fine) and carrying
     #      the population between stages so the search narrows instead of restarting
-    sub = subsample(points)
+    sub = subsample(points, max_cols=31)
+    global_kw = dict(model_kw or {})
+    global_kw.setdefault("cutoff", 40)  # converged to <1e-8 GHz except at the extreme EC/EL corner; local stage uses 60
     if do_global:
         lo_b = np.array([b[0] for b in tb])
         hi_b = np.array([b[1] for b in tb])
-        stages = [(max(4 * c_global, 0.3), maxiter // 2), (c_global, maxiter)]
+        stages = [(max(4 * c_global, 0.3), maxiter // 2), (c_global, maxiter), (max(c_global / 4, 1.5 * c_local), maxiter // 2)]
         population = None
         theta0 = None
         n_evals = 0
         for c_stage, it in stages:
-            obj_g = Objective(hyp, sub, band, c_stage, model_kw)
+            obj_g = Objective(hyp, sub, band, c_stage, global_kw)
             de_kw = dict(bounds=tb, maxiter=it, popsize=popsize, tol=1e-8, seed=seed, polish=False)
             de_kw["init"] = "sobol" if population is None else population
             if init is not None and population is None:
@@ -274,7 +277,7 @@ def fit_hypothesis(
     return FitResult(hyp, params, theta, sigma, float(obj_l(theta)), r, inlier, inlier_frac, rms, x_all, lines, history=history, n_evals=n_evals + int(ls.nfev))
 
 
-def holdout_check(points: np.ndarray, result: FitResult, band: tuple[float, float], frac: float = 0.3, c_local: float = 0.03, model_kw: dict | None = None) -> dict:
+def holdout_check(points: np.ndarray, result: FitResult, band: tuple[float, float], frac: float = 0.3, c_local: float = 0.012, model_kw: dict | None = None) -> dict:
     """Refit locally on ~70% of flux columns, score the untouched 30%."""
     cols = np.unique(points[:, 0])
     test_cols = cols[::max(int(round(1 / frac)), 2)]
@@ -294,3 +297,18 @@ def holdout_check(points: np.ndarray, result: FitResult, band: tuple[float, floa
     )
     result.holdout = out
     return out
+
+
+def track_score(points: np.ndarray, track_ids: np.ndarray, flat: np.ndarray, inlier_mask: np.ndarray) -> float:
+    """Fraction of track weight explained by a fit (features count, not pixels)."""
+    from .extract import track_weights
+
+    tw = track_weights(points, track_ids, flat)
+    tot = sum(tw.values())
+    if tot <= 0:
+        return 0.0
+    expl = 0.0
+    for t, w in tw.items():
+        m = track_ids == t
+        expl += w * float(np.mean(inlier_mask[m]))
+    return expl / tot

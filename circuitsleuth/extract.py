@@ -59,3 +59,105 @@ def match_points(found: np.ndarray, truth: np.ndarray, tol_f: float) -> float:
         if same_col.size and np.min(np.abs(same_col[:, 1] - ft)) <= tol_f:
             hit += 1
     return hit / len(truth)
+
+
+# ----------------------------------------------------------------------------- tracks
+def link_tracks(points: np.ndarray, df_tol: float = 0.08) -> np.ndarray:
+    """Greedy column-to-column linking of points into line segments ("tracks").
+
+    Returns an integer track id per point. Two points in adjacent columns join the same track when
+    their frequencies differ by less than `df_tol` GHz; each point links to at most one predecessor.
+    """
+    n = len(points)
+    ids = -np.ones(n, int)
+    if n == 0:
+        return ids
+    cols = np.unique(points[:, 0])
+    col_of = np.searchsorted(cols, points[:, 0])
+    next_id = 0
+    prev_idx: np.ndarray = np.array([], int)
+    for c in range(len(cols)):
+        cur_idx = np.flatnonzero(col_of == c)
+        cur_idx = cur_idx[np.argsort(points[cur_idx, 1])]
+        taken = set()
+        for i in cur_idx:
+            best, best_d = -1, df_tol
+            for j in prev_idx:
+                if j in taken:
+                    continue
+                d = abs(points[i, 1] - points[j, 1])
+                if d < best_d:
+                    best, best_d = j, d
+            if best >= 0:
+                ids[i] = ids[best]
+                taken.add(best)
+            else:
+                ids[i] = next_id
+                next_id += 1
+        prev_idx = cur_idx
+    return ids
+
+
+def flat_lines(points: np.ndarray, tol: float = 0.02, min_frac: float = 0.6) -> list[float]:
+    """Frequencies at which a feature is present in >= min_frac of all flux columns (flux-independent lines)."""
+    cols = np.unique(points[:, 0])
+    ncol = len(cols)
+    if ncol == 0:
+        return []
+    f = points[:, 1]
+    order = np.argsort(f)
+    fs, xs = f[order], points[order, 0]
+    found: list[float] = []
+    i = 0
+    while i < len(fs):
+        j = i
+        while j + 1 < len(fs) and fs[j + 1] - fs[i] < 2 * tol:
+            j += 1
+        n_cols = len(np.unique(xs[i : j + 1]))
+        if n_cols >= min_frac * ncol:
+            fc = float(np.median(fs[i : j + 1]))
+            if not found or abs(fc - found[-1]) > 2 * tol:
+                found.append(fc)
+            i = j + 1
+        else:
+            i += 1
+    return found
+
+
+def flat_feature_mask(points: np.ndarray, tol: float = 0.02, min_frac: float = 0.6) -> np.ndarray:
+    """Per-point boolean: lies on a flux-independent line (pump/LO/mixer spur, or a fixed-frequency line)."""
+    mask = np.zeros(len(points), bool)
+    for fc in flat_lines(points, tol, min_frac):
+        mask |= np.abs(points[:, 1] - fc) < 1.5 * tol
+    return mask
+
+
+def flat_track_mask(points: np.ndarray, track_ids: np.ndarray, span_tol: float = 0.045, min_frac: float = 0.5) -> np.ndarray:
+    """Backward-compatible alias: flat detection by frequency occupancy (robust to track swaps at crossings)."""
+    return flat_feature_mask(points, tol=span_tol / 2, min_frac=min_frac)
+
+
+def track_weights(points: np.ndarray, track_ids: np.ndarray, flat: np.ndarray) -> dict[int, float]:
+    """Weight per track: sqrt(length) * mean point weight, halved for flat tracks (prior: often spurious)."""
+    out = {}
+    for t in np.unique(track_ids):
+        m = track_ids == t
+        w = np.sqrt(m.sum()) * float(points[m, 2].mean())
+        if flat[m].any():
+            w *= 0.5
+        out[int(t)] = w
+    return out
+
+
+def summarize_tracks(points: np.ndarray, track_ids: np.ndarray, mask: np.ndarray | None = None) -> list[dict]:
+    """Human-readable description of tracks (optionally only those selected by `mask`)."""
+    out = []
+    for t in np.unique(track_ids):
+        m = track_ids == t
+        if mask is not None and not (m & mask).sum() >= 0.5 * m.sum():
+            continue
+        f = points[m, 1]
+        x = points[m, 0]
+        out.append(dict(track=int(t), n_points=int(m.sum()), f_lo=float(f.min()), f_hi=float(f.max()), f_mean=float(f.mean()),
+                        x_lo=float(x.min()), x_hi=float(x.max()), flat=bool((f.max() - f.min()) < 0.045), weight=float(points[m, 2].mean())))
+    return sorted(out, key=lambda d: -d["n_points"])

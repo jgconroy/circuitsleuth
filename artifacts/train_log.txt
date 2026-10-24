@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Users/grantconroy/calhacks13/circuitsleuth/scripts/train_classifier.py", line 4, in <module>
+    from circuitsleuth import classify
+ModuleNotFoundError: No module named 'circuitsleuth'

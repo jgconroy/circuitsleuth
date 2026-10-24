@@ -160,13 +160,9 @@ def downsample(image: np.ndarray, size: int = 64) -> np.ndarray:
     if rep_x > 1:
         img = np.repeat(img, rep_x, axis=1)
     nf, nx = img.shape
-    fe = (np.arange(size + 1) * nf) // size
-    xe = (np.arange(size + 1) * nx) // size
-    out = np.zeros((size, size))
-    for i in range(size):
-        rows = img[fe[i] : fe[i + 1]]
-        for j in range(size):
-            out[i, j] = rows[:, xe[j] : xe[j + 1]].max()
+    fe = (np.arange(size) * nf) // size
+    xe = (np.arange(size) * nx) // size
+    out = np.maximum.reduceat(np.maximum.reduceat(img, fe, axis=0), xe, axis=1)
     return out.astype(np.float32)
 
 

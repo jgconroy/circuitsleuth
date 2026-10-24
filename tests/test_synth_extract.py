@@ -43,8 +43,8 @@ def test_extract_recovers_most_truth_points_on_clean_maps():
         t = synth.sample_truth(rng, cfg)
         r = synth.render(t, cfg, rng)
         pts = extract.extract_points(r["image"], r["x"], r["f"])
-        # only truth points that are bright enough to be real features
-        truth = r["points"][r["points"][:, 2] > 0.25 * r["points"][:, 2].max()]
+        # only truth points bright enough to be detectable (>= 5 sigma above the noise)
+        truth = r["points"][r["points"][:, 2] >= 5 * t["noise"]]
         recalls.append(extract.match_points(pts, truth, tol_f=1.5 * t["linewidth"]))
     assert np.mean(recalls) >= 0.9, recalls
 
@@ -56,7 +56,7 @@ def test_extract_handles_dips_as_well_as_peaks():
     t["sign"] = -1
     r = synth.render(t, cfg, rng)
     pts = extract.extract_points(r["image"], r["x"], r["f"])
-    truth = r["points"][r["points"][:, 2] > 0.25 * r["points"][:, 2].max()]
+    truth = r["points"][r["points"][:, 2] >= 5 * t["noise"]]
     assert extract.match_points(pts, truth, tol_f=1.5 * t["linewidth"]) >= 0.85
 
 
@@ -77,3 +77,21 @@ def test_extract_precision_on_clean_maps():
                 good += w
         precs.append(good / pts[:, 2].sum())
     assert np.mean(precs) > 0.9, precs
+
+
+def test_tracks_and_flat_detection():
+    cfg = synth.SynthConfig(nx=81, nf=400, noise_range=(0.05, 0.05), max_spurs=0)
+    rng = np.random.default_rng(9)
+    t = synth.sample_truth(rng, cfg, family="tunable_transmon", coupled=False)
+    t["spurs"] = [dict(f=0.5 * (t["f_lo"] + t["f_hi"]), amp=0.9, sideband=0.0)]
+    r = synth.render(t, cfg, rng)
+    pts = extract.extract_points(r["image"], r["x"], r["f"])
+    ids = extract.link_tracks(pts)
+    flat = extract.flat_track_mask(pts, ids)
+    # the spur must be detected as flat; the qubit line must not
+    spur_pts = np.abs(pts[:, 1] - t["spurs"][0]["f"]) < 0.03
+    assert flat[spur_pts].mean() > 0.8
+    q = np.abs(pts[:, 1] - np.interp(pts[:, 0], r["x"], r["lines"]["0-1"])) < 0.03
+    assert flat[q].mean() < 0.2
+    summ = extract.summarize_tracks(pts, ids, flat)
+    assert any(abs(s["f_mean"] - t["spurs"][0]["f"]) < 0.03 for s in summ)
