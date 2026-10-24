@@ -110,9 +110,10 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
 
 ## 5. Pending / in progress (check before starting new work)
 - Circuit blind rerun (background, started Sat ~12:30): results -> `artifacts/blind_results.json`; update README Results if different.
-- UI lab-features pass by a subagent (known-parameter constraints, derived table, operating-point tool, exports, HDF5/2-D CSV
-  import with transpose/unit/crop, design comparison, session history). Verify with the AppTest snippet in section 6 after it lands,
-  then commit.
+- (done Sat ~18:00) UI lab features landed and verified headlessly on circuit/NV/DQD (`scripts/apptest_quick.py` + platform runs):
+  known-parameter constraints (toggle inside Search), derived table, operating-point tool, exports (JSON/CSV/HTML/scqubits),
+  HDF5 + 2-D grid CSV import (`ui/importers.py`), design comparison (toggle inside Explain), session history. AppTest cannot
+  drive file uploads; those paths were unit-tested by the subagent only.
 - Big-machine run: user copies `dist/circuitsleuth_bigmachine` to lanthanum, runs `python run_train.py bench ...` then `start`,
   copies `classifier.pt/json` back into `artifacts/` (compare `fam_acc` with 0.888 first). Optional `run_blind.py` for a 200-map table.
 - User to-dos: API credits (optional), record video per `docs/pitch.md`, Devpost submission before Sun 9 AM PDT.
@@ -126,6 +127,7 @@ streamlit run app.py                   # demos A/B/E: use "Load precomputed resu
 ```
 
 ## 7. Ideas not done (ranked)
+0. A fresh screenshot of the lab-feature UI for README/Devpost (current image predates them).
 1. Retrain proposer with crossing_visible on 200k+ maps (big machines) and regress fr/g only when crossing visible.
 2. Instrument drivers ("look here" -> take the sweep): out of hackathon scope; mention as future work.
 3. Add 0-pi qubit / flux qubit / coupled-transmon families; trapped-ion sideband spectroscopy.
