@@ -29,7 +29,7 @@ class AgentConfig:
     try_coupled: str = "auto"  # "auto" | "always" | "never"
     holdout: bool = True
     seed: int = 0
-    c_local: float = 0.012
+    c_local: float | None = None  # None: platform default (circuits 12 MHz, NV 1.5 MHz)
     extra_hypotheses: tuple = ()
     families: tuple = ()  # restrict candidate families (empty = all)
     flux_calibrated: bool = False  # x axis already in flux quanta: period = 1, offset = 0 (tight bounds)
@@ -195,6 +195,10 @@ def next_measurements(res: fit.FitResult, pts_all, band, x_grid, c_local, line_w
 def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np.ndarray | None = None, points: np.ndarray | None = None,
              band: tuple[float, float] | None = None, config: AgentConfig | None = None, progress: Progress | None = None) -> dict:
     cfg = config or AgentConfig()
+    platform = models.platform_of(cfg.families[0]) if cfg.families else "circuit"
+    scales = models.platform_scales(platform)
+    if cfg.c_local is None:
+        cfg = AgentConfig(**{**cfg.__dict__, "c_local": scales["c_local"]})
     t_start = time.time()
     # ---- 1. features
     if points is None:
@@ -209,9 +213,9 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
     x_grid = np.asarray(x, float) if x is not None else np.unique(points[:, 0])
     if len(points) < 10:
         return dict(error="fewer than 10 spectral features found; lower the detection threshold or check the map", n_points=int(len(points)))
-    ids = extract.link_tracks(points)
-    flat = extract.flat_feature_mask(points)
-    flat_lines = extract.flat_lines(points)
+    ids = extract.link_tracks(points, df_tol=scales["df_tol"])
+    flat = extract.flat_feature_mask(points, tol=scales["flat_tol"])
+    flat_lines = extract.flat_lines(points, tol=scales["flat_tol"])
     _emit(progress, "features", n_points=int(len(points)), n_tracks=int(len(np.unique(ids))), flat_lines=flat_lines)
 
     # ---- 2. propose
@@ -261,8 +265,8 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
         def cb(params, loss):
             _emit(progress, "fit_progress", hypothesis=h.label, params=params, loss=loss, lines={k: v.tolist() for k, v in fit.predict_lines(h, params, x_grid).items()})
 
-        return fit.fit_hypothesis(pts_fit, h, band, init=init, bounds=bounds, maxiter=maxiter, popsize=cfg.popsize, seed=cfg.seed, workers=cfg.workers, callback=cb, c_local=cfg.c_local,
-                                  n_starts=cfg.n_starts if n_starts is None else n_starts)
+        return fit.fit_hypothesis(pts_fit, h, band, init=init, bounds=bounds, maxiter=maxiter, popsize=cfg.popsize, seed=cfg.seed, workers=cfg.workers, callback=cb,
+                                  c_local=cfg.c_local, c_global=scales["c_global"], n_starts=cfg.n_starts if n_starts is None else n_starts)
 
     def run(h: fit.Hypothesis, init: dict | None):
         pts_fit = _fit_points_for(h, points, flat)

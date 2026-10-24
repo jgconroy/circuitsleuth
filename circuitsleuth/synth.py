@@ -84,7 +84,7 @@ def sample_truth(rng: np.random.Generator, cfg: SynthConfig | None = None, famil
         x_hi=x_hi,
         f_lo=f_lo,
         f_hi=f_hi,
-        linewidth=float(rng.uniform(*cfg.linewidth_range)),
+        linewidth=float(rng.uniform(*(cfg.linewidth_range if platform == "circuit" else models.PLATFORMS[platform]["linewidth"]))),
         noise=float(rng.uniform(*cfg.noise_range)),
         two_photon=bool(rng.random() < cfg.p_two_photon),
         sign=int(rng.choice([1, -1], p=[0.7, 0.3])),

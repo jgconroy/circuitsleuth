@@ -252,7 +252,7 @@ def _fit_once(
     if do_global:
         lo_b = np.array([b[0] for b in tb])
         hi_b = np.array([b[1] for b in tb])
-        stages = [(max(4 * c_global, 0.3), maxiter // 2), (c_global, maxiter), (max(c_global / 4, 1.5 * c_local), maxiter // 2)]
+        stages = [(4 * c_global, maxiter // 2), (c_global, maxiter), (max(c_global / 4, 1.5 * c_local), maxiter // 2)]
         population = None
         theta0 = None
         n_evals = 0

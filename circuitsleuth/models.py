@@ -55,12 +55,25 @@ FAMILIES: dict[str, dict] = {
 }
 CONTROL_BOUNDS = {"field_scale": (20.0, 400.0), "lever_arm": (2.0, 60.0)}
 PLATFORMS = {
-    "circuit": dict(label="Superconducting circuits", families=["transmon", "tunable_transmon", "fluxonium"], control_label="flux bias (arbitrary units)"),
-    "nv": dict(label="NV centres in diamond", families=["nv_ensemble"], control_label="coil current (arbitrary units)"),
-    "dot": dict(label="Semiconductor quantum dots", families=["charge_qubit"], control_label="detuning gate voltage (arbitrary units)"),
+    # scale = typical line precision / separation in GHz; the fitter, linker and flat-line detector scale with it
+    "circuit": dict(label="Superconducting circuits", families=["transmon", "tunable_transmon", "fluxonium"], control_label="flux bias (arbitrary units)", scale=0.012, linewidth=(0.01, 0.08)),
+    "nv": dict(label="NV centres in diamond", families=["nv_ensemble"], control_label="coil current (arbitrary units)", scale=0.0015, linewidth=(0.002, 0.008)),
+    "dot": dict(label="Semiconductor quantum dots", families=["charge_qubit"], control_label="detuning gate voltage (arbitrary units)", scale=0.012, linewidth=(0.02, 0.08)),
 }
+
+
+def platform_scales(platform: str) -> dict:
+    c = PLATFORMS[platform]["scale"]
+    return dict(c_local=c, c_global=c * 20 / 3, df_tol=c * 20 / 3, flat_tol=c * 5 / 3)
 GAMMA_E = 2.8025e-3  # GHz per gauss
 NV_AXES = np.array([[1, 1, 1], [1, -1, -1], [-1, 1, -1], [-1, -1, 1]], float) / np.sqrt(3.0)
+
+
+def nv_projections(theta: float, phi: float) -> np.ndarray:
+    """Sorted |B.n_k| for the four NV axes (unit field). Invariant under the diamond's tetrahedral symmetry,
+    so it is the right thing to compare two field directions by: several (theta, phi) give identical spectra."""
+    b = np.array([np.sin(theta) * np.cos(phi), np.sin(theta) * np.sin(phi), np.cos(theta)])
+    return np.sort(np.abs(NV_AXES @ b))
 
 
 def platform_of(family: str) -> str:

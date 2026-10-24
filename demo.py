@@ -33,10 +33,15 @@ def main():
             b = rep["best"]
             row["found"] = f"{b['family']}{'+res' if b['coupled'] else ''}"
             row["family_ok"] = b["family"] == t["family"]
-            errs = {k: abs(b["params"][k] - v) / abs(v) for k, v in t["params"].items() if k in b["params"]}
+            ABS = {"D": 0.002, "E": 0.002, "theta": 0.05, "phi": 0.05, "x0": 0.03, "d": 0.06}  # absolute tolerances, expressed as a 5%-equivalent score
+            errs = {k: (abs(b["params"][k] - v) / ABS[k] * 0.05 if k in ABS else abs(b["params"][k] - v) / abs(v)) for k, v in t["params"].items() if k in b["params"]}
             if "period" in b["params"] and synth.models.FAMILIES[t["family"]]["flux_dependent"]:
                 errs["period"] = abs(b["params"]["period"] - t["period"]) / t["period"]
-            circuit_errs = {k: v for k, v in errs.items() if k not in ("fr", "g", "x0", "phi")}  # resonator params need a crossing; x0/phi are offsets/angles, judged separately
+            circuit_errs = {k: v for k, v in errs.items() if k not in ("fr", "g", "x0", "phi", "theta")}  # resonator params need a crossing; angles/offsets judged below
+            if t["family"] == "nv_ensemble":  # field direction up to tetrahedral symmetry, scaled by gauss-per-unit
+                pt, pf = synth.models.nv_projections(t["params"]["theta"], t["params"]["phi"]) * t["params"]["field_scale"], synth.models.nv_projections(b["params"]["theta"], b["params"]["phi"]) * b["params"]["field_scale"]
+                circuit_errs["field_vector"] = float(np.max(np.abs(pf - pt) / np.maximum(pt, 1.0)))
+                circuit_errs.pop("field_scale", None)
             row["max_rel_err"] = round(max(circuit_errs.values()), 3) if circuit_errs else None
             row["max_rel_err_all"] = round(max(errs.values()), 3) if errs else None
             row["errs"] = {k: round(v, 3) for k, v in errs.items()}

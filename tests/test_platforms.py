@@ -44,7 +44,8 @@ def test_agent_recovers_nv_ensemble():
     print("\nNV:", b, "truth", t["params"])
     assert abs(b["D"] - 2.870) < 0.003
     assert abs(b["E"] - 0.004) < 0.002
-    assert abs(b["field_scale"] * np.cos(b["theta"]) - 120.0 * np.cos(0.6)) / (120.0 * np.cos(0.6)) < 0.05  # axial field per unit current
+    # field direction up to the crystal's tetrahedral symmetry: compare the axial projections on the four NV axes
+    assert np.allclose(b["field_scale"] * models.nv_projections(b["theta"], b["phi"]), 120.0 * models.nv_projections(0.6, 0.3), rtol=0.05)
 
 
 def test_agent_recovers_charge_qubit():
