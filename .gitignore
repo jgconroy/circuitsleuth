@@ -6,3 +6,5 @@ artifacts/*.npz
 data/synth/
 .pytest_cache/
 .streamlit/secrets.toml
+artifacts/classifier_v*.pt
+artifacts/train_log*.txt
