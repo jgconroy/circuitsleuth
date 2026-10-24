@@ -9,7 +9,8 @@ def main():
     import app  # noqa: E402  (pulls in the DEMOS table; Streamlit calls are no-ops outside a server)
     key = [k for k in app.DEMOS if k.startswith(sys.argv[1])][0]
     truth, r = app.make_demo(key)
-    cfg = agent.AgentConfig(maxiter=60, workers=4)
+    fast = "--fast" in sys.argv
+    cfg = agent.AgentConfig(maxiter=30, n_starts=1, popsize=12, top_k=2, coupled_trials=1, workers=4) if fast else agent.AgentConfig(maxiter=60, workers=4)
     t0 = time.time()
     rep = agent.identify(r["image"], r["x"], r["f"], config=cfg)
     print(f"{time.time()-t0:.0f}s best:", rep["best"]["hypothesis"], rep["best"]["params_pretty"], "score", rep["best"]["track_score"], "holdout", rep["best"].get("holdout", {}).get("inlier_frac"))

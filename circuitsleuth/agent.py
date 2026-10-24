@@ -35,6 +35,7 @@ class AgentConfig:
     flux_calibrated: bool = False  # x axis already in flux quanta: period = 1, offset = 0 (tight bounds)
     n_starts: int = 2  # random restarts of the global search (best fine-scale loss wins)
     coupled_margin: float = 0.05  # a resonator model must beat the bare circuit by this much to be accepted
+    coupled_trials: int = 2  # how many of the best bare families get a resonator trial
     prior_weight: float = 0.1  # weight of the CNN family probability in the score (0 = ignore)
 
 
@@ -315,7 +316,7 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
     #      unexplained flux-dependent points at the resonator frequency), then the proposer, then flat lines.
     want_coupled = cfg.try_coupled == "always" or (cfg.try_coupled == "auto" and (p_coupled > 0.25 or best_score < 0.85))
     bare_sorted = [r for r in results if not r[0].hyp.coupled]
-    for base_res, base_score, base_inl in bare_sorted[:2]:  # the best two bare families get a resonator trial
+    for base_res, base_score, base_inl in bare_sorted[: cfg.coupled_trials]:  # the best bare families get a resonator trial
         if not want_coupled or base_score < best_score - 0.35:
             continue
         hc = fit.Hypothesis(base_res.hyp.family, True)
@@ -341,7 +342,7 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
         _emit(progress, "revise", reason=f"trying {hc.label} (p_coupled={p_coupled:.2f}, bare score {base_score:.3f}); resonator candidates {', '.join(f'{v:.2f}' for v in cands[:2])} GHz")
         _emit(progress, "fit_start", hypothesis=hc.label, n_points=int(len(pts_fit)))
         cbest, csc, cinl = None, -np.inf, None
-        for fr0 in cands[:2]:
+        for fr0 in cands[: max(1, cfg.coupled_trials)]:
             b = fit.default_bounds(hc, pts_fit[:, 0])
             for k, v in base_res.params.items():  # circuit + calibration stay near the bare solution
                 if k in b and k not in ("d", "offset", "period"):

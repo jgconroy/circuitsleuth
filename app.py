@@ -98,11 +98,16 @@ use_clf = st.sidebar.checkbox("Use CNN proposer to seed the search", value=weigh
                               help="Trained on synthetic maps; only proposes hypotheses and starting points. All numbers come from the physics fit.")
 try_coupled = st.sidebar.selectbox("Try a readout-resonator model", ["auto", "always", "never"], index=0)
 families = st.sidebar.multiselect("Candidate circuits", list(fit.models.FAMILIES), default=list(fit.models.FAMILIES))
-workers = st.sidebar.slider("CPU workers", 1, 8, 1)
+workers = st.sidebar.slider("CPU workers", 1, 8, 4)
 use_llm = st.sidebar.checkbox("Explain with Claude", value=True)
 flux_calibrated = st.sidebar.checkbox("Flux axis is already in flux quanta (Φ/Φ₀)", value=False,
                                       help="Tick when the x axis is calibrated: the fit then holds period = 1 and offset = 0 instead of fitting them.")
-maxiter = {"fast": 30, "normal": 60, "thorough": 100}[speed]
+PRESETS = {  # search effort -> agent settings
+    "fast": dict(maxiter=30, n_starts=1, popsize=12, top_k=2, coupled_trials=1),
+    "normal": dict(maxiter=50, n_starts=2, popsize=15, top_k=3, coupled_trials=2),
+    "thorough": dict(maxiter=100, n_starts=3, popsize=20, top_k=3, coupled_trials=2),
+}
+preset = PRESETS[speed]
 
 truth = None
 image = x = f = points = None
@@ -170,7 +175,7 @@ with right:
     table = st.empty()
 
 if run:
-    cfg = agent.AgentConfig(maxiter=maxiter, use_classifier=use_clf, try_coupled=try_coupled, workers=workers, families=tuple(families), flux_calibrated=flux_calibrated)
+    cfg = agent.AgentConfig(use_classifier=use_clf, try_coupled=try_coupled, workers=workers, families=tuple(families), flux_calibrated=flux_calibrated, **preset)
     rows = []
     state = dict(last=0.0)
     with left:
