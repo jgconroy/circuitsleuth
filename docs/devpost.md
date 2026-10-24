@@ -24,6 +24,9 @@ Python 3.12, NumPy/SciPy, scqubits (ground truth for the physics), PyTorch (prop
 ## Beyond circuit QED
 The method is "spectrum versus a control knob, explained by a small Hamiltonian", so other platforms are plug-in families. We added NV-centre ensembles in diamond (ODMR versus coil current: zero-field splitting, strain, field direction and the gauss-per-amp calibration all come out) and semiconductor double-quantum-dot charge qubits (tunnel coupling and lever arm from spectroscopy versus detuning). Same extraction, same robust fit, same verification and "look here" logic.
 
+## Built for the lab bench
+Known-parameter constraints (fix EC from design, fr from a single-tone scan), derived quantities a physicist actually uses (anharmonicity, charge dispersion, sweet-spot bias values in your own control units, flux sensitivity, dispersive shift, Purcell factor), an operating-point solver ("which bias gives me 5 GHz?"), exports (CSV curves, HTML map, a scqubits snippet that rebuilds the fit), HDF5/CSV instrument-file import with cropping and unit handling, and a batch mode for fab lots. This is the part a Jupyter notebook never gets around to.
+
 ## Challenges
 - Flux-independent spurs with more pixels than the qubit line hijacked the fit until we scored *features* (line segments) instead of pixels and split off flat lines before fitting flux-tunable circuits.
 - EJ and EC are degenerate along constant f01; only the two-photon or 1-2 line breaks it. The fitter now reports that degeneracy as a large uncertainty and asks for exactly that line.

@@ -78,6 +78,30 @@ scores, and a physics panel (the potential well and its levels for circuits; spi
 centres; the charge anticrossing for quantum dots). A platform selector switches between superconducting circuits,
 NV centres and quantum dots, each with hidden demo circuits and a "surprise" random one.
 
+## For the lab, not just the demo
+
+- **Known parameters.** Tick what you already know (EC from design, fr from a single-tone scan) with a tolerance; the
+  search is constrained accordingly, exactly like a notebook fit with fixed arguments but without editing code.
+- **Derived quantities.** Anharmonicity, EJ/EC, exact charge dispersion, sweet-spot bias values in your control units,
+  maximum flux sensitivity, tuning range, qubit–resonator detuning, dispersive shift and Purcell factor; for NV centres the
+  strain splitting and per-orientation axial field; for quantum dots the gap in µeV and the lever arm.
+- **Operating points.** Type a target f01 and get the control values that reach it (marked on the map).
+- **Exports.** JSON report, fitted curves as CSV, the annotated map as HTML, and a scqubits snippet that rebuilds the fitted
+  circuit in two lines.
+- **Real instrument files.** HDF5 (pick the 2-D dataset and axis vectors), 2-D CSV grids, point lists, NPZ, or a screenshot
+  with axis ranges; transpose, unit conversion and cropping in the sidebar.
+- **Batch mode.** `python batch.py <folder>` identifies every map in a folder and writes one CSV row per device, plus a JSON
+  report per map, for fab-lot characterisation.
+- **Confidence.** Each result carries a confidence level from the score gap between circuit families; ambiguous maps say so.
+
+## Training and benchmarking on bigger machines
+
+`python scripts/make_bigmachine_pkg.py` builds `dist/circuitsleuth_bigmachine/` (self-contained, CPU only). Its
+`run_train.py bench` measures generation, training and identification speed on that machine and projects the wall time
+**before** anything long starts; `run_train.py start` is detached and resumable; `run_blind.py` runs a 200-map blind
+accuracy table in parallel. The proposer's resonator target is now "visible avoided crossing" (the learnable proxy; a
+far-detuned resonator leaves no trace), which a 2000-map smoke run already classifies at 85 % versus 55 % for the old target.
+
 ## Run it
 
 ```bash
