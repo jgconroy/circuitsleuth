@@ -37,7 +37,7 @@ class AgentConfig:
     smooth_cols: int = 1  # average neighbouring flux columns before peak finding (3 helps very noisy maps)
     coupled_margin: float = 0.05  # a resonator model must beat the bare circuit by this much to be accepted
     coupled_trials: int = 2  # how many of the best bare families get a resonator trial
-    prior_weight: float = 0.1  # weight of the CNN family probability in the score (0 = ignore)
+    prior_weight: float = 0.05  # weight of the CNN family probability in the score (0 = ignore); the CNN is confidently wrong on some resonator-crossing maps
 
 
 def _emit(progress: Progress | None, kind: str, **payload):
