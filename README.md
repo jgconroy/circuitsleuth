@@ -131,10 +131,11 @@ faint fluxonium: these are the cases we would want more data for, and the report
 that run was 9 min per map because the test shared the laptop with the test suite; alone, with four workers,
 a map takes about 2 min with the 'fast' preset and 5–6 min with 'normal' (which is what the saved demo results use).
 
-### Proposer (CNN on 64×64 thumbnails, 20 000 synthetic maps, held-out 2 000)
+### Proposer (CNN on 64×64 thumbnails, 40 000 synthetic maps, held-out 3 000)
 
-Family accuracy 86 %, resonator-present accuracy 55 % (near chance: a resonator is invisible unless the
-qubit crosses it), so the network is only used to rank families and seed the search.
+Family accuracy 89 % (86 % with the first 20 000-map run), resonator-present accuracy 59 % (near chance:
+a resonator is invisible unless the qubit crosses it), so the network is only used to rank families, seed
+the search, and add a mild prior to the score.
 
 
 ## Honest limitations
