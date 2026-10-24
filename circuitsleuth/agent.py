@@ -62,7 +62,8 @@ def _fit_points_for(hyp: fit.Hypothesis, pts_all: np.ndarray, flat: np.ndarray) 
     """Flux-dependent circuit hypotheses are fitted on the flux-dependent features only (flat lines are
     pumps/spurs/fixed neighbours); a fixed-frequency circuit's own lines are flat, so it is fitted on
     everything, and so are the other platforms (a charge qubit far from zero detuning is nearly flat)."""
-    if hyp.platform == "circuit" and hyp.flux_dependent and (~flat).sum() >= 10:
+    n_dyn = int((~flat).sum())
+    if hyp.flux_dependent and n_dyn >= max(10, 0.2 * len(pts_all)):
         return pts_all[~flat]
     return pts_all
 

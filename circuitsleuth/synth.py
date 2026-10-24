@@ -45,6 +45,18 @@ LINEAR_PARAMS = {"d", "D", "theta", "phi", "x0", "offset"}
 
 
 def sample_truth(rng: np.random.Generator, cfg: SynthConfig | None = None, family: str | None = None, coupled: bool | None = None, platform: str = "circuit") -> dict:
+    """Draw a hidden circuit. Re-draws (up to 25 times) until the primary transition is inside the measured
+    band for at least 30 % of the sweep: a map that never shows the qubit is not a measurement anyone would fit."""
+    for _ in range(25):
+        truth = _sample_truth_once(rng, cfg, family, coupled, platform)
+        x = np.linspace(truth["x_lo"], truth["x_hi"], 41)
+        L = next(iter(true_lines(truth, x).values()))
+        if np.mean(np.isfinite(L) & (L > truth["f_lo"]) & (L < truth["f_hi"])) >= 0.3:
+            return truth
+    return truth
+
+
+def _sample_truth_once(rng: np.random.Generator, cfg: SynthConfig | None = None, family: str | None = None, coupled: bool | None = None, platform: str = "circuit") -> dict:
     cfg = cfg or SynthConfig()
     fams = models.PLATFORMS[platform]["families"]
     family = family or fams[rng.integers(len(fams))]
