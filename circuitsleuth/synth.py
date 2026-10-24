@@ -35,6 +35,7 @@ class SynthConfig:
     p_coupled: float = 0.5
     p_two_photon: float = 0.6
     dropout_max_segments: int = 3
+    p_crossing: float = 0.6  # when a resonator is present, place it inside the 0-1 line's range this often (visible avoided crossing)
 
 
 def _loguniform(rng, lo, hi):
@@ -79,6 +80,14 @@ def _sample_truth_once(rng: np.random.Generator, cfg: SynthConfig | None = None,
         n_per = float(rng.uniform(*cfg.periods_in_window))
         period = (x_hi - x_lo) / n_per
         offset = float(rng.uniform(x_lo, x_hi))
+    if coupled and rng.random() < cfg.p_crossing:
+        # put the resonator where the bare 0-1 line actually passes, inside the band
+        circuit = {k: v for k, v in params.items() if k not in ("fr", "g")}
+        phi = (np.linspace(x_lo, x_hi, 41) - offset) / period if ctrl else np.zeros(41)
+        f01 = models.transitions(family, circuit, phi, coupled=False)["0-1"]
+        lo_, hi_ = max(float(np.nanmin(f01)), f_lo + 0.2), min(float(np.nanmax(f01)), f_hi - 0.2)
+        if hi_ > lo_:
+            params["fr"] = float(np.clip(rng.uniform(lo_, hi_), *models.RESONATOR_BOUNDS["fr"]))
     elif ctrl == ("field_scale", "x0"):
         params["field_scale"] = _loguniform(rng, 30.0, 200.0)
         params["x0"] = float(rng.uniform(-0.6, 0.6))
@@ -204,8 +213,25 @@ def downsample(image: np.ndarray, size: int = 64) -> np.ndarray:
     return out.astype(np.float32)
 
 
+def crossing_visible(truth: dict) -> bool:
+    """A readout resonator is only learnable when the qubit's 0-1 line actually crosses it inside the
+    measured window and band (an avoided crossing). Far-detuned resonators leave no visible trace."""
+    if not truth.get("coupled"):
+        return False
+    fr = truth["params"]["fr"]
+    if not (truth["f_lo"] < fr < truth["f_hi"]):
+        return False
+    x = np.linspace(truth["x_lo"], truth["x_hi"], 81)
+    bare = dict(truth, coupled=False, params={k: v for k, v in truth["params"].items() if k not in ("fr", "g")})
+    f01 = true_lines(bare, x)["0-1"]
+    d = f01 - fr
+    ok = np.isfinite(d)
+    return bool(np.any(d[ok][:-1] * d[ok][1:] <= 0)) if ok.sum() > 1 else False
+
+
 def make_dataset(n: int, seed: int = 0, cfg: SynthConfig | None = None, size: int = 64):
-    """Arrays for classifier training: thumbnails, family index, coupled flag, normalised log-params."""
+    """Arrays for classifier training: thumbnails, family index, visible-crossing flag, truths.
+    (The second array used to be the raw 'coupled' flag; it is now 'crossing_visible', the learnable target.)"""
     cfg = cfg or SynthConfig()
     rng = np.random.default_rng(seed)
     X = np.zeros((n, size, size), np.float32)
@@ -217,6 +243,7 @@ def make_dataset(n: int, seed: int = 0, cfg: SynthConfig | None = None, size: in
         r = render(t, cfg, rng)
         X[i] = downsample(r["image"], size)
         fam[i] = FAMILY_NAMES.index(t["family"])
-        cpl[i] = int(t["coupled"])
+        cpl[i] = int(crossing_visible(t))
+        t["crossing_visible"] = bool(cpl[i])
         truths.append(t)
     return X, fam, cpl, truths

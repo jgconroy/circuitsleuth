@@ -1,5 +1,6 @@
-"""Tiny CNN proposer: a 64x64 thumbnail of the map -> family probabilities, resonator flag and a coarse
-parameter seed (normalised log-parameters) plus the number of flux periods in the window.
+"""Tiny CNN proposer: a 64x64 thumbnail of the map -> family probabilities, a visible-avoided-crossing flag
+(the learnable proxy for "there is a readout resonator in this map") and a coarse parameter seed
+(normalised log-parameters) plus the number of flux periods in the window.
 
 The proposer only *seeds* the physics fit (narrower bounds, good starting point); every number that is
 reported comes from the fit, never from the network.
@@ -56,16 +57,18 @@ def denormalise(fam: str, u: np.ndarray, coupled: bool) -> dict:
 
 
 class Net(nn.Module):
-    def __init__(self, n_fam: int = 3, slots: dict | None = None):
+    def __init__(self, n_fam: int = 3, slots: dict | None = None, width: int = 1):
         super().__init__()
         slots = slots or PARAM_SLOTS
+        self.width = width
+        c1, c2, c3 = 16 * width, 32 * width, 64 * width
         self.features = nn.Sequential(
-            nn.Conv2d(1, 16, 3, padding=1), nn.ReLU(), nn.MaxPool2d(2),
-            nn.Conv2d(16, 32, 3, padding=1), nn.ReLU(), nn.MaxPool2d(2),
-            nn.Conv2d(32, 64, 3, padding=1), nn.ReLU(), nn.MaxPool2d(2),
-            nn.Conv2d(64, 64, 3, padding=1), nn.ReLU(), nn.AdaptiveAvgPool2d((4, 4)),
+            nn.Conv2d(1, c1, 3, padding=1), nn.ReLU(), nn.MaxPool2d(2),
+            nn.Conv2d(c1, c2, 3, padding=1), nn.ReLU(), nn.MaxPool2d(2),
+            nn.Conv2d(c2, c3, 3, padding=1), nn.ReLU(), nn.MaxPool2d(2),
+            nn.Conv2d(c3, c3, 3, padding=1), nn.ReLU(), nn.AdaptiveAvgPool2d((4, 4)),
         )
-        self.fc = nn.Sequential(nn.Flatten(), nn.Linear(64 * 16, 256), nn.ReLU(), nn.Dropout(0.1))
+        self.fc = nn.Sequential(nn.Flatten(), nn.Linear(c3 * 16, 256), nn.ReLU(), nn.Dropout(0.1))
         self.fam = nn.Linear(256, n_fam)
         self.coupled = nn.Linear(256, 1)
         self.nper = nn.Linear(256, 1)
@@ -79,7 +82,7 @@ class Net(nn.Module):
 
 def build_targets(truths: list[dict]):
     fam = np.array([FAMILIES.index(t["family"]) for t in truths], np.int64)
-    cpl = np.array([int(t["coupled"]) for t in truths], np.float32)
+    cpl = np.array([int(t.get("crossing_visible", t["coupled"])) for t in truths], np.float32)
     nper = np.array([(t["x_hi"] - t["x_lo"]) / t["period"] if models.FAMILIES[t["family"]]["flux_dependent"] else np.nan for t in truths], np.float32)
     nper = (np.log(nper) - np.log(N_PER_RANGE[0])) / (np.log(N_PER_RANGE[1]) - np.log(N_PER_RANGE[0]))
     P = {f: np.full((len(truths), len(PARAM_SLOTS[f])), np.nan, np.float32) for f in FAMILIES}
@@ -95,15 +98,21 @@ def _masked_mse(pred, target):
     return F.mse_loss(pred[m], target[m])
 
 
-def train(n_train: int = 20000, n_val: int = 2000, epochs: int = 12, batch: int = 128, seed: int = 0, out: Path = DEFAULT_PATH, log=print):
+def train(n_train: int = 20000, n_val: int = 2000, epochs: int = 12, batch: int = 128, seed: int = 0, out: Path = DEFAULT_PATH, log=print, width: int = 1, data=None):
+    """Train the proposer. `data` may be a prebuilt (X, truths) pair (e.g. from the big-machine generator)."""
     torch.manual_seed(seed)
     t0 = time.time()
-    X, _, _, truths = synth.make_dataset(n_train + n_val, seed=seed)
-    log(f"generated {len(X)} maps in {time.time()-t0:.0f}s")
+    if data is None:
+        X, _, _, truths = synth.make_dataset(n_train + n_val, seed=seed)
+        log(f"generated {len(X)} maps in {time.time()-t0:.0f}s")
+    else:
+        X, truths = data
+        n_val = min(n_val, len(X) // 10)
+        n_train = len(X) - n_val
     fam, cpl, nper, P = build_targets(truths)
     Xt = torch.from_numpy(X[:, None])
     idx_tr, idx_va = np.arange(n_train), np.arange(n_train, n_train + n_val)
-    net = Net()
+    net = Net(width=width)
     opt = torch.optim.AdamW(net.parameters(), lr=2e-3, weight_decay=1e-4)
     sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=3e-3, total_steps=epochs * (n_train // batch + 1))
     T = dict(fam=torch.from_numpy(fam), cpl=torch.from_numpy(cpl), nper=torch.from_numpy(nper), P={f: torch.from_numpy(P[f]) for f in FAMILIES})
@@ -131,7 +140,7 @@ def train(n_train: int = 20000, n_val: int = 2000, epochs: int = 12, batch: int 
         metrics = evaluate(net, Xt[idx_va], fam[idx_va], cpl[idx_va], nper[idx_va], {f: P[f][idx_va] for f in FAMILIES})
         log(f"epoch {ep+1}/{epochs} loss={tot/n_train:.4f} val_fam_acc={metrics['fam_acc']:.3f} val_coupled_acc={metrics['coupled_acc']:.3f} param_rmse={metrics['param_rmse']:.3f} nper_rmse={metrics['nper_rmse']:.3f} ({time.time()-t0:.0f}s)")
     out.parent.mkdir(parents=True, exist_ok=True)
-    torch.save(dict(state=net.state_dict(), families=FAMILIES, slots=PARAM_SLOTS, metrics=metrics, n_train=n_train, epochs=epochs), out)
+    torch.save(dict(state=net.state_dict(), families=FAMILIES, slots=PARAM_SLOTS, metrics=metrics, n_train=n_train, epochs=epochs, width=width), out)
     json.dump(metrics, open(out.with_suffix(".json"), "w"), indent=1)
     return net, metrics
 
@@ -163,7 +172,7 @@ def load(path: Path = DEFAULT_PATH) -> Net | None:
     if not path.exists():
         return None
     ck = torch.load(path, map_location="cpu", weights_only=False)
-    net = Net(len(ck["families"]), ck["slots"])
+    net = Net(len(ck["families"]), ck["slots"], width=int(ck.get("width", 1)))
     net.load_state_dict(ck["state"])
     net.eval()
     return net
@@ -186,6 +195,6 @@ def propose(net: Net, image: np.ndarray, x: np.ndarray, top_k: int = 3) -> list[
             if models.FAMILIES[fam]["flux_dependent"]:
                 seed["period"] = span / np.clip(nper, *N_PER_RANGE)
                 seed["offset"] = float(np.min(x))
-            props.append(dict(family=fam, coupled=coupled, prob=p, seed=seed, p_coupled=pcpl, nper=nper))
+            props.append(dict(family=fam, coupled=coupled, prob=p, seed=seed, p_coupled=pcpl, p_crossing=pcpl, nper=nper))
     props.sort(key=lambda d: -d["prob"])
     return props[:top_k]

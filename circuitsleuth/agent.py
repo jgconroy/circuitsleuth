@@ -35,6 +35,7 @@ class AgentConfig:
     flux_calibrated: bool = False  # x axis already in flux quanta: period = 1, offset = 0 (tight bounds)
     n_starts: int = 2  # random restarts of the global search (best fine-scale loss wins)
     smooth_cols: int = 1  # average neighbouring flux columns before peak finding (3 helps very noisy maps)
+    param_bounds: dict = field(default_factory=dict)  # user knowledge: name -> (lo, hi); lo == hi fixes the value
     coupled_margin: float = 0.05  # a resonator model must beat the bare circuit by this much to be accepted
     coupled_trials: int = 2  # how many of the best bare families get a resonator trial
     prior_weight: float = 0.05  # weight of the CNN family probability in the score (0 = ignore); the CNN is confidently wrong on some resonator-crossing maps
@@ -56,6 +57,19 @@ def rasterize(points: np.ndarray, nf: int = 400, nx: int | None = None, lw: floa
         c = int(np.argmin(np.abs(x - xi)))
         img[:, c] += wi * lw**2 / ((f - fi) ** 2 + lw**2)
     return img, x, f
+
+
+def _apply_user_bounds(bounds: dict, cfg: "AgentConfig") -> dict:
+    """Narrow or fix parameters the user already knows (design values, a single-tone resonator scan...)."""
+    b = dict(bounds)
+    for k, v in (cfg.param_bounds or {}).items():
+        if k not in b:
+            continue
+        lo, hi = (float(v), float(v)) if np.isscalar(v) else (float(v[0]), float(v[1]))
+        if lo == hi:
+            lo, hi = lo * (1 - 1e-4) if lo != 0 else -1e-6, hi * (1 + 1e-4) if hi != 0 else 1e-6
+        b[k] = (min(lo, hi), max(lo, hi))
+    return b
 
 
 def _fit_points_for(hyp: fit.Hypothesis, pts_all: np.ndarray, flat: np.ndarray) -> np.ndarray:
@@ -265,6 +279,8 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
     results: list[tuple[fit.FitResult, float, np.ndarray]] = []
 
     def run_one(h: fit.Hypothesis, pts_fit, init, bounds, maxiter, n_starts=None):
+        bounds = _apply_user_bounds(bounds if bounds is not None else fit.default_bounds(h, pts_fit[:, 0]), cfg) if cfg.param_bounds else bounds
+
         def cb(params, loss):
             _emit(progress, "fit_progress", hypothesis=h.label, params=params, loss=loss, lines={k: v.tolist() for k, v in fit.predict_lines(h, params, x_grid).items()})
 
@@ -448,6 +464,15 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
         points=points.tolist(),
         track_ids=ids.tolist(),
     )
+    try:
+        from . import derived
+
+        xr = (float(np.min(x_grid)), float(np.max(x_grid)))
+        report["derived"] = [dict(d, value=(None if not np.isfinite(d["value"]) else round(float(d["value"]), 6))) for d in derived.derived_quantities(report["best"], xr)]
+        report["scqubits_code"] = derived.scqubits_code(report["best"])
+    except Exception as e:  # derived quantities are a convenience, never a failure
+        report["derived"] = []
+        report["scqubits_code"] = f"# unavailable: {type(e).__name__}: {e}"
     _emit(progress, "done", report=report)
     return report
 
