@@ -82,7 +82,11 @@ def theta_bounds(bounds: dict, names: list[str]) -> list[tuple[float, float]]:
     out = []
     for n in names:
         lo, hi = bounds[n]
-        out.append((np.log(lo), np.log(hi)) if n in LOG_PARAMS else (lo, hi))
+        if lo > hi:  # defensive: an inverted narrowed interval collapses to a tiny one around its midpoint
+            lo, hi = hi, lo
+        if hi - lo < 1e-6 * max(abs(hi), 1.0):
+            lo, hi = lo - 1e-6 * max(abs(lo), 1.0), hi + 1e-6 * max(abs(hi), 1.0)
+        out.append((np.log(max(lo, 1e-9)), np.log(max(hi, 1e-9))) if n in LOG_PARAMS else (lo, hi))
     return out
 
 
@@ -246,7 +250,9 @@ def _fit_once(
             de_kw = dict(bounds=tb, maxiter=it, popsize=popsize, tol=1e-8, seed=seed, polish=False)
             de_kw["init"] = "sobol" if population is None else population
             if init is not None and population is None:
-                de_kw["x0"] = to_theta_partial(init, names, tb)
+                x0 = to_theta_partial(init, names, tb)
+                eps = 1e-9 * (hi_b - lo_b)
+                de_kw["x0"] = np.clip(x0, lo_b + eps, hi_b - eps)
             if workers != 1:
                 de_kw.update(workers=workers, updating="deferred")
 

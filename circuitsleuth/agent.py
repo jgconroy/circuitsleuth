@@ -280,11 +280,17 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
                 _emit(progress, "calibration", period=P, axes=cal["axes"])
         best_res, best_sc, best_inl = None, -np.inf, None
         for b, ini, mi in candidates:
-            res = run_one(h, pts_fit, ini, b, mi, n_starts=None if b is None else 1)
+            try:
+                res = run_one(h, pts_fit, ini, b, mi, n_starts=None if b is None else 1)
+            except Exception as e:  # a narrowed candidate must never take the whole run down
+                _emit(progress, "warning", message=f"{h.label}: candidate search failed ({type(e).__name__}: {str(e)[:80]})")
+                continue
             score, inl = _score(res, points, ids, flat, band, cfg.c_local)
             score += prior(h)
             if score > best_sc:
                 best_res, best_sc, best_inl = res, score, inl
+        if best_res is None:
+            return None, -np.inf
         best_res.lines = fit.predict_lines(h, best_res.params, x_grid)
         results.append((best_res, best_sc, best_inl))
         _emit(progress, "fit_done", hypothesis=h.label, score=best_sc, summary=best_res.summary(), lines={k: v.tolist() for k, v in best_res.lines.items()})
@@ -308,21 +314,23 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
     #      Seeds for fr: where the bare model fails most (an avoided crossing leaves a cluster of
     #      unexplained flux-dependent points at the resonator frequency), then the proposer, then flat lines.
     want_coupled = cfg.try_coupled == "always" or (cfg.try_coupled == "auto" and (p_coupled > 0.25 or best_score < 0.85))
-    if want_coupled and not best.hyp.coupled:
-        hc = fit.Hypothesis(best.hyp.family, True)
+    bare_sorted = [r for r in results if not r[0].hyp.coupled]
+    for base_res, base_score, base_inl in bare_sorted[:2]:  # the best two bare families get a resonator trial
+        if not want_coupled or base_score < best_score - 0.35:
+            continue
+        hc = fit.Hypothesis(base_res.hyp.family, True)
         fr_cands: list[float] = []
-        bad = (~best_inl) & (~flat)
+        bad = (~base_inl) & (~flat)
         if bad.sum() >= 5:
             hist, edges = np.histogram(points[bad, 1], bins=np.arange(band[0], band[1] + 0.2, 0.2), weights=points[bad, 2])
             if hist.max() > 0:
                 fr_cands.append(float(0.5 * (edges[np.argmax(hist)] + edges[np.argmax(hist) + 1])))
         for prop in proposals:
-            if prop["family"] == best.hyp.family and prop["coupled"] and "fr" in prop["seed"]:
+            if prop["family"] == hc.family and prop["coupled"] and "fr" in prop["seed"]:
                 fr_cands.append(float(prop["seed"]["fr"]))
                 break
         fr_cands += [fl for fl in flat_lines if 4.0 < fl < 10.0]
         fr_cands.append(7.0)
-        # unique, in order, inside the resonator prior
         seen, cands = set(), []
         for v in fr_cands:
             v = float(np.clip(v, *models.RESONATOR_BOUNDS["fr"]))
@@ -330,36 +338,41 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
                 seen.add(round(v, 1))
                 cands.append(v)
         pts_fit = _fit_points_for(hc, points, flat)
-        _emit(progress, "revise", reason=f"trying {hc.label} (p_coupled={p_coupled:.2f}, best score {best_score:.3f}); resonator candidates {', '.join(f'{v:.2f}' for v in cands[:3])} GHz")
+        _emit(progress, "revise", reason=f"trying {hc.label} (p_coupled={p_coupled:.2f}, bare score {base_score:.3f}); resonator candidates {', '.join(f'{v:.2f}' for v in cands[:2])} GHz")
         _emit(progress, "fit_start", hypothesis=hc.label, n_points=int(len(pts_fit)))
         cbest, csc, cinl = None, -np.inf, None
         for fr0 in cands[:2]:
             b = fit.default_bounds(hc, pts_fit[:, 0])
-            for k, v in best.params.items():  # circuit + calibration stay close to the bare solution
+            for k, v in base_res.params.items():  # circuit + calibration stay near the bare solution
                 if k in b and k not in ("d", "offset", "period"):
                     b[k] = (max(0.5 * v, b[k][0]), min(2.0 * v, b[k][1]))
                 elif k == "period":
                     b[k] = (0.9 * v, 1.1 * v)
                 elif k == "offset":
-                    b[k] = (v - 0.1 * best.params.get("period", 1.0), v + 0.1 * best.params.get("period", 1.0))
+                    b[k] = (v - 0.1 * base_res.params.get("period", 1.0), v + 0.1 * base_res.params.get("period", 1.0))
             b["fr"] = (max(fr0 - 0.6, models.RESONATOR_BOUNDS["fr"][0]), min(fr0 + 0.6, models.RESONATOR_BOUNDS["fr"][1]))
-            init = dict(best.params, fr=fr0, g=0.1)
-            res = run_one(hc, pts_fit, init, b, cfg.maxiter, n_starts=1)
+            init = dict(base_res.params, fr=fr0, g=0.1)
+            try:
+                res = run_one(hc, pts_fit, init, b, cfg.maxiter, n_starts=1)
+            except Exception as e:
+                _emit(progress, "warning", message=f"{hc.label}: search failed ({type(e).__name__})")
+                continue
             score, inl = _score(res, points, ids, flat, band, cfg.c_local)
             score += prior(hc)
             if score > csc:
                 cbest, csc, cinl = res, score, inl
+        if cbest is None:
+            continue
         cbest.lines = fit.predict_lines(hc, cbest.params, x_grid)
-        accepted = csc > best_score + cfg.coupled_margin
-        # a resonator the data does not need (coupling consistent with zero) is not evidence either
+        accepted = csc > base_score + cfg.coupled_margin
         g_sig = cbest.sigma.get("g", float("nan"))
         if np.isfinite(g_sig) and cbest.params.get("g", 0) < 2 * g_sig:
             accepted = False
-        results.append((cbest, csc if accepted else min(csc, best_score - 1e-6), cinl))
+        results.append((cbest, csc if accepted else min(csc, base_score - 1e-6), cinl))
         _emit(progress, "fit_done", hypothesis=hc.label, score=csc, summary=cbest.summary(), lines={k: v.tolist() for k, v in cbest.lines.items()},
-              note=("accepted" if accepted else f"rejected: gain {csc - best_score:+.3f} < margin {cfg.coupled_margin} or coupling not significant"))
-        results.sort(key=lambda r: -r[1])
-        best, best_score, best_inl = results[0]
+              note=("accepted" if accepted else f"rejected: gain {csc - base_score:+.3f} < margin {cfg.coupled_margin} or coupling not significant"))
+    results.sort(key=lambda r: -r[1])
+    best, best_score, best_inl = results[0]
 
     # ---- 5. verify on held-out columns
     if cfg.holdout:
