@@ -63,7 +63,26 @@ Optional: `ANTHROPIC_API_KEY=...` in `.env` enables the Claude explanation layer
 
 See `artifacts/` after running `demo.py` and `scripts/run_real.py`. (Filled in below before submission.)
 
-RESULTS_PLACEHOLDER
+### Real data: Nguyen et al. (2019) fluxonium, device A
+
+Input: Fig. 2 of the paper digitised from the vector PDF (`scripts/prep_nguyen2019.py`); the right half of
+the published map is too noisy for any feature to survive extraction, so only the 0-1 line from Φ = 0 to
+about 0.3 and fragments of 0-2 are available. With the paper's flux axis (period held at 1):
+
+| parameter | CircuitSleuth | paper's fit |
+|---|---|---|
+| EJ | 3.23 ± 0.20 GHz | 3.0 GHz |
+| EC | 0.80 ± 0.05 GHz | 0.84 GHz |
+| EL | 0.98 ± 0.04 GHz | 1.0 GHz |
+
+Without the axis prior the period is unconstrained by this half-map (the fit reports it and asks for a sweep
+near Φ = ½ below 1.2 GHz, which is exactly where the paper's inset lives).
+
+### Proposer (CNN on 64×64 thumbnails, 20 000 synthetic maps, held-out 2 000)
+
+Family accuracy 86 %, resonator-present accuracy 55 % (near chance: a resonator is invisible unless the
+qubit crosses it), so the network is only used to rank families and seed the search.
+
 
 ## Honest limitations
 
