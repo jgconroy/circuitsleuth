@@ -145,15 +145,15 @@ def flat_track_mask(points: np.ndarray, track_ids: np.ndarray, span_tol: float =
     return flat_feature_mask(points, tol=span_tol / 2, min_frac=min_frac)
 
 
-def track_weights(points: np.ndarray, track_ids: np.ndarray, flat: np.ndarray) -> dict[int, float]:
-    """Weight per track: sqrt(length) * mean point weight, halved for flat tracks (prior: often spurious)."""
+def track_weights(points: np.ndarray, track_ids: np.ndarray, flat: np.ndarray, min_points: int = 3) -> dict[int, float]:
+    """Weight per track: sqrt(length) * mean point weight. Tracks shorter than `min_points` are isolated
+    noise peaks and get no weight, so a flexible model cannot score by sweeping its lines through noise."""
     out = {}
     for t in np.unique(track_ids):
         m = track_ids == t
-        w = np.sqrt(m.sum()) * float(points[m, 2].mean())
-        if flat[m].any():
-            w *= 0.5
-        out[int(t)] = w
+        if m.sum() < min_points:
+            continue
+        out[int(t)] = np.sqrt(m.sum()) * float(points[m, 2].mean())
     return out
 
 

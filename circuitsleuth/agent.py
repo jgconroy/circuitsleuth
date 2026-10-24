@@ -64,11 +64,37 @@ def _fit_points_for(hyp: fit.Hypothesis, pts_all: np.ndarray, flat: np.ndarray) 
     return pts_all
 
 
+def missing_line_penalty(res: fit.FitResult, pts_all: np.ndarray, band, c_local: float) -> float:
+    """Visibility-weighted fraction of predicted lines that run through measured columns with nothing
+    under them. A model that predicts a strong 0-1 line where the data shows nothing is implausible;
+    an unseen faint 0-3 line costs little."""
+    vis = models.line_weights()
+    cols = np.unique(pts_all[:, 0])
+    lines = fit.predict_lines(res.hyp, res.params, cols)
+    tot, miss = 0.0, 0.0
+    for name, Li in lines.items():
+        if name == "res":
+            continue
+        inband = np.isfinite(Li) & (Li > band[0]) & (Li < band[1])
+        if inband.sum() < 3:
+            continue
+        has = 0
+        for c, Lc in zip(cols[inband], Li[inband]):
+            near = pts_all[np.isclose(pts_all[:, 0], c), 1]
+            if near.size and np.min(np.abs(near - Lc)) < 3 * c_local:
+                has += 1
+        frac_missing = 1.0 - has / inband.sum()
+        tot += vis[name]
+        miss += vis[name] * frac_missing
+    return miss / tot if tot > 0 else 0.0
+
+
 def _score(res: fit.FitResult, pts_all, ids, flat, band, c_local, model_kw=None) -> tuple[float, np.ndarray]:
     obj = fit.Objective(res.hyp, pts_all, band, c_local, model_kw)
     r = obj.residuals(res.theta)
     inl = r < 3 * c_local
     ts = fit.track_score(pts_all, ids, flat, inl)
+    ts -= 0.3 * missing_line_penalty(res, pts_all, band, c_local)
     # complexity penalty + precision tie-break: a model that explains the same features with a 4 MHz residual
     # beats a look-alike that needs 15 MHz
     rms_pen = min(float(np.nan_to_num(res.rms_inliers, nan=0.03)) * 1e3, 30.0) / 300.0
