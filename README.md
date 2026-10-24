@@ -27,7 +27,10 @@ in as families. Two are included beyond superconducting circuits:
 | NV centres in diamond | ODMR lines vs coil current | S = 1 Hamiltonian D Sz² + E(Sx² − Sy²) + γ B·S for the four ⟨111⟩ orientations | D, E, field direction (θ, φ), gauss per unit current, zero-field current |
 | Semiconductor double quantum dot | charge-qubit spectroscopy vs detuning gate | f = √(ε² + (2 t_c)²), ε = lever arm × (V − V₀) | tunnel coupling t_c, lever arm, detuning zero |
 
-On hidden synthetic maps both come back to better than 1 % (`tests/test_platforms.py`). Adding a
+On hand-picked hidden maps both come back to better than 1 % (`tests/test_platforms.py`); on random
+hidden maps (`python demo.py --platform nv|dot`) the family is always identified and every parameter is
+within tolerance in 6 of 8 (NV) and 5 of 8 (quantum dot) cases, the misses being maps with fewer than
+about twenty usable features, which the report flags as low confidence. Adding a
 platform means writing its transition frequencies in `models.py` and declaring its control axis; the
 extraction, robust fitting, hold-out verification, unexplained-feature and next-measurement logic are shared.
 
