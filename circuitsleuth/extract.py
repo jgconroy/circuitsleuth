@@ -23,13 +23,20 @@ def normalise(image: np.ndarray, per_column: bool = True) -> np.ndarray:
     return img
 
 
-def extract_points(image: np.ndarray, x: np.ndarray, f: np.ndarray, snr: float = 4.0, max_per_column: int = 8, min_sep_px: int = 2) -> np.ndarray:
+def extract_points(image: np.ndarray, x: np.ndarray, f: np.ndarray, snr: float = 4.0, max_per_column: int = 8, min_sep_px: int = 2, smooth_cols: int = 1) -> np.ndarray:
     """Return (N,3) array of (x, f, weight) for peaks found column by column.
 
     Peaks are detected against a robust noise estimate, refined to sub-pixel precision with a
     parabola through the three points around the maximum, and weighted by prominence.
+    `smooth_cols` > 1 averages each column with its neighbours first: a continuous line gains
+    sqrt(k) in signal-to-noise while column-wise noise does not, at the price of blurring steep lines.
     """
     img = normalise(image)
+    if smooth_cols > 1:
+        k = int(smooth_cols)
+        kern = np.ones(k) / k
+        img = np.apply_along_axis(lambda row: np.convolve(row, kern, mode="same"), 1, img)
+        img = img * np.sqrt(k)  # restore the noise units so `snr` keeps its meaning
     df = f[1] - f[0]
     out = []
     for c in range(img.shape[1]):

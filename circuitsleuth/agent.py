@@ -34,6 +34,7 @@ class AgentConfig:
     families: tuple = ()  # restrict candidate families (empty = all)
     flux_calibrated: bool = False  # x axis already in flux quanta: period = 1, offset = 0 (tight bounds)
     n_starts: int = 2  # random restarts of the global search (best fine-scale loss wins)
+    smooth_cols: int = 1  # average neighbouring flux columns before peak finding (3 helps very noisy maps)
     coupled_margin: float = 0.05  # a resonator model must beat the bare circuit by this much to be accepted
     coupled_trials: int = 2  # how many of the best bare families get a resonator trial
     prior_weight: float = 0.1  # weight of the CNN family probability in the score (0 = ignore)
@@ -58,9 +59,10 @@ def rasterize(points: np.ndarray, nf: int = 400, nx: int | None = None, lw: floa
 
 
 def _fit_points_for(hyp: fit.Hypothesis, pts_all: np.ndarray, flat: np.ndarray) -> np.ndarray:
-    """Flux-dependent hypotheses are fitted on the flux-dependent features only; a fixed-frequency
-    circuit's lines are flat, so it is fitted on everything."""
-    if hyp.flux_dependent and (~flat).sum() >= 10:
+    """Flux-dependent circuit hypotheses are fitted on the flux-dependent features only (flat lines are
+    pumps/spurs/fixed neighbours); a fixed-frequency circuit's own lines are flat, so it is fitted on
+    everything, and so are the other platforms (a charge qubit far from zero detuning is nearly flat)."""
+    if hyp.platform == "circuit" and hyp.flux_dependent and (~flat).sum() >= 10:
         return pts_all[~flat]
     return pts_all
 
@@ -203,7 +205,7 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
     # ---- 1. features
     if points is None:
         assert image is not None and x is not None and f is not None, "need image+x+f or points"
-        points = extract.extract_points(image, x, f)
+        points = extract.extract_points(image, x, f, smooth_cols=cfg.smooth_cols)
         band = band or (float(f[0]), float(f[-1]))
     else:
         points = np.asarray(points, float)
@@ -312,7 +314,7 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
 
     n_dyn = int((~flat).sum())
     for h, p in bare:
-        if h.flux_dependent and n_dyn < max(10, 0.2 * len(points)):
+        if h.platform == "circuit" and h.flux_dependent and n_dyn < max(10, 0.2 * len(points)):
             _emit(progress, "skip", hypothesis=h.label, reason=f"only {n_dyn} of {len(points)} features vary with flux")
             continue  # (almost) everything is flux-independent: a flux-tunable circuit cannot be the explanation
         init = None
