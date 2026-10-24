@@ -11,6 +11,12 @@ Built in 36 hours at Cal Hacks 13.0 (Oct 2026).
 *Above: a published fluxonium spectroscopy map (Nguyen et al., PRX 9, 041041, 2019, device A), digitised
 from the paper's vector PDF. CircuitSleuth was told nothing except "this is a map between 0 and 5 GHz".*
 
+![synthetic demo](artifacts/fig_demo_A.png)
+
+*A hidden tunable transmon crossing a 7 GHz readout resonator, with a pump spur at 5.1 GHz. The bare circuit
+could not explain the bend near 7 GHz, so the agent hypothesised a resonator there: EJmax, EC, d, fr, g and
+the flux period all come back within 1 % (precomputed result shipped with the app).*
+
 ## Why
 
 Every superconducting-qubit lab does this by hand: stare at a spectroscopy map, guess the circuit, open
