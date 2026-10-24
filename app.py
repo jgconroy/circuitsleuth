@@ -68,8 +68,13 @@ def draw_map(image, x, f, points=None, inlier=None, lines=None, x_grid=None, box
             ax.plot(x_grid, v, color="white", alpha=0.9, label=name, **LINE_STYLE.get(name, {}))
     if boxes:
         for b in boxes:
-            ax.add_patch(Rectangle((b["x_lo"], b["f_lo"]), b["x_hi"] - b["x_lo"], max(b["f_hi"] - b["f_lo"], 0.05), fill=False, ec="#ffd166", lw=1.5, ls="--"))
-            ax.text(b["x_lo"], b["f_hi"], f" look here: {b['line']}", color="#ffd166", fontsize=8, va="bottom")
+            name = b.get("line")
+            if lines is not None and x_grid is not None and name in lines:
+                v = np.array([np.nan if u is None else u for u in lines[name]], float)
+                m = (x_grid >= b["x_lo"]) & (x_grid <= b["x_hi"]) & np.isfinite(v)
+                if m.any():
+                    ax.plot(x_grid[m], v[m], color="#ffd166", lw=4, alpha=0.55, solid_capstyle="round")
+                    ax.text(x_grid[m][0], v[m][0], f" look here: {name}", color="#ffd166", fontsize=8, va="bottom")
     if flat_lines:
         for fl in flat_lines:
             ax.axhline(fl, color="#ff5c5c", lw=0.6, alpha=0.5)

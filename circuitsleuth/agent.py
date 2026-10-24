@@ -33,6 +33,7 @@ class AgentConfig:
     extra_hypotheses: tuple = ()
     families: tuple = ()  # restrict candidate families (empty = all)
     flux_calibrated: bool = False  # x axis already in flux quanta: period = 1, offset = 0 (tight bounds)
+    n_starts: int = 2  # random restarts of the global search (best fine-scale loss wins)
 
 
 def _emit(progress: Progress | None, kind: str, **payload):
@@ -113,14 +114,32 @@ def next_measurements(res: fit.FitResult, pts_all, band, x_grid, c_local, line_w
             if not near.size or np.min(np.abs(near[:, 1] - Li)) > 3 * c_local:
                 missing.append((xi, Li))
         if len(missing) >= 0.5 * inband.sum() and len(missing) >= 3:
+            # split the missing columns into contiguous runs and report the longest two as boxes
             xs = np.array([m[0] for m in missing])
             fs = np.array([m[1] for m in missing])
+            order = np.argsort(xs)
+            xs, fs = xs[order], fs[order]
+            dxg = np.median(np.diff(np.unique(x_grid))) if len(x_grid) > 1 else 1.0
+            runs, start = [], 0
+            for i in range(1, len(xs) + 1):
+                if i == len(xs) or xs[i] - xs[i - 1] > 2.5 * dxg:
+                    runs.append((start, i))
+                    start = i
+            runs.sort(key=lambda ab: -(ab[1] - ab[0]))
             why = f"the model predicts the {name} line here but nothing was detected"
             if name == "0-2/2ph":
                 why += "; raise the drive power to bring out the two-photon transition"
             elif name == "1-2":
                 why += "; a weak thermal population line, visible with higher power or a pre-pulse"
-            out.append(dict(kind="look_here", line=name, x_lo=round(float(xs.min()), 4), x_hi=round(float(xs.max()), 4), f_lo=round(float(fs.min()), 3), f_hi=round(float(fs.max()), 3), why=why))
+            for a, b_ in runs[:2]:
+                if b_ - a < 3:
+                    continue
+                out.append(dict(kind="look_here", line=name, x_lo=round(float(xs[a]), 4), x_hi=round(float(xs[b_ - 1]), 4), f_lo=round(float(fs[a:b_].min()), 3), f_hi=round(float(fs[a:b_].max()), 3), why=why))
+    # keep the most useful suggestions: 0-1 first, then by run length
+    prio = {"0-1": 0, "0-2": 1, "0-2/2ph": 2, "1-2": 3, "0-3": 4}
+    look = [o for o in out if o["kind"] == "look_here"]
+    look.sort(key=lambda o: (prio.get(o["line"], 9), -(o["x_hi"] - o["x_lo"])))
+    out = [o for o in out if o["kind"] != "look_here"] + look[:4]
     # poorly determined parameters
     for n, s in res.sigma.items():
         v = res.params.get(n, np.nan)
@@ -192,11 +211,12 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
     # ---- 3. fit bare hypotheses
     results: list[tuple[fit.FitResult, float, np.ndarray]] = []
 
-    def run_one(h: fit.Hypothesis, pts_fit, init, bounds, maxiter):
+    def run_one(h: fit.Hypothesis, pts_fit, init, bounds, maxiter, n_starts=None):
         def cb(params, loss):
             _emit(progress, "fit_progress", hypothesis=h.label, params=params, loss=loss, lines={k: v.tolist() for k, v in fit.predict_lines(h, params, x_grid).items()})
 
-        return fit.fit_hypothesis(pts_fit, h, band, init=init, bounds=bounds, maxiter=maxiter, popsize=cfg.popsize, seed=cfg.seed, workers=cfg.workers, callback=cb, c_local=cfg.c_local)
+        return fit.fit_hypothesis(pts_fit, h, band, init=init, bounds=bounds, maxiter=maxiter, popsize=cfg.popsize, seed=cfg.seed, workers=cfg.workers, callback=cb, c_local=cfg.c_local,
+                                  n_starts=cfg.n_starts if n_starts is None else n_starts)
 
     def run(h: fit.Hypothesis, init: dict | None):
         pts_fit = _fit_points_for(h, points, flat)
@@ -211,7 +231,7 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
             cal = extract.estimate_flux_calibration(pts_fit)
             if cal["period"]:
                 P = cal["period"]
-                for ax in cal["axes"][:2]:
+                for ax in cal["axes"][:1]:
                     if ax["type"] == "unknown":
                         continue
                     off = ax["x"] if ax["type"] == "max" else ax["x"] - P / 2
@@ -224,7 +244,7 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
                 _emit(progress, "calibration", period=P, axes=cal["axes"])
         best_res, best_sc, best_inl = None, -np.inf, None
         for b, ini, mi in candidates:
-            res = run_one(h, pts_fit, ini, b, mi)
+            res = run_one(h, pts_fit, ini, b, mi, n_starts=None if b is None else 1)
             score, inl = _score(res, points, ids, flat, band, cfg.c_local)
             if score > best_sc:
                 best_res, best_sc, best_inl = res, score, inl
@@ -276,7 +296,7 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
         _emit(progress, "revise", reason=f"trying {hc.label} (p_coupled={p_coupled:.2f}, best score {best_score:.3f}); resonator candidates {', '.join(f'{v:.2f}' for v in cands[:3])} GHz")
         _emit(progress, "fit_start", hypothesis=hc.label, n_points=int(len(pts_fit)))
         cbest, csc, cinl = None, -np.inf, None
-        for fr0 in cands[:3]:
+        for fr0 in cands[:2]:
             b = fit.default_bounds(hc, pts_fit[:, 0])
             for k, v in best.params.items():  # circuit + calibration stay close to the bare solution
                 if k in b and k not in ("d", "offset", "period"):
@@ -287,7 +307,7 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
                     b[k] = (v - 0.1 * best.params.get("period", 1.0), v + 0.1 * best.params.get("period", 1.0))
             b["fr"] = (max(fr0 - 0.6, models.RESONATOR_BOUNDS["fr"][0]), min(fr0 + 0.6, models.RESONATOR_BOUNDS["fr"][1]))
             init = dict(best.params, fr=fr0, g=0.1)
-            res = run_one(hc, pts_fit, init, b, max(20, int(cfg.maxiter * 0.6)))
+            res = run_one(hc, pts_fit, init, b, cfg.maxiter, n_starts=1)
             score, inl = _score(res, points, ids, flat, band, cfg.c_local)
             if score > csc:
                 cbest, csc, cinl = res, score, inl

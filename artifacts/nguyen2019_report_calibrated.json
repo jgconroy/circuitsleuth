@@ -1,6 +1,6 @@
 {
  "status": "ok",
- "runtime_s": 32.1,
+ "runtime_s": 37.8,
  "n_points": 149,
  "n_tracks": 69,
  "band_GHz": [
@@ -226,10 +226,19 @@
   {
    "kind": "look_here",
    "line": "0-1",
-   "x_lo": 0.025,
+   "x_lo": 0.2219,
    "x_hi": 0.55,
    "f_lo": 0.613,
-   "f_hi": 4.509,
+   "f_hi": 4.182,
+   "why": "the model predicts the 0-1 line here but nothing was detected"
+  },
+  {
+   "kind": "look_here",
+   "line": "0-1",
+   "x_lo": 0.1563,
+   "x_hi": 0.2069,
+   "f_lo": 4.234,
+   "f_hi": 4.366,
    "why": "the model predicts the 0-1 line here but nothing was detected"
   },
   {
@@ -251,9 +260,18 @@
   {
    "kind": "look_here",
    "line": "0-2/2ph",
-   "x_lo": 0.0,
+   "x_lo": 0.1869,
    "x_hi": 0.55,
    "f_lo": 1.647,
+   "f_hi": 3.602,
+   "why": "the model predicts the 0-2/2ph line here but nothing was detected; raise the drive power to bring out the two-photon transition"
+  },
+  {
+   "kind": "look_here",
+   "line": "0-2/2ph",
+   "x_lo": 0.0,
+   "x_hi": 0.1663,
+   "f_lo": 3.726,
    "f_hi": 4.112,
    "why": "the model predicts the 0-2/2ph line here but nothing was detected; raise the drive power to bring out the two-photon transition"
   },

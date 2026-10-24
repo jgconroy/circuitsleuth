@@ -200,7 +200,7 @@ def subsample(points: np.ndarray, max_cols: int = 41, max_points: int = 3000) ->
     return points
 
 
-def fit_hypothesis(
+def _fit_once(
     points: np.ndarray,
     hyp: Hypothesis,
     band: tuple[float, float],
@@ -215,6 +215,7 @@ def fit_hypothesis(
     callback: Callable[[dict, float], None] | None = None,
     model_kw: dict | None = None,
     do_global: bool = True,
+    n_starts: int = 1,
 ) -> FitResult:
     x_all = np.unique(points[:, 0])
     bounds = bounds or default_bounds(hyp, x_all)
@@ -272,13 +273,14 @@ def fit_hypothesis(
         i_ej, i_ec = names.index(ej_name), names.index("EC")
         p0 = from_theta(theta0, names)
         f01 = np.sqrt(8 * p0["EC"] * p0[ej_name]) - p0["EC"]
-        best_t, best_v = theta0, obj_l(theta0)
-        for ec in np.exp(np.linspace(np.log(p0["EC"] * 0.5), np.log(p0["EC"] * 2.0), 21)):
+        obj_sweep = Objective(hyp, points, band, 3 * c_local, model_kw)
+        best_t, best_v = theta0, obj_sweep(theta0)
+        for ec in np.exp(np.linspace(np.log(p0["EC"] * 0.5), np.log(p0["EC"] * 2.0), 25)):
             ej = (f01 + ec) ** 2 / (8 * ec)
             t = theta0.copy()
             t[i_ec], t[i_ej] = np.log(ec), np.log(ej)
             if np.all(t >= lo) and np.all(t <= hi):
-                v = obj_l(t)
+                v = obj_sweep(t)
                 if v < best_v:
                     best_t, best_v = t, v
         theta0 = best_t
@@ -287,7 +289,9 @@ def fit_hypothesis(
     def resid(theta):
         return sw * obj_l.residuals(theta)
 
-    ls = least_squares(resid, theta0, bounds=(lo, hi), loss="soft_l1", f_scale=c_local, xtol=1e-10, ftol=1e-10, max_nfev=400)
+    # two-stage polish: a wider robust scale first pulls in lines that are ~50-100 MHz off, then the fine scale
+    ls = least_squares(resid, theta0, bounds=(lo, hi), loss="soft_l1", f_scale=3 * c_local, xtol=1e-9, ftol=1e-9, max_nfev=200)
+    ls = least_squares(resid, ls.x, bounds=(lo, hi), loss="soft_l1", f_scale=c_local, xtol=1e-10, ftol=1e-10, max_nfev=400)
     theta = ls.x
     params = from_theta(theta, names)
     r = obj_l.residuals(theta)
@@ -307,6 +311,22 @@ def fit_hypothesis(
         sigma = {n: float("nan") for n in names}
     lines = predict_lines(hyp, params, x_all, model_kw)
     return FitResult(hyp, params, theta, sigma, float(obj_l(theta)), r, inlier, inlier_frac, rms, x_all, lines, history=history, n_evals=n_evals + int(ls.nfev))
+
+
+def fit_hypothesis(points, hyp, band, bounds=None, init=None, c_global=0.08, c_local=0.012, maxiter=60, popsize=15, seed=0, workers=1,
+                   callback=None, model_kw=None, do_global=True, n_starts=1) -> FitResult:
+    """Multi-start wrapper: run the global+local fit from `n_starts` different random seeds and keep
+    the solution with the lowest fine-scale loss (the robust landscape has narrow basins; two starts
+    roughly square the failure probability away)."""
+    best = None
+    for k in range(max(1, n_starts) if do_global else 1):
+        res = _fit_once(points, hyp, band, bounds=bounds, init=init, c_global=c_global, c_local=c_local, maxiter=maxiter, popsize=popsize,
+                        seed=seed + 1000 * k, workers=workers, callback=callback, model_kw=model_kw, do_global=do_global)
+        if best is None or res.loss < best.loss:
+            best = res
+        if best.inlier_frac > 0.97:
+            break
+    return best
 
 
 def holdout_check(points: np.ndarray, result: FitResult, band: tuple[float, float], frac: float = 0.3, c_local: float = 0.012, model_kw: dict | None = None) -> dict:

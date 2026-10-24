@@ -21,9 +21,17 @@ for name, vals in rep["lines"].items():
     v = np.array([np.nan if u is None else u for u in vals], float)
     if np.isfinite(v).any():
         ax.plot(xg, v, color="white", alpha=0.9, label=name, **styles.get(name, {}))
-for b in [n for n in rep["next_measurements"] if n["kind"] == "look_here"]:
-    ax.add_patch(Rectangle((b["x_lo"], b["f_lo"]), b["x_hi"] - b["x_lo"], max(b["f_hi"] - b["f_lo"], 0.05), fill=False, ec="#ffd166", lw=1.5, ls="--"))
-    ax.text(b["x_lo"], b["f_hi"], f" look here: {b['line']}", color="#ffd166", fontsize=8, va="bottom")
+boxes = [n for n in rep["next_measurements"] if n["kind"] == "look_here"]
+lines = rep["lines"]; x_grid = xg
+if boxes:
+    for b in boxes:
+        name = b.get("line")
+        if lines is not None and x_grid is not None and name in lines:
+            v = np.array([np.nan if u is None else u for u in lines[name]], float)
+            m = (x_grid >= b["x_lo"]) & (x_grid <= b["x_hi"]) & np.isfinite(v)
+            if m.any():
+                ax.plot(x_grid[m], v[m], color="#ffd166", lw=4, alpha=0.55, solid_capstyle="round")
+                ax.text(x_grid[m][0], v[m][0], f" look here: {name}", color="#ffd166", fontsize=8, va="bottom")
 ax.set_ylim(f[0], f[-1]); ax.set_xlabel("control / flux"); ax.set_ylabel("frequency (GHz)")
 b = rep["best"]
 ax.set_title(f"{b['hypothesis']}: " + ", ".join(f"{k}={v}" for k, v in b["params_pretty"].items() if k not in ("offset",)), fontsize=8)
