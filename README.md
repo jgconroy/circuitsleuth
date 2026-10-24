@@ -96,7 +96,7 @@ dropped the two-photon line only f01 is observable and EJ/EC come back with larg
 The failures are tunable-transmon-plus-resonator maps mistaken for fluxonium (two cases) and one very
 faint fluxonium: these are the cases we would want more data for, and the report says so. Mean runtime in
 that run was 9 min per map because the test shared the laptop with the test suite; alone, with four workers,
-a map takes 2–4 min.
+a map takes about 2 min with the 'fast' preset and 5–6 min with 'normal' (which is what the saved demo results use).
 
 ### Proposer (CNN on 64×64 thumbnails, 20 000 synthetic maps, held-out 2 000)
 

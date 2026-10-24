@@ -17,6 +17,11 @@ from circuitsleuth import agent, classify, explain, extract, fit, synth
 
 st.set_page_config(page_title="CircuitSleuth", page_icon="🔎", layout="wide")
 
+SAVED = {  # precomputed reports (normal preset, four workers) for the slow demos
+    "A": "artifacts/demo_A_report.json",
+    "B": "artifacts/demo_B_report.json",
+    "E": "artifacts/nguyen2019_report_calibrated.json",
+}
 DEMOS = {
     "A · tunable transmon through a 7 GHz readout resonator, plus a pump spur": dict(
         family="tunable_transmon", params=dict(EJmax=25.0, EC=0.3, d=0.3, fr=7.0, g=0.1), period=1.3, offset=0.2, f_lo=3.0, f_hi=9.0,
@@ -170,9 +175,23 @@ with left:
 with right:
     st.subheader("Run")
     run = st.button("Identify circuit", type="primary", width="stretch")
+    saved_path = None
+    if source == "Demo circuit":
+        import os
+
+        key = name.split(" ")[0]
+        if key in SAVED and os.path.exists(SAVED[key]):
+            saved_path = SAVED[key]
+    load_saved = st.button("Load precomputed result (normal preset)", width="stretch", disabled=saved_path is None,
+                           help="The same pipeline run earlier with the 'normal' effort preset; identical output, no waiting.")
     status = st.empty()
     live = st.empty()
     table = st.empty()
+
+if load_saved and saved_path:
+    st.session_state["report"] = json.load(open(saved_path))
+    st.session_state["truth"] = truth
+    status.success(f"Loaded {saved_path} (precomputed; runtime was {st.session_state['report'].get('runtime_s', '?')} s)")
 
 if run:
     cfg = agent.AgentConfig(use_classifier=use_clf, try_coupled=try_coupled, workers=workers, families=tuple(families), flux_calibrated=flux_calibrated, **preset)
