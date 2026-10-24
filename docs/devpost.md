@@ -13,7 +13,10 @@ Upload a map (image, NPZ, or a CSV of features). CircuitSleuth
 - verifies on flux columns it never fitted,
 - revises itself: when a bare circuit leaves an unexplained cluster, it seeds a resonator hypothesis where the data bends,
 - reports parameters ± uncertainty, every hypothesis it tried and why it lost, every feature it could not explain (with a physical interpretation), and concrete "look here" boxes: frequency and flux ranges where the next measurement should go, plus which transition would pin down any poorly determined parameter,
+- labels its own confidence from the score gap between circuit families, so an ambiguous map says so,
 - and explains all of it in plain English via Claude (structured output), falling back to a template without a key.
+
+The interface is a dark, single-accent Streamlit app: interactive map with hover, live fit overlay with a loss sparkline, a schematic of the identified circuit, the Hamiltonian table with uncertainties, hypothesis scores, and a physics panel (potential well and levels; spin-1 levels versus field for NV centres; the charge anticrossing for quantum dots).
 
 ## How we built it
 Python 3.12, NumPy/SciPy, scqubits (ground truth for the physics), PyTorch (proposer), Streamlit (UI), Claude Opus 5.5 (explanations). The build itself was agent-driven: a spec with pytest acceptance criteria, an implementation loop that only moves on when the tests are green, and an independent reviewer pass. On a published 2019 PRX fluxonium map digitised from the paper, with no tuning, it returns EJ 3.23 ± 0.20, EC 0.80 ± 0.05, EL 0.98 ± 0.04 GHz against the paper's 3.0 / 0.84 / 1.0. On hand-built hidden circuits it recovers every parameter, including resonator frequency and coupling and the flux period, to about 1 %.
