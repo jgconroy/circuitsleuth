@@ -347,6 +347,8 @@ def fit_hypothesis(points, hyp, band, bounds=None, init=None, c_global=0.08, c_l
                 nar[n] = (v - 0.06 * P, v + 0.06 * P)
             elif n in ("fr", "g"):
                 nar[n] = (lo, hi)
+            elif n in ("EC", "EJ", "EJmax") and hyp.family != "fluxonium":
+                nar[n] = (lo, hi)  # the 0-1 line alone cannot separate EJ from EC: leave both open
             elif n in LOG_PARAMS:
                 nar[n] = (max(lo, v / 1.6), min(hi, v * 1.6))
             else:

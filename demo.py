@@ -34,7 +34,9 @@ def main():
             errs = {k: abs(b["params"][k] - v) / abs(v) for k, v in t["params"].items() if k in b["params"]}
             if "period" in b["params"] and synth.models.FAMILIES[t["family"]]["flux_dependent"]:
                 errs["period"] = abs(b["params"]["period"] - t["period"]) / t["period"]
-            row["max_rel_err"] = round(max(errs.values()), 3) if errs else None
+            circuit_errs = {k: v for k, v in errs.items() if k not in ("fr", "g")}  # resonator params are only determined when the qubit crosses it
+            row["max_rel_err"] = round(max(circuit_errs.values()), 3) if circuit_errs else None
+            row["max_rel_err_all"] = round(max(errs.values()), 3) if errs else None
             row["errs"] = {k: round(v, 3) for k, v in errs.items()}
             row["track_score"] = b["track_score"]
             row["holdout"] = (b.get("holdout") or {}).get("inlier_frac")
@@ -46,7 +48,8 @@ def main():
     ok = [r for r in rows if r["family_ok"]]
     print(f"\nfamily identification: {len(ok)}/{len(rows)}")
     good = [r for r in ok if r.get("max_rel_err") is not None and r["max_rel_err"] < 0.05]
-    print(f"all parameters within 5%: {len(good)}/{len(rows)}")
+    print(f"family correct and all circuit parameters (EJ/EC/EL/d, flux period) within 5%: {len(good)}/{len(rows)}")
+    print(f"mean runtime {np.mean([r['runtime_s'] for r in rows]):.0f} s per map")
     Path(a.out).parent.mkdir(exist_ok=True, parents=True)
     json.dump(rows, open(a.out, "w"), indent=1)
 

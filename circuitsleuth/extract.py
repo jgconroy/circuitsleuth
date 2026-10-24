@@ -70,11 +70,12 @@ def match_points(found: np.ndarray, truth: np.ndarray, tol_f: float) -> float:
 
 
 # ----------------------------------------------------------------------------- tracks
-def link_tracks(points: np.ndarray, df_tol: float = 0.08) -> np.ndarray:
+def link_tracks(points: np.ndarray, df_tol: float = 0.08, slope_factor: float = 1.5, max_tol: float = 0.45) -> np.ndarray:
     """Greedy column-to-column linking of points into line segments ("tracks").
 
-    Returns an integer track id per point. Two points in adjacent columns join the same track when
-    their frequencies differ by less than `df_tol` GHz; each point links to at most one predecessor.
+    A point joins the track of a point in the previous column when it lies within a tolerance of that
+    track's linear extrapolation. The tolerance grows with the track's local slope (steep lines move
+    far between columns) but never beyond `max_tol` GHz. Each previous point links to at most one successor.
     """
     n = len(points)
     ids = -np.ones(n, int)
@@ -82,22 +83,26 @@ def link_tracks(points: np.ndarray, df_tol: float = 0.08) -> np.ndarray:
         return ids
     cols = np.unique(points[:, 0])
     col_of = np.searchsorted(cols, points[:, 0])
+    step = np.zeros(n)  # last frequency step of the track ending at this point
     next_id = 0
     prev_idx: np.ndarray = np.array([], int)
     for c in range(len(cols)):
         cur_idx = np.flatnonzero(col_of == c)
         cur_idx = cur_idx[np.argsort(points[cur_idx, 1])]
-        taken = set()
+        taken: set[int] = set()
         for i in cur_idx:
-            best, best_d = -1, df_tol
+            best, best_d = -1, np.inf
             for j in prev_idx:
                 if j in taken:
                     continue
-                d = abs(points[i, 1] - points[j, 1])
-                if d < best_d:
+                pred = points[j, 1] + step[j]
+                tol = min(max_tol, max(df_tol, slope_factor * abs(step[j])))
+                d = abs(points[i, 1] - pred)
+                if d < tol and d < best_d:
                     best, best_d = j, d
             if best >= 0:
                 ids[i] = ids[best]
+                step[i] = points[i, 1] - points[best, 1]
                 taken.add(best)
             else:
                 ids[i] = next_id
@@ -147,13 +152,18 @@ def flat_track_mask(points: np.ndarray, track_ids: np.ndarray, span_tol: float =
 
 def track_weights(points: np.ndarray, track_ids: np.ndarray, flat: np.ndarray, min_points: int = 3) -> dict[int, float]:
     """Weight per track: sqrt(length) * mean point weight. Tracks shorter than `min_points` are isolated
-    noise peaks and get no weight, so a flexible model cannot score by sweeping its lines through noise."""
+    noise peaks and get no weight, so a flexible model cannot score by sweeping its lines through noise.
+    Flat tracks count half: a flat feature matched by a flat line is one number of evidence, a curved
+    track matched by a curved line is a shape."""
     out = {}
     for t in np.unique(track_ids):
         m = track_ids == t
         if m.sum() < min_points:
             continue
-        out[int(t)] = np.sqrt(m.sum()) * float(points[m, 2].mean())
+        w = np.sqrt(m.sum()) * float(points[m, 2].mean())
+        if flat[m].mean() > 0.5:
+            w *= 0.5
+        out[int(t)] = w
     return out
 
 
