@@ -105,8 +105,9 @@ def predict_lines(hyp: Hypothesis, params: dict, x: np.ndarray, model_kw: dict |
 class Objective:
     """Callable loss on a fixed point cloud; picklable so differential_evolution can use workers."""
 
-    def __init__(self, hyp: Hypothesis, points: np.ndarray, band: tuple[float, float], c: float, model_kw: dict | None = None):
+    def __init__(self, hyp: Hypothesis, points: np.ndarray, band: tuple[float, float], c: float, model_kw: dict | None = None, line_filter: list[str] | None = None):
         self.hyp = hyp
+        self.line_filter = line_filter
         self.names = hyp.names
         self.points = points
         self.x_cols, self.col_idx = np.unique(points[:, 0], return_inverse=True)
@@ -119,7 +120,8 @@ class Objective:
     def line_matrix(self, theta: np.ndarray) -> np.ndarray:
         params = from_theta(theta, self.names)
         lines = predict_lines(self.hyp, params, self.x_cols, self.model_kw)
-        L = np.stack([lines[k] for k in lines])  # (nlines, ncols)
+        keys = [k for k in lines if (self.line_filter is None or k in self.line_filter)]
+        L = np.stack([lines[k] for k in keys])  # (nlines, ncols)
         return np.where(np.isfinite(L), L, np.inf)
 
     def residuals(self, theta: np.ndarray) -> np.ndarray:
@@ -216,6 +218,7 @@ def _fit_once(
     model_kw: dict | None = None,
     do_global: bool = True,
     n_starts: int = 1,
+    line_filter: list[str] | None = None,
 ) -> FitResult:
     x_all = np.unique(points[:, 0])
     bounds = bounds or default_bounds(hyp, x_all)
@@ -239,7 +242,7 @@ def _fit_once(
         theta0 = None
         n_evals = 0
         for c_stage, it in stages:
-            obj_g = Objective(hyp, sub, band, c_stage, global_kw)
+            obj_g = Objective(hyp, sub, band, c_stage, global_kw, line_filter)
             de_kw = dict(bounds=tb, maxiter=it, popsize=popsize, tol=1e-8, seed=seed, polish=False)
             de_kw["init"] = "sobol" if population is None else population
             if init is not None and population is None:
@@ -262,7 +265,7 @@ def _fit_once(
         n_evals = 0
 
     # ---- local refinement on all points
-    obj_l = Objective(hyp, points, band, c_local, model_kw)
+    obj_l = Objective(hyp, points, band, c_local, model_kw, line_filter)
     lo = np.array([b[0] for b in tb])
     hi = np.array([b[1] for b in tb])
     theta0 = np.clip(theta0, lo + 1e-9, hi - 1e-9)
@@ -273,7 +276,7 @@ def _fit_once(
         i_ej, i_ec = names.index(ej_name), names.index("EC")
         p0 = from_theta(theta0, names)
         f01 = np.sqrt(8 * p0["EC"] * p0[ej_name]) - p0["EC"]
-        obj_sweep = Objective(hyp, points, band, 3 * c_local, model_kw)
+        obj_sweep = Objective(hyp, points, band, 3 * c_local, model_kw, line_filter)
         best_t, best_v = theta0, obj_sweep(theta0)
         for ec in np.exp(np.linspace(np.log(p0["EC"] * 0.5), np.log(p0["EC"] * 2.0), 25)):
             ej = (f01 + ec) ** 2 / (8 * ec)
@@ -313,14 +316,47 @@ def _fit_once(
     return FitResult(hyp, params, theta, sigma, float(obj_l(theta)), r, inlier, inlier_frac, rms, x_all, lines, history=history, n_evals=n_evals + int(ls.nfev))
 
 
+def brightest_points(points: np.ndarray) -> np.ndarray:
+    """One point per flux column: the brightest feature (almost always the 0-1 line)."""
+    out = []
+    for c in np.unique(points[:, 0]):
+        m = points[:, 0] == c
+        out.append(points[m][np.argmax(points[m, 2])])
+    return np.array(out)
+
+
 def fit_hypothesis(points, hyp, band, bounds=None, init=None, c_global=0.08, c_local=0.012, maxiter=60, popsize=15, seed=0, workers=1,
-                   callback=None, model_kw=None, do_global=True, n_starts=1) -> FitResult:
-    """Multi-start wrapper: run the global+local fit from `n_starts` different random seeds and keep
-    the solution with the lowest fine-scale loss (the robust landscape has narrow basins; two starts
-    roughly square the failure probability away)."""
+                   callback=None, model_kw=None, do_global=True, n_starts=1, staged=True) -> FitResult:
+    """Robust driver.  (1) staged: fit the 0-1 line alone to the brightest feature per column (one line,
+    no assignment ambiguity -> smooth landscape), then fit all lines with bounds narrowed around that;
+    (2) multi-start: the plain global+local fit from `n_starts` seeds.  Lowest fine-scale loss wins."""
     best = None
+    x_all = np.unique(points[:, 0])
+    base_bounds = bounds or default_bounds(hyp, x_all)
+    if do_global and staged and hyp.flux_dependent and len(x_all) >= 12:
+        bp = brightest_points(points)
+        resA = _fit_once(bp, hyp, band, bounds=base_bounds, init=init, c_global=c_global, c_local=c_local, maxiter=max(20, int(maxiter * 0.7)), popsize=popsize,
+                         seed=seed + 7, workers=workers, callback=callback, model_kw=model_kw, line_filter=["0-1"])
+        nar = {}
+        P = resA.params.get("period", 1.0)
+        for n, (lo, hi) in base_bounds.items():
+            v = resA.params[n]
+            if n == "period":
+                nar[n] = (max(lo, 0.9 * v), min(hi, 1.1 * v))
+            elif n == "offset":
+                nar[n] = (v - 0.06 * P, v + 0.06 * P)
+            elif n in ("fr", "g"):
+                nar[n] = (lo, hi)
+            elif n in LOG_PARAMS:
+                nar[n] = (max(lo, v / 1.6), min(hi, v * 1.6))
+            else:
+                nar[n] = (max(lo, v - 0.2), min(hi, v + 0.2))
+        best = _fit_once(points, hyp, band, bounds=nar, init=resA.params, c_global=c_global, c_local=c_local, maxiter=max(20, int(maxiter * 0.7)), popsize=popsize,
+                         seed=seed + 13, workers=workers, callback=callback, model_kw=model_kw, do_global=True)
+        if best.inlier_frac > 0.97:
+            return best
     for k in range(max(1, n_starts) if do_global else 1):
-        res = _fit_once(points, hyp, band, bounds=bounds, init=init, c_global=c_global, c_local=c_local, maxiter=maxiter, popsize=popsize,
+        res = _fit_once(points, hyp, band, bounds=base_bounds, init=init, c_global=c_global, c_local=c_local, maxiter=maxiter, popsize=popsize,
                         seed=seed + 1000 * k, workers=workers, callback=callback, model_kw=model_kw, do_global=do_global)
         if best is None or res.loss < best.loss:
             best = res

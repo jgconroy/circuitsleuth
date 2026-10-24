@@ -15,10 +15,17 @@ def hidden(family, params, period, offset, f_lo, f_hi, spurs=(), two_photon=True
 FAST = agent.AgentConfig(maxiter=40, use_classifier=False, holdout=True)
 
 
+def show(rep):
+    print("\nHYPOTHESES:")
+    for h in rep.get("hypotheses", []):
+        print(f"  {h['hypothesis']:40s} score={h['track_score']:+.3f} inlier={h['inlier_frac']:.2f} rms={h['rms_inliers_MHz']:.1f} params={ {k: round(v, 3) for k, v in h['params'].items()} }")
+
+
 def test_agent_identifies_tunable_transmon_with_resonator_and_spur():
     t, r = hidden("tunable_transmon", dict(EJmax=25.0, EC=0.3, d=0.3, fr=7.0, g=0.1), 1.3, 0.2, 3.0, 9.0, spurs=[dict(f=5.1, amp=0.9, sideband=0.0)], seed=1)
     events = []
     rep = agent.identify(r["image"], r["x"], r["f"], config=FAST, progress=lambda k, p: events.append(k))
+    show(rep)
     assert rep["status"] == "ok", rep
     assert rep["best"]["family"] == "tunable_transmon" and rep["best"]["coupled"] is True, rep["best"]
     for k in ("EJmax", "EC", "fr"):
@@ -33,6 +40,7 @@ def test_agent_identifies_tunable_transmon_with_resonator_and_spur():
 def test_agent_identifies_fixed_transmon():
     t, r = hidden("transmon", dict(EJ=15.0, EC=0.28), 1.0, 0.0, 3.0, 8.0, seed=2)
     rep = agent.identify(r["image"], r["x"], r["f"], config=FAST)
+    show(rep)
     assert rep["best"]["family"] == "transmon", rep["best"]
     assert abs(rep["best"]["params"]["EC"] - 0.28) < 0.02
 
@@ -40,6 +48,7 @@ def test_agent_identifies_fixed_transmon():
 def test_agent_identifies_fluxonium():
     t, r = hidden("fluxonium", dict(EJ=6.0, EC=1.0, EL=0.6), 1.1, -0.3, 0.3, 9.0, seed=3)
     rep = agent.identify(r["image"], r["x"], r["f"], config=FAST)
+    show(rep)
     assert rep["best"]["family"] == "fluxonium", rep["best"]
     for k in ("EJ", "EC", "EL"):
         assert abs(rep["best"]["params"][k] - t["params"][k]) / t["params"][k] < 0.05, (k, rep["best"]["params"])
