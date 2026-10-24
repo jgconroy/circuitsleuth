@@ -69,7 +69,7 @@ def missing_line_penalty(res: fit.FitResult, pts_all: np.ndarray, band, c_local:
     """Visibility-weighted fraction of predicted lines that run through measured columns with nothing
     under them. A model that predicts a strong 0-1 line where the data shows nothing is implausible;
     an unseen faint 0-3 line costs little."""
-    vis = models.line_weights()
+    vis = models.line_weights(res.hyp.family)
     cols = np.unique(pts_all[:, 0])
     lines = fit.predict_lines(res.hyp, res.params, cols)
     tot, miss = 0.0, 0.0
@@ -156,7 +156,7 @@ def next_measurements(res: fit.FitResult, pts_all, band, x_grid, c_local, line_w
                     start = i
             runs.sort(key=lambda ab: -(ab[1] - ab[0]))
             why = f"the model predicts the {name} line here but nothing was detected"
-            if name == "0-2/2ph":
+            if name.endswith("2ph"):
                 why += "; raise the drive power to bring out the two-photon transition"
             elif name == "1-2":
                 why += "; a weak thermal population line, visible with higher power or a pre-pulse"
@@ -180,7 +180,14 @@ def next_measurements(res: fit.FitResult, pts_all, band, x_grid, c_local, line_w
                     "EL": "EL is best constrained by the 0-1 line near half flux and by the 0-2 transition",
                     "d": "the junction asymmetry d is set by the minimum of the 0-1 line at half flux: extend the flux sweep",
                     "g": "the coupling g is set by the avoided-crossing splitting: measure finely where the qubit crosses the resonator",
-                    "fr": "the resonator frequency: a single-tone scan pins it"}.get(n, "")
+                    "fr": "the resonator frequency: a single-tone scan pins it",
+                    "D": "the zero-field splitting D is read off at B = 0: include the zero-field point in the sweep",
+                    "E": "the strain splitting E is the line separation at B = 0: sweep through zero field with fine steps",
+                    "theta": "the field polar angle sets how the four NV orientations fan out: a larger field range separates them",
+                    "phi": "the field azimuth separates the orientations that currently overlap: tilt the field slightly",
+                    "t_c": "the tunnel coupling is the minimum of the hyperbola at zero detuning: measure finely around it",
+                    "lever_arm": "the lever arm is the slope of the line far from zero detuning: extend the detuning range",
+                    "x0": "the zero of the control axis: measure on both sides of the minimum"}.get(n, "")
             out.append(dict(kind="constrain_parameter", parameter=n, rel_sigma=round(float(s / abs(v)), 3), why=hint))
     return out
 
@@ -210,7 +217,8 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
     # ---- 2. propose
     proposals = []
     net = None
-    if cfg.use_classifier:
+    circuit_only = all(models.platform_of(f) == "circuit" for f in (cfg.families or ("transmon",)))
+    if cfg.use_classifier and circuit_only:
         try:
             from . import classify
 
@@ -228,7 +236,8 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
         bare = [(h, p) for h, p in order if not h.coupled][: cfg.top_k]
         p_coupled = proposals[0]["p_coupled"]
     else:
-        bare = [(fit.Hypothesis(fam, False), None) for fam in models.FAMILIES]
+        fams = cfg.families or tuple(models.PLATFORMS["circuit"]["families"])
+        bare = [(fit.Hypothesis(fam, False), None) for fam in fams]
         p_coupled = 0.5
     for h in cfg.extra_hypotheses:
         if h not in [b[0] for b in bare]:
@@ -264,7 +273,7 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
             b["period"] = (0.97, 1.03)
             b["offset"] = (-0.03, 0.03)
             candidates = [(b, dict(init or {}, period=1.0, offset=0.0), cfg.maxiter)]
-        elif h.flux_dependent:
+        elif h.flux_dependent and h.platform == "circuit":
             cal = extract.estimate_flux_calibration(pts_fit)
             if cal["period"]:
                 P = cal["period"]
@@ -317,7 +326,7 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
     want_coupled = cfg.try_coupled == "always" or (cfg.try_coupled == "auto" and (p_coupled > 0.25 or best_score < 0.85))
     bare_sorted = [r for r in results if not r[0].hyp.coupled]
     for base_res, base_score, base_inl in bare_sorted[: cfg.coupled_trials]:  # the best bare families get a resonator trial
-        if not want_coupled or base_score < best_score - 0.35:
+        if not want_coupled or base_score < best_score - 0.35 or base_res.hyp.platform != "circuit":
             continue
         hc = fit.Hypothesis(base_res.hyp.family, True)
         fr_cands: list[float] = []
@@ -399,7 +408,7 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
         flat_lines_GHz=[round(v, 3) for v in flat_lines],
         proposals=[dict(hypothesis=fit.Hypothesis(p["family"], p["coupled"]).label, prob=round(p["prob"], 3)) for p in proposals],
         hypotheses=[dict(res.summary(), track_score=round(sc, 4)) for res, sc, _ in results],
-        best=dict(res_summary(best), track_score=round(best_score, 4), explained_dynamic=round(float(explained_dynamic), 4), note=note),
+        best=dict(res_summary(best), track_score=round(best_score, 4), explained_dynamic=round(float(explained_dynamic), 4), note=note, platform=best.hyp.platform),
         unexplained=unexpl,
         next_measurements=nxt,
         lines={k: [None if not np.isfinite(v) else round(float(v), 5) for v in arr] for k, arr in best.lines.items()},

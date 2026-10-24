@@ -19,7 +19,7 @@ from scipy.optimize import differential_evolution, least_squares
 
 from . import models
 
-LOG_PARAMS = {"EJ", "EC", "EL", "EJmax", "fr", "g", "period"}
+LOG_PARAMS = {"EJ", "EC", "EL", "EJmax", "fr", "g", "period", "field_scale", "lever_arm", "t_c", "E"}
 MODEL_KW = {"ncut": 20, "cutoff": 60, "kq": 5, "kr": 3}
 
 
@@ -29,15 +29,18 @@ class Hypothesis:
     coupled: bool = False
 
     @property
-    def flux_dependent(self) -> bool:
+    def flux_dependent(self) -> bool:  # kept for backward compatibility: "depends on the control axis"
         return models.FAMILIES[self.family]["flux_dependent"]
+
+    control_dependent = flux_dependent
+
+    @property
+    def platform(self) -> str:
+        return models.platform_of(self.family)
 
     @property
     def names(self) -> list[str]:
-        n = models.hypothesis_params(self.family, self.coupled)
-        if self.flux_dependent:
-            n = n + ["period", "offset"]
-        return n
+        return models.hypothesis_params(self.family, self.coupled) + list(models.control_params(self.family))
 
     @property
     def label(self) -> str:
@@ -50,11 +53,18 @@ ALL_HYPOTHESES = [Hypothesis(f, c) for f in models.FAMILIES for c in (False, Tru
 # ----------------------------------------------------------------------------- parameterisation
 def default_bounds(hyp: Hypothesis, x: np.ndarray) -> dict[str, tuple[float, float]]:
     b = dict(models.hypothesis_bounds(hyp.family, hyp.coupled))
-    if hyp.flux_dependent:
-        span = float(np.max(x) - np.min(x))
+    span = float(np.max(x) - np.min(x))
+    ctrl = models.control_params(hyp.family)
+    if ctrl == ("period", "offset"):
         pmax = span / 0.4
         b["period"] = (span / 3.0, pmax)
         b["offset"] = (float(np.min(x)) - pmax / 2, float(np.max(x)) + pmax / 2)
+    elif ctrl == ("field_scale", "x0"):
+        b["field_scale"] = models.CONTROL_BOUNDS["field_scale"]
+        b["x0"] = (float(np.min(x)) - span, float(np.max(x)) + span)
+    elif ctrl == ("lever_arm", "x0"):
+        b["lever_arm"] = models.CONTROL_BOUNDS["lever_arm"]
+        b["x0"] = (float(np.min(x)) - span / 2, float(np.max(x)) + span / 2)
     return b
 
 
@@ -91,18 +101,19 @@ def theta_bounds(bounds: dict, names: list[str]) -> list[tuple[float, float]]:
 
 
 def split_params(params: dict, hyp: Hypothesis):
-    circuit = {k: v for k, v in params.items() if k not in ("period", "offset")}
+    ctrl = set(models.control_params(hyp.family))
+    circuit = {k: v for k, v in params.items() if k not in ctrl}
     period = params.get("period", 1.0)
     offset = params.get("offset", 0.0)
     return circuit, period, offset
 
 
 def predict_lines(hyp: Hypothesis, params: dict, x: np.ndarray, model_kw: dict | None = None) -> dict[str, np.ndarray]:
-    circuit, period, offset = split_params(params, hyp)
-    phi = (np.asarray(x, float) - offset) / period if hyp.flux_dependent else np.zeros(len(x))
+    circuit, _, _ = split_params(params, hyp)
+    ctrl_val = models.control_from_x(hyp.family, params, np.asarray(x, float))
     kw = dict(MODEL_KW)
     kw.update(model_kw or {})
-    return models.transitions(hyp.family, circuit, phi, coupled=hyp.coupled, **kw)
+    return models.transitions(hyp.family, circuit, ctrl_val, coupled=hyp.coupled, **kw)
 
 
 # ----------------------------------------------------------------------------- objective
@@ -247,7 +258,7 @@ def _fit_once(
         n_evals = 0
         for c_stage, it in stages:
             obj_g = Objective(hyp, sub, band, c_stage, global_kw, line_filter)
-            de_kw = dict(bounds=tb, maxiter=it, popsize=popsize, tol=1e-8, seed=seed, polish=False)
+            de_kw = dict(bounds=tb, maxiter=it, popsize=popsize, tol=1e-3, seed=seed, polish=False)  # stop a stage once the population has converged
             de_kw["init"] = "sobol" if population is None else population
             if init is not None and population is None:
                 x0 = to_theta_partial(init, names, tb)
@@ -339,7 +350,7 @@ def fit_hypothesis(points, hyp, band, bounds=None, init=None, c_global=0.08, c_l
     best = None
     x_all = np.unique(points[:, 0])
     base_bounds = bounds or default_bounds(hyp, x_all)
-    if do_global and staged and hyp.flux_dependent and len(x_all) >= 12:
+    if do_global and staged and hyp.flux_dependent and hyp.platform == "circuit" and len(x_all) >= 12:
         bp = brightest_points(points)
         resA = _fit_once(bp, hyp, band, bounds=base_bounds, init=init, c_global=c_global, c_local=c_local, maxiter=max(20, int(maxiter * 0.7)), popsize=popsize,
                          seed=seed + 7, workers=workers, callback=callback, model_kw=model_kw, line_filter=["0-1"])

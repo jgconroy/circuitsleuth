@@ -13,8 +13,13 @@ import numpy as np
 
 from . import models
 
-FAMILY_NAMES = list(models.FAMILIES)
+FAMILY_NAMES = list(models.PLATFORMS["circuit"]["families"])  # the CNN proposer is trained on circuits
 SPUR_LABEL = -1
+BANDS = {  # per platform: ranges for the lower and upper edge of the measured band (GHz)
+    "circuit": ((0.05, 1.5), (7.5, 13.0)),
+    "nv": ((2.3, 2.6), (3.1, 3.45)),
+    "dot": ((0.5, 1.5), (8.0, 14.0)),
+}
 
 
 @dataclass
@@ -36,26 +41,41 @@ def _loguniform(rng, lo, hi):
     return float(np.exp(rng.uniform(np.log(lo), np.log(hi))))
 
 
-def sample_truth(rng: np.random.Generator, cfg: SynthConfig | None = None, family: str | None = None, coupled: bool | None = None) -> dict:
+LINEAR_PARAMS = {"d", "D", "theta", "phi", "x0", "offset"}
+
+
+def sample_truth(rng: np.random.Generator, cfg: SynthConfig | None = None, family: str | None = None, coupled: bool | None = None, platform: str = "circuit") -> dict:
     cfg = cfg or SynthConfig()
-    family = family or FAMILY_NAMES[rng.integers(len(FAMILY_NAMES))]
-    coupled = bool(rng.random() < cfg.p_coupled) if coupled is None else coupled
+    fams = models.PLATFORMS[platform]["families"]
+    family = family or fams[rng.integers(len(fams))]
+    platform = models.platform_of(family)
+    coupled = (bool(rng.random() < cfg.p_coupled) if coupled is None else coupled) if platform == "circuit" else False
     bounds = models.hypothesis_bounds(family, coupled)
     params = {}
     for name, (lo, hi) in bounds.items():
-        params[name] = float(rng.uniform(lo, hi)) if name == "d" else _loguniform(rng, lo, hi)
-    # make sure the 0-1 line lands in a plausible band at least somewhere; resample a few times if not
-    f_lo = float(rng.uniform(*cfg.f_lo_range))
-    f_hi = float(rng.uniform(*cfg.f_hi_range))
+        params[name] = float(rng.uniform(lo, hi)) if name in LINEAR_PARAMS else _loguniform(rng, lo, hi)
+    if platform == "circuit":
+        f_lo = float(rng.uniform(*cfg.f_lo_range))
+        f_hi = float(rng.uniform(*cfg.f_hi_range))
+    else:
+        (a, b), (c, d) = BANDS[platform]
+        f_lo, f_hi = float(rng.uniform(a, b)), float(rng.uniform(c, d))
     x_lo, x_hi = -1.0, 1.0
-    if models.FAMILIES[family]["flux_dependent"]:
+    ctrl = models.control_params(family)
+    period, offset = 1.0, 0.0
+    if ctrl == ("period", "offset"):
         n_per = float(rng.uniform(*cfg.periods_in_window))
         period = (x_hi - x_lo) / n_per
         offset = float(rng.uniform(x_lo, x_hi))
-    else:
-        period, offset = 1.0, 0.0
+    elif ctrl == ("field_scale", "x0"):
+        params["field_scale"] = _loguniform(rng, 30.0, 200.0)
+        params["x0"] = float(rng.uniform(-0.6, 0.6))
+    elif ctrl == ("lever_arm", "x0"):
+        params["lever_arm"] = _loguniform(rng, 4.0, 30.0)
+        params["x0"] = float(rng.uniform(-0.5, 0.5))
     truth = dict(
         family=family,
+        platform=platform,
         coupled=coupled,
         params=params,
         period=period,
@@ -86,8 +106,14 @@ def flux_from_x(x: np.ndarray, period: float, offset: float) -> np.ndarray:
 
 
 def true_lines(truth: dict, x: np.ndarray) -> dict[str, np.ndarray]:
-    phi = flux_from_x(x, truth["period"], truth["offset"])
-    return models.transitions(truth["family"], truth["params"], phi, coupled=truth["coupled"])
+    fam = truth["family"]
+    ctrl = models.control_params(fam)
+    if ctrl == ("period", "offset") or not ctrl:
+        phi = flux_from_x(x, truth["period"], truth["offset"])
+        circuit = {k: v for k, v in truth["params"].items() if k not in ctrl}
+        return models.transitions(fam, circuit, phi, coupled=truth["coupled"])
+    circuit = {k: v for k, v in truth["params"].items() if k not in ctrl}
+    return models.transitions(fam, circuit, models.control_from_x(fam, truth["params"], x), coupled=False)
 
 
 def render(truth: dict, cfg: SynthConfig | None = None, rng: np.random.Generator | None = None) -> dict:
@@ -97,14 +123,14 @@ def render(truth: dict, cfg: SynthConfig | None = None, rng: np.random.Generator
     x = np.linspace(truth["x_lo"], truth["x_hi"], cfg.nx)
     f = np.linspace(truth["f_lo"], truth["f_hi"], cfg.nf)
     lines = true_lines(truth, x)
-    weights = models.line_weights()
+    weights = models.line_weights(truth["family"])
     lw = truth["linewidth"]
     img = np.zeros((cfg.nf, cfg.nx))
     pts, labs = [], []
     line_names = list(lines)
     for li, name in enumerate(line_names):
         freq = lines[name]
-        if name == "0-2/2ph" and not truth["two_photon"]:
+        if name.endswith("2ph") and not truth["two_photon"]:
             continue
         amp = weights[name] * float(rng.uniform(0.5, 1.2))
         if name == "res":
