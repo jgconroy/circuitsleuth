@@ -8,9 +8,11 @@
 
 **1:30 – 2:05  What it cannot explain and where to look next.**  Scroll: the unexplained 5.1 GHz line labelled as pump/LO leakage; the yellow 'look here' boxes; the Claude summary. "A fitter's most useful output is the list of things it could not fit, and the measurement that would settle them."
 
-**2:05 – 2:40  Real data.**  Switch to demo E: a 2019 PRX fluxonium map digitised from the paper. Show the recovered EJ, EC, EL next to the paper's values, and the flux period coming out as one flux quantum because the paper's axis was already calibrated. "No tuning for this dataset. Same code."
+**2:05 – 2:25  Not just circuit QED.**  Switch platform to "NV centres in diamond", pick the demo, click Identify (it finishes in seconds): "Same engine, different Hamiltonian: zero-field splitting, strain, the field direction and the gauss-per-amp calibration, from an ODMR map. Quantum dots work the same way. A new platform is one function."
 
-**2:40 – 3:00  Close.**  "Next step is obvious: the agent that says 'look here' drives the instrument and takes that sweep. Bring-up of a new chip becomes a loop that runs itself. Repo, tests and the blind-test table are on GitHub."
+**2:25 – 2:45  Real data.**  Switch to demo E: a 2019 PRX fluxonium map digitised from the paper. Show the recovered EJ, EC, EL next to the paper's values, and the flux period coming out as one flux quantum because the paper's axis was already calibrated. "No tuning for this dataset. Same code."
+
+**2:45 – 3:00  Close.**  "Next step is obvious: the agent that says 'look here' drives the instrument and takes that sweep. Bring-up of a new chip becomes a loop that runs itself. Repo, tests and the blind-test table are on GitHub."
 
 **Q&A ammunition**
 - Why not just least squares? Spurs and missing lines break it; Geman–McClure bounds the cost of any outlier; features are scored, not pixels.
