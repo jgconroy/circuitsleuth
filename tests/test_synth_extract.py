@@ -95,3 +95,16 @@ def test_tracks_and_flat_detection():
     assert flat[q].mean() < 0.2
     summ = extract.summarize_tracks(pts, ids, flat)
     assert any(abs(s["f_mean"] - t["spurs"][0]["f"]) < 0.03 for s in summ)
+
+
+def test_flux_calibration_from_symmetry():
+    from tests.test_fit import handpicked
+
+    t, r, pts = handpicked("tunable_transmon", dict(EJmax=25.0, EC=0.3, d=0.3), period=1.3, offset=0.2, f_lo=3.0, f_hi=9.0, seed=5)
+    cal = extract.estimate_flux_calibration(pts)
+    assert cal["period"] is not None and abs(cal["period"] - 1.3) / 1.3 < 0.06, cal
+    xs = {round(a["x"], 1): a["type"] for a in cal["axes"]}
+    assert any(abs(x - 0.2) < 0.08 and k == "max" for x, k in xs.items()), cal
+    t, r, pts = handpicked("fluxonium", dict(EJ=6.0, EC=1.0, EL=0.6), period=1.1, offset=-0.3, f_lo=0.3, f_hi=9.0, seed=3)
+    cal = extract.estimate_flux_calibration(pts)  # multi-line spectra are harder: only require a sane structure
+    assert "axes" in cal and all(abs(a["x"]) < 2.5 for a in cal["axes"])

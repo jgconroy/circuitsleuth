@@ -5,10 +5,18 @@ import numpy as np
 from scipy.signal import find_peaks
 
 
-def normalise(image: np.ndarray) -> np.ndarray:
-    """Per-column median removal, global MAD scaling, sign so that lines are positive peaks."""
+def normalise(image: np.ndarray, per_column: bool = True) -> np.ndarray:
+    """Per-column median removal, robust (MAD) noise scaling, sign so that lines are positive peaks.
+
+    With per_column=True each flux column is scaled by its own noise level, so columns with a noisy
+    drive/readout (common in real data: vertical streaks) do not flood the point cloud with false peaks."""
     img = image - np.median(image, axis=0, keepdims=True)
-    mad = np.median(np.abs(img)) + 1e-12
+    mad_g = np.median(np.abs(img)) + 1e-12
+    if per_column:
+        mad_c = np.median(np.abs(img), axis=0, keepdims=True)
+        mad = np.maximum(mad_c, mad_g) + 1e-12  # only ever raise the noise estimate for noisy columns
+    else:
+        mad = mad_g
     img = img / (1.4826 * mad)
     if np.mean(np.clip(img, -50, 50) ** 3) < 0:
         img = -img
@@ -161,3 +169,98 @@ def summarize_tracks(points: np.ndarray, track_ids: np.ndarray, mask: np.ndarray
         out.append(dict(track=int(t), n_points=int(m.sum()), f_lo=float(f.min()), f_hi=float(f.max()), f_mean=float(f.mean()),
                         x_lo=float(x.min()), x_hi=float(x.max()), flat=bool((f.max() - f.min()) < 0.045), weight=float(points[m, 2].mean())))
     return sorted(out, key=lambda d: -d["n_points"])
+
+
+# ----------------------------------------------------------------------------- flux calibration
+def brightest_per_column(points: np.ndarray):
+    cols = np.unique(points[:, 0])
+    fb = np.full(len(cols), np.nan)
+    for i, c in enumerate(cols):
+        m = points[:, 0] == c
+        if m.any():
+            fb[i] = points[m, 1][np.argmax(points[m, 2])]
+    return cols, fb
+
+
+def _column_matrix(points: np.ndarray):
+    cols = np.unique(points[:, 0])
+    idx = np.searchsorted(cols, points[:, 0])
+    kmax = int(np.bincount(idx).max())
+    F = np.full((len(cols), kmax), np.nan)
+    fill = np.zeros(len(cols), int)
+    for i, fi in zip(idx, points[:, 1]):
+        F[i, fill[i]] = fi
+        fill[i] += 1
+    return cols, idx, F
+
+
+def estimate_flux_calibration(points: np.ndarray, max_axes: int = 4) -> dict:
+    """Physics prior: every flux-tunable circuit's spectrum is mirror-symmetric about Phi = 0 and Phi = 1/2.
+
+    Symmetry score of the whole point cloud (Chamfer distance to its mirror image) as a function of the
+    mirror position x0; its minima are the symmetry axes, the autocorrelation of the score curve gives the
+    axis spacing (= period / 2), and the lowest line's behaviour at an axis says whether it is Phi = 0
+    (frequency maximum) or Phi = 1/2 (minimum).  Only used to narrow the search bounds.
+    """
+    if len(points) < 12:
+        return dict(axes=[], period=None)
+    cols, idx, F = _column_matrix(points)
+    n = len(cols)
+    f_low = np.nanmin(F, axis=1)
+    if n < 8 or np.nanstd(f_low) < 0.05:
+        return dict(axes=[], period=None)
+    dx = float(np.median(np.diff(cols)))
+    span = float(cols[-1] - cols[0])
+    cands = np.arange(cols[0] - span / 2, cols[-1] + span / 2 + 1e-9, dx / 2)
+    res = np.full(len(cands), np.nan)
+    fpts = points[:, 1]
+    for k, x0 in enumerate(cands):
+        j = np.round((2 * x0 - points[:, 0] - cols[0]) / dx).astype(int)
+        ok = (j >= 0) & (j < n)
+        if ok.sum() < max(8, 0.25 * len(points)):
+            continue
+        d = np.nanmin(np.abs(F[j[ok]] - fpts[ok, None]), axis=1)
+        d = d[np.isfinite(d)]
+        if d.size:
+            res[k] = np.median(d)
+    if np.isfinite(res).sum() < 5:
+        return dict(axes=[], period=None)
+    thresh = max(0.03, 0.3 * float(np.nanmedian(res)))
+    r = np.where(np.isfinite(res), res, np.inf)
+    axes = [(float(cands[k]), float(r[k])) for k in range(1, len(cands) - 1) if r[k] <= thresh and r[k] <= r[k - 1] and r[k] <= r[k + 1]]
+    merged: list[tuple[float, float]] = []
+    for x0, rr in sorted(axes):
+        if merged and abs(x0 - merged[-1][0]) < 2 * dx:
+            if rr < merged[-1][1]:
+                merged[-1] = (x0, rr)
+        else:
+            merged.append((x0, rr))
+    # period from the autocorrelation of the (negated) symmetry score: periodic with period/2
+    period = None
+    sig = np.where(np.isfinite(res), res, np.nanmedian(res))
+    sig = -(sig - sig.mean())
+    step = dx / 2
+    max_lag = int(len(sig) * 0.6)
+    ac = np.array([np.dot(sig[: len(sig) - L], sig[L:]) / max(len(sig) - L, 1) for L in range(max_lag)])
+    if ac.size > 6 and ac[0] > 0:
+        ac = ac / ac[0]
+        min_lag = max(3, int(round(0.08 * span / step)))
+        for L in range(min_lag, len(ac) - 1):
+            if ac[L] > 0.25 and ac[L] >= ac[L - 1] and ac[L] >= ac[L + 1]:
+                period = 2 * L * step
+                break
+    out_axes = []
+    for x0, rr in merged:
+        near = np.abs(cols - x0) < max(span / 12, 2 * dx)
+        far = (np.abs(cols - x0) >= max(span / 12, 2 * dx)) & (np.abs(cols - x0) < span / 4)
+        if np.isfinite(f_low[near]).sum() == 0 or np.isfinite(f_low[far]).sum() == 0:
+            kind = "unknown"
+        else:
+            kind = "max" if np.nanmean(f_low[near]) > np.nanmean(f_low[far]) else "min"
+        out_axes.append(dict(x=x0, type=kind, resid=rr))
+    if period is None and len(out_axes) >= 2:
+        sp = np.diff(np.sort([a["x"] for a in out_axes]))
+        if sp.max() / max(sp.min(), 1e-9) < 1.35:
+            period = 2 * float(np.median(sp))
+    out_axes.sort(key=lambda a: a["resid"])
+    return dict(axes=out_axes[:max_axes], period=period)

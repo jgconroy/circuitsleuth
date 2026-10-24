@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "circuitsleuth"
+version = "0.1.0"
+description = "Identify superconducting circuits and their Hamiltonian parameters from two-tone spectroscopy maps"
+requires-python = ">=3.11"
+dependencies = ["numpy", "scipy", "scqubits", "scikit-learn", "torch", "matplotlib", "pillow", "streamlit", "anthropic", "python-dotenv"]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.setuptools]
+packages = ["circuitsleuth"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

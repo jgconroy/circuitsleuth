@@ -31,6 +31,7 @@ class AgentConfig:
     seed: int = 0
     c_local: float = 0.012
     extra_hypotheses: tuple = ()
+    families: tuple = ()  # restrict candidate families (empty = all)
 
 
 def _emit(progress: Progress | None, kind: str, **payload):
@@ -179,23 +180,47 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
     for h in cfg.extra_hypotheses:
         if h not in [b[0] for b in bare]:
             bare.append((h, None))
+    if cfg.families:
+        bare = [(h, p) for h, p in bare if h.family in cfg.families] or [(fit.Hypothesis(f, False), None) for f in cfg.families]
     _emit(progress, "proposals", hypotheses=[dict(h=h.label, prob=(p or {}).get("prob")) for h, p in bare], p_coupled=p_coupled)
 
     # ---- 3. fit bare hypotheses
     results: list[tuple[fit.FitResult, float, np.ndarray]] = []
 
-    def run(h: fit.Hypothesis, init: dict | None, bounds: dict | None = None):
-        pts_fit = _fit_points_for(h, points, flat)
-        _emit(progress, "fit_start", hypothesis=h.label, n_points=int(len(pts_fit)))
-
+    def run_one(h: fit.Hypothesis, pts_fit, init, bounds, maxiter):
         def cb(params, loss):
             _emit(progress, "fit_progress", hypothesis=h.label, params=params, loss=loss, lines={k: v.tolist() for k, v in fit.predict_lines(h, params, x_grid).items()})
 
-        res = fit.fit_hypothesis(pts_fit, h, band, init=init, bounds=bounds, maxiter=cfg.maxiter, popsize=cfg.popsize, seed=cfg.seed, workers=cfg.workers, callback=cb, c_local=cfg.c_local)
-        score, inl = _score(res, points, ids, flat, band, cfg.c_local)
-        results.append((res, score, inl))
-        _emit(progress, "fit_done", hypothesis=h.label, score=score, summary=res.summary(), lines={k: v.tolist() for k, v in res.lines.items()})
-        return res, score
+        return fit.fit_hypothesis(pts_fit, h, band, init=init, bounds=bounds, maxiter=maxiter, popsize=cfg.popsize, seed=cfg.seed, workers=cfg.workers, callback=cb, c_local=cfg.c_local)
+
+    def run(h: fit.Hypothesis, init: dict | None):
+        pts_fit = _fit_points_for(h, points, flat)
+        _emit(progress, "fit_start", hypothesis=h.label, n_points=int(len(pts_fit)))
+        candidates: list[tuple[dict | None, dict | None, int]] = [(None, init, cfg.maxiter)]  # (bounds, init, maxiter); wide search first
+        if h.flux_dependent:
+            cal = extract.estimate_flux_calibration(pts_fit)
+            if cal["period"]:
+                P = cal["period"]
+                for ax in cal["axes"][:2]:
+                    if ax["type"] == "unknown":
+                        continue
+                    off = ax["x"] if ax["type"] == "max" else ax["x"] - P / 2
+                    b = fit.default_bounds(h, pts_fit[:, 0])
+                    b["period"] = (0.85 * P, 1.15 * P)
+                    b["offset"] = (off - 0.08 * P, off + 0.08 * P)
+                    ini = dict(init or {})
+                    ini.update(period=P, offset=off)
+                    candidates.append((b, ini, max(20, int(cfg.maxiter * 0.6))))
+                _emit(progress, "calibration", period=P, axes=cal["axes"])
+        best_res, best_sc, best_inl = None, -np.inf, None
+        for b, ini, mi in candidates:
+            res = run_one(h, pts_fit, ini, b, mi)
+            score, inl = _score(res, points, ids, flat, band, cfg.c_local)
+            if score > best_sc:
+                best_res, best_sc, best_inl = res, score, inl
+        results.append((best_res, best_sc, best_inl))
+        _emit(progress, "fit_done", hypothesis=h.label, score=best_sc, summary=best_res.summary(), lines={k: v.tolist() for k, v in best_res.lines.items()})
+        return best_res, best_sc
 
     for h, p in bare:
         if h.flux_dependent and (~flat).sum() < 10:
@@ -209,21 +234,50 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
     results.sort(key=lambda r: -r[1])
     best, best_score, best_inl = results[0]
 
-    # ---- 4. revise: try the resonator-coupled version of the best family
+    # ---- 4. revise: try the resonator-coupled version of the best family.
+    #      Seeds for fr: where the bare model fails most (an avoided crossing leaves a cluster of
+    #      unexplained flux-dependent points at the resonator frequency), then the proposer, then flat lines.
     want_coupled = cfg.try_coupled == "always" or (cfg.try_coupled == "auto" and (p_coupled > 0.25 or best_score < 0.85))
     if want_coupled and not best.hyp.coupled:
         hc = fit.Hypothesis(best.hyp.family, True)
-        fr_guess = None
+        fr_cands: list[float] = []
+        bad = (~best_inl) & (~flat)
+        if bad.sum() >= 5:
+            hist, edges = np.histogram(points[bad, 1], bins=np.arange(band[0], band[1] + 0.2, 0.2), weights=points[bad, 2])
+            if hist.max() > 0:
+                fr_cands.append(float(0.5 * (edges[np.argmax(hist)] + edges[np.argmax(hist) + 1])))
         for prop in proposals:
-            if prop["family"] == best.hyp.family and prop["coupled"]:
-                fr_guess, g_guess = prop["seed"].get("fr"), prop["seed"].get("g")
+            if prop["family"] == best.hyp.family and prop["coupled"] and "fr" in prop["seed"]:
+                fr_cands.append(float(prop["seed"]["fr"]))
                 break
-        if fr_guess is None:
-            cands = [fl for fl in flat_lines if 4.0 < fl < 10.0]
-            fr_guess, g_guess = (cands[0] if cands else 7.0), 0.1
-        init = dict(best.params, fr=fr_guess, g=g_guess)
-        _emit(progress, "revise", reason=f"trying {hc.label} (p_coupled={p_coupled:.2f}, best score {best_score:.3f})")
-        run(hc, init)
+        fr_cands += [fl for fl in flat_lines if 4.0 < fl < 10.0]
+        fr_cands.append(7.0)
+        # unique, in order, inside the resonator prior
+        seen, cands = set(), []
+        for v in fr_cands:
+            v = float(np.clip(v, *models.RESONATOR_BOUNDS["fr"]))
+            if round(v, 1) not in seen:
+                seen.add(round(v, 1))
+                cands.append(v)
+        pts_fit = _fit_points_for(hc, points, flat)
+        _emit(progress, "revise", reason=f"trying {hc.label} (p_coupled={p_coupled:.2f}, best score {best_score:.3f}); resonator candidates {', '.join(f'{v:.2f}' for v in cands[:3])} GHz")
+        _emit(progress, "fit_start", hypothesis=hc.label, n_points=int(len(pts_fit)))
+        cbest, csc, cinl = None, -np.inf, None
+        for fr0 in cands[:3]:
+            b = fit.default_bounds(hc, pts_fit[:, 0])
+            for k, v in best.params.items():  # circuit + calibration stay close to the bare solution
+                if k in b and k not in ("d", "offset"):
+                    b[k] = (0.8 * v, 1.25 * v)
+                elif k == "offset":
+                    b[k] = (v - 0.1 * best.params.get("period", 1.0), v + 0.1 * best.params.get("period", 1.0))
+            b["fr"] = (max(fr0 - 0.6, models.RESONATOR_BOUNDS["fr"][0]), min(fr0 + 0.6, models.RESONATOR_BOUNDS["fr"][1]))
+            init = dict(best.params, fr=fr0, g=0.1)
+            res = run_one(hc, pts_fit, init, b, max(20, int(cfg.maxiter * 0.6)))
+            score, inl = _score(res, points, ids, flat, band, cfg.c_local)
+            if score > csc:
+                cbest, csc, cinl = res, score, inl
+        results.append((cbest, csc, cinl))
+        _emit(progress, "fit_done", hypothesis=hc.label, score=csc, summary=cbest.summary(), lines={k: v.tolist() for k, v in cbest.lines.items()})
         results.sort(key=lambda r: -r[1])
         best, best_score, best_inl = results[0]
 
