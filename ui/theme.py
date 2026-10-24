@@ -45,6 +45,12 @@ section[data-testid="stSidebar"] .block-container { padding-top: 1.4rem; }
   border-top: 1px solid #2a2a28; padding-top: .45rem; margin-top: .5rem; white-space: pre-wrap; }
 .cs-caption { font-size: .8rem; color: #c3c2b7; margin: -.3rem 0 .4rem; }
 .cs-note { font-size: .9rem; color: #c3c2b7; border-left: 2px solid #fab219; padding: .15rem .7rem; margin: .2rem 0 .8rem; }
+.cs-table { width: 100%; border-collapse: collapse; font-size: .9rem; font-variant-numeric: tabular-nums; margin: .2rem 0 .9rem; }
+.cs-table th { text-align: left; color: #c3c2b7; font-weight: 500; padding: .35rem .55rem; border-bottom: 1px solid #2a2a28; }
+.cs-table td { padding: .32rem .55rem; border-bottom: 1px solid #2a2a28; vertical-align: top; color: #f0efec; }
+.cs-table td.muted { color: #c3c2b7; font-size: .82rem; }
+.cs-table td.num { white-space: nowrap; }
+.cs-param { font-size: .82rem; line-height: 1.15; color: #f0efec; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 </style>"""
 
 HEADER = """<div class="cs-wordmark"><span class="cs-name"><span class="cs-mark"></span>CircuitSleuth</span>
@@ -87,3 +93,16 @@ def caption(text: str) -> str:
 
 def note(text: str) -> str:
     return f'<div class="cs-note">{html.escape(text)}</div>'
+
+
+def table_html(columns, rows, muted=(), numeric=()) -> str:
+    """Compact HTML table in the app's palette. `muted` and `numeric` list column indices drawn muted / kept on one line."""
+    head = "".join(f"<th>{html.escape(str(c))}</th>" for c in columns)
+    body = []
+    for r in rows:
+        cells = []
+        for i, c in enumerate(r):
+            cls = " ".join(k for k, on in (("muted", i in muted), ("num", i in numeric)) if on)
+            cells.append(f'<td class="{cls}">{html.escape(str(c))}</td>')
+        body.append("<tr>" + "".join(cells) + "</tr>")
+    return f'<table class="cs-table"><thead><tr>{head}</tr></thead><tbody>{"".join(body)}</tbody></table>'

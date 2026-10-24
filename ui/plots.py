@@ -52,8 +52,11 @@ def _finite(vals) -> np.ndarray:
     return np.array([np.nan if v is None else v for v in vals], float)
 
 
-def map_figure(image, x, f, points=None, inlier=None, lines=None, x_grid=None, look_here=None, flat_lines=None, title=None, xlabel="control (flux bias, arbitrary units)") -> go.Figure:
-    """Spectroscopy map with detected features, fitted transitions, 'look here' segments and flat spur lines."""
+def map_figure(image, x, f, points=None, inlier=None, lines=None, x_grid=None, look_here=None, flat_lines=None, title=None, xlabel="control (flux bias, arbitrary units)",
+               markers=None) -> go.Figure:
+    """Spectroscopy map with detected features, fitted transitions, 'look here' segments and flat spur lines.
+
+    `markers` is an optional list of (control, frequency) operating points drawn as small amber diamonds."""
     x, f = np.asarray(x, float), np.asarray(f, float)
     img = np.clip(extract.normalise(np.asarray(image, float)), 0, 10)
     fig = go.Figure()
@@ -95,6 +98,10 @@ def map_figure(image, x, f, points=None, inlier=None, lines=None, x_grid=None, l
         first = False
     for fl in flat_lines or []:
         fig.add_hline(y=float(fl), line=dict(color=RED, width=1), opacity=0.4)
+    if markers:
+        M = np.asarray(markers, float).reshape(-1, 2)
+        fig.add_trace(go.Scatter(x=M[:, 0], y=M[:, 1], mode="markers", name="operating point", marker=dict(symbol="diamond", size=10, color=ACCENT, line=dict(color=SURFACE, width=1)),
+                                 hovertemplate="operating point<br>control %{x:.3f}<br>%{y:.3f} GHz<extra></extra>"))
     _style(fig, 520, title=title, margin=dict(l=62, r=14, t=40 if title else 14, b=54))
     fig.update_xaxes(title_text=xlabel, range=[float(x[0]), float(x[-1])], showgrid=False)
     fig.update_yaxes(title_text="drive frequency (GHz)", range=[float(f[0]), float(f[-1])], showgrid=False)
