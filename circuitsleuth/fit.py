@@ -225,6 +225,9 @@ def fit_hypothesis(
     # ---- global search on a subsample, annealing the robust scale (coarse -> fine) and carrying
     #      the population between stages so the search narrows instead of restarting
     sub = subsample(points, max_cols=31)
+    if hyp.family == "fluxonium":  # harder landscape: more diversity
+        popsize = max(popsize, 20)
+        maxiter = int(maxiter * 1.5)
     global_kw = dict(model_kw or {})
     global_kw.setdefault("cutoff", 40)  # converged to <1e-8 GHz except at the extreme EC/EL corner; local stage uses 60
     if do_global:
@@ -262,6 +265,23 @@ def fit_hypothesis(
     lo = np.array([b[0] for b in tb])
     hi = np.array([b[1] for b in tb])
     theta0 = np.clip(theta0, lo + 1e-9, hi - 1e-9)
+    # EJ-EC degeneracy along constant f01 (transmon families): the global search often settles anywhere
+    # on that valley; scan it at the fine scale and restart the polish from the best point
+    ej_name = "EJ" if "EJ" in names else ("EJmax" if "EJmax" in names else None)
+    if ej_name and "EC" in names:
+        i_ej, i_ec = names.index(ej_name), names.index("EC")
+        p0 = from_theta(theta0, names)
+        f01 = np.sqrt(8 * p0["EC"] * p0[ej_name]) - p0["EC"]
+        best_t, best_v = theta0, obj_l(theta0)
+        for ec in np.exp(np.linspace(np.log(p0["EC"] * 0.5), np.log(p0["EC"] * 2.0), 21)):
+            ej = (f01 + ec) ** 2 / (8 * ec)
+            t = theta0.copy()
+            t[i_ec], t[i_ej] = np.log(ec), np.log(ej)
+            if np.all(t >= lo) and np.all(t <= hi):
+                v = obj_l(t)
+                if v < best_v:
+                    best_t, best_v = t, v
+        theta0 = best_t
     sw = np.sqrt(obj_l.w * len(obj_l.w))
 
     def resid(theta):

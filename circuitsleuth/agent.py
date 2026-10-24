@@ -32,6 +32,7 @@ class AgentConfig:
     c_local: float = 0.012
     extra_hypotheses: tuple = ()
     families: tuple = ()  # restrict candidate families (empty = all)
+    flux_calibrated: bool = False  # x axis already in flux quanta: period = 1, offset = 0 (tight bounds)
 
 
 def _emit(progress: Progress | None, kind: str, **payload):
@@ -201,7 +202,12 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
         pts_fit = _fit_points_for(h, points, flat)
         _emit(progress, "fit_start", hypothesis=h.label, n_points=int(len(pts_fit)))
         candidates: list[tuple[dict | None, dict | None, int]] = [(None, init, cfg.maxiter)]  # (bounds, init, maxiter); wide search first
-        if h.flux_dependent:
+        if h.flux_dependent and cfg.flux_calibrated:
+            b = fit.default_bounds(h, pts_fit[:, 0])
+            b["period"] = (0.97, 1.03)
+            b["offset"] = (-0.03, 0.03)
+            candidates = [(b, dict(init or {}, period=1.0, offset=0.0), cfg.maxiter)]
+        elif h.flux_dependent:
             cal = extract.estimate_flux_calibration(pts_fit)
             if cal["period"]:
                 P = cal["period"]
@@ -273,8 +279,10 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
         for fr0 in cands[:3]:
             b = fit.default_bounds(hc, pts_fit[:, 0])
             for k, v in best.params.items():  # circuit + calibration stay close to the bare solution
-                if k in b and k not in ("d", "offset"):
-                    b[k] = (0.8 * v, 1.25 * v)
+                if k in b and k not in ("d", "offset", "period"):
+                    b[k] = (max(0.5 * v, b[k][0]), min(2.0 * v, b[k][1]))
+                elif k == "period":
+                    b[k] = (0.9 * v, 1.1 * v)
                 elif k == "offset":
                     b[k] = (v - 0.1 * best.params.get("period", 1.0), v + 0.1 * best.params.get("period", 1.0))
             b["fr"] = (max(fr0 - 0.6, models.RESONATOR_BOUNDS["fr"][0]), min(fr0 + 0.6, models.RESONATOR_BOUNDS["fr"][1]))

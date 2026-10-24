@@ -95,6 +95,8 @@ try_coupled = st.sidebar.selectbox("Try a readout-resonator model", ["auto", "al
 families = st.sidebar.multiselect("Candidate circuits", list(fit.models.FAMILIES), default=list(fit.models.FAMILIES))
 workers = st.sidebar.slider("CPU workers", 1, 8, 1)
 use_llm = st.sidebar.checkbox("Explain with Claude", value=True)
+flux_calibrated = st.sidebar.checkbox("Flux axis is already in flux quanta (Φ/Φ₀)", value=False,
+                                      help="Tick when the x axis is calibrated: the fit then holds period = 1 and offset = 0 instead of fitting them.")
 maxiter = {"fast": 30, "normal": 60, "thorough": 100}[speed]
 
 truth = None
@@ -107,6 +109,7 @@ if source == "Demo circuit":
     image, x, f = r["image"], r["x"], r["f"]
     if DEMOS[name] == "real":
         band = (0.05, float(f[-1]))
+        flux_calibrated = st.sidebar.checkbox("Use the paper's flux axis (Φ/Φ₀) for this map", value=True)
         st.sidebar.caption("Real data: the right half of the published map is very noisy; the paper's own fit gives EJ=3, EC=0.84, EL=1 GHz.")
 elif source.startswith("Upload points"):
     up = st.sidebar.file_uploader("CSV with columns x, f, (weight)", type=["csv", "txt"])
@@ -162,7 +165,7 @@ with right:
     table = st.empty()
 
 if run:
-    cfg = agent.AgentConfig(maxiter=maxiter, use_classifier=use_clf, try_coupled=try_coupled, workers=workers, families=tuple(families))
+    cfg = agent.AgentConfig(maxiter=maxiter, use_classifier=use_clf, try_coupled=try_coupled, workers=workers, families=tuple(families), flux_calibrated=flux_calibrated)
     rows = []
     state = dict(last=0.0)
     with left:
