@@ -37,7 +37,7 @@ section[data-testid="stSidebar"][data-collapsed="false"] > div:first-child { wid
 section[data-testid="stSidebar"][data-collapsed="true"] { width:0 !important; min-width:0 !important; }
 section[data-testid="stSidebar"] .block-container { padding-top:1.25rem; }
 /* the sidebar has a fixed width: no resize handle (it showed a col-resize cursor that did nothing) */
-[data-testid="stSidebarResizeHandle"] { display:none !important; }
+[data-testid="stSidebarResizeHandle"], section[data-testid="stSidebar"] > div > div[style*="col-resize"] { display:none !important; }
 section[data-testid="stSidebar"] { cursor:default; }
 /* with the sidebar collapsed the main column fills the window */
 section[data-testid="stSidebar"][data-collapsed="true"] ~ div .block-container { max-width:none; padding-left:48px; padding-right:48px; }
