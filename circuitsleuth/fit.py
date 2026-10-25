@@ -414,7 +414,7 @@ def relabel_alternatives(points: np.ndarray, res: FitResult, band: tuple[float, 
 
 
 def fit_hypothesis(points, hyp, band, bounds=None, init=None, c_global=0.08, c_local=0.012, maxiter=60, popsize=15, seed=0, workers=1,
-                   callback=None, model_kw=None, do_global=True, n_starts=1, staged=True) -> FitResult:
+                   callback=None, model_kw=None, do_global=True, n_starts=1, staged=True, trim=None) -> FitResult:
     """Robust driver.  (1) staged: fit the 0-1 line alone to the brightest feature per column (one line,
     no assignment ambiguity -> smooth landscape), then fit all lines with bounds narrowed around that;
     (2) multi-start: the plain global+local fit from `n_starts` seeds.  Lowest fine-scale loss wins."""
@@ -445,6 +445,21 @@ def fit_hypothesis(points, hyp, band, bounds=None, init=None, c_global=0.08, c_l
                          seed=seed + 13, workers=workers, callback=callback, model_kw=model_kw, do_global=True)
         if best.inlier_frac > 0.97:
             return _normalise_offset(best, x_all)
+    if trim is not None and not do_global and init is not None:
+        # local polish from a trusted geometric prior, in two trimmed stages: fit the features within 4*trim of the prior's lines,
+        # then within `trim` of the refined lines.  A crowd of unrelated points (spurs, noise) therefore cannot drag the soft-L1
+        # polish out of the prior's basin; the caller scores the result on all points.
+        tb = theta_bounds(base_bounds, hyp.names)
+        cur = init
+        res = None
+        for stage_trim in (4 * trim, trim):
+            th = to_theta_partial(cur, hyp.names, tb)
+            r = Objective(hyp, points, band, c_local, model_kw).residuals(th)
+            keep = r < stage_trim
+            sub = points[keep] if keep.sum() >= max(8, 3 * len(hyp.names)) else points
+            res = _fit_once(sub, hyp, band, bounds=base_bounds, init=cur, c_global=c_global, c_local=c_local, model_kw=model_kw, do_global=False)
+            cur = res.params
+        return _normalise_offset(res, x_all)
     for k in range(max(1, n_starts) if do_global else 1):
         res = _fit_once(points, hyp, band, bounds=base_bounds, init=init, c_global=c_global, c_local=c_local, maxiter=maxiter, popsize=popsize,
                         seed=seed + 1000 * k, workers=workers, callback=callback, model_kw=model_kw, do_global=do_global)

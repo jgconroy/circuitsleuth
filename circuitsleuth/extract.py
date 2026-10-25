@@ -89,13 +89,17 @@ def match_points(found: np.ndarray, truth: np.ndarray, tol_f: float) -> float:
 
 
 # ----------------------------------------------------------------------------- tracks
-def link_tracks(points: np.ndarray, df_tol: float = 0.08, slope_factor: float = 1.5, max_tol: float = 0.45) -> np.ndarray:
+def link_tracks(points: np.ndarray, df_tol: float = 0.08, slope_factor: float = 1.5, max_tol: float | None = None) -> np.ndarray:
     """Greedy column-to-column linking of points into line segments ("tracks").
 
     A point joins the track of a point in the previous column when it lies within a tolerance of that
     track's linear extrapolation. The tolerance grows with the track's local slope (steep lines move
-    far between columns) but never beyond `max_tol` GHz. Each previous point links to at most one successor.
+    far between columns) but never beyond `max_tol` (default 0.45 GHz, or 5.6 x df_tol when the platform's
+    frequency scale is coarser: a Rydberg Stark parabola in MHz moves several df_tol per column).
+    Each previous point links to at most one successor.
     """
+    if max_tol is None:
+        max_tol = max(0.45, 5.6 * df_tol)
     n = len(points)
     ids = -np.ones(n, int)
     if n == 0:
@@ -296,3 +300,110 @@ def estimate_flux_calibration(points: np.ndarray, max_axes: int = 4) -> dict:
             period = 2 * float(np.median(sp))
     out_axes.sort(key=lambda a: a["resid"])
     return dict(axes=out_axes[:max_axes], period=period)
+
+
+# ----------------------------------------------------------------------------- geometric initial guesses (dots, atoms)
+def _dynamic_tracks(points: np.ndarray, df_tol: float, min_points: int = 6) -> list[np.ndarray]:
+    """Point arrays of the longest control-dependent tracks (flat lines removed), longest first."""
+    pts = np.asarray(points, float)
+    if len(pts) < min_points:
+        return []
+    flat = flat_feature_mask(pts, tol=max(df_tol / 4, 1e-6))
+    dyn = pts[~flat] if int((~flat).sum()) >= min_points else pts
+    ids = link_tracks(dyn, df_tol=df_tol)
+    out = []
+    for t in np.unique(ids):
+        m = ids == t
+        if m.sum() >= min_points and (dyn[m, 1].max() - dyn[m, 1].min()) > 2 * df_tol:
+            out.append(dyn[m])
+    return sorted(out, key=lambda a: -len(a))
+
+
+def _track_points_for_prior(points: np.ndarray, df_tol: float, min_points: int, n_tracks: int) -> np.ndarray | None:
+    tracks = _dynamic_tracks(points, df_tol, min_points=min_points)
+    if not tracks:
+        return None
+    return np.vstack(tracks[:n_tracks])
+
+
+def estimate_dqd_init(points: np.ndarray, df_tol: float = 0.08) -> dict | None:
+    """Charge-qubit prior from the shape of the data.  For a trial zero-detuning point x0 the hyperbola is LINEAR in the
+    squares, f^2 = lever^2 (x - x0)^2 + (2 t_c)^2, so lever and t_c follow from a 2-parameter least squares on the longest
+    control-dependent tracks; a grid over x0 (every measured column) picks the x0 with the smallest median residual.  Works
+    with the vertex missing (band edge, dropout) and with the V split into two arms.  Only used to seed and narrow the search."""
+    tr = _track_points_for_prior(points, df_tol, min_points=5, n_tracks=3)
+    if tr is None or len(tr) < 6:
+        return None
+    cols = np.unique(points[:, 0])
+    best = None
+    for x0 in cols:
+        u = (tr[:, 0] - x0) ** 2
+        A = np.column_stack([u, np.ones_like(u)])
+        try:
+            (a, b), *_ = np.linalg.lstsq(A, tr[:, 1] ** 2, rcond=None)
+        except np.linalg.LinAlgError:
+            continue
+        if a <= 0 or b <= 0:
+            continue
+        resid = np.abs(np.sqrt(np.clip(a * u + b, 0, None)) - tr[:, 1])
+        med = float(np.median(resid))
+        if best is None or med < best[0]:
+            best = (med, float(x0), float(np.sqrt(a)), float(np.sqrt(b) / 2.0))
+    if best is None:
+        return None
+    med, x0, lever, t_c = best
+    return dict(t_c=max(t_c, 1e-3), lever_arm=lever, x0=x0, n_track=int(len(tr)), resid=med)
+
+
+def estimate_stark_init(points: np.ndarray, df_tol: float = 1.2, alpha_mid: float = 2.0) -> dict | None:
+    """Rydberg Stark-map prior.  For a trial null x0 every component is LINEAR in u = (x - x0)^2:  f = f_v - k u with
+    k = alpha kappa^2 / 2.  Each control-dependent track (a parabola, or one arm of one after the flat vertex region was
+    masked) gets its own (f_v, k) by least squares; the x0 grid (every measured column) minimises the summed residuals; tracks
+    whose (f_v, k) agree are arms of the same component.  kappa (field_scale) is not observable separately from alpha, so it is
+    set to put the geometric-mean alpha at `alpha_mid`.  Only used to seed and narrow the search."""
+    tracks = _dynamic_tracks(points, df_tol, min_points=6)[:4]
+    if not tracks:
+        return None
+    cols = np.unique(points[:, 0])
+    best = None
+    for x0 in cols:
+        tot, fits = 0.0, []
+        for tr in tracks:
+            u = (tr[:, 0] - x0) ** 2
+            if np.ptp(u) < 1e-9:
+                fits = []
+                break
+            A = np.column_stack([np.ones_like(u), -u])
+            (fv, k), *_ = np.linalg.lstsq(A, tr[:, 1], rcond=None)
+            if k <= 0:
+                fits = []
+                break
+            tot += float(np.sum(np.abs(fv - k * u - tr[:, 1])))
+            fits.append((float(fv), float(k), int(len(tr))))
+        if fits and (best is None or tot < best[0]):
+            best = (tot, float(x0), fits)
+    if best is None:
+        return None
+    _, x0, fits = best
+    # merge arms of the same component: close vertex and curvature
+    comps: list[list] = []
+    for fv, k, n in sorted(fits, key=lambda t: -t[2]):
+        for c in comps:
+            if abs(c[0] - fv) < 3 * df_tol and abs(c[1] - k) / max(c[1], 1e-9) < 0.3:
+                w = c[2] + n
+                c[0], c[1], c[2] = (c[0] * c[2] + fv * n) / w, (c[1] * c[2] + k * n) / w, w
+                break
+        else:
+            comps.append([fv, k, n])
+    comps.sort(key=lambda c: -c[2])
+    if len(comps) == 1:
+        up = lo = comps[0]
+        dfs = 2.0
+    else:
+        up, lo = sorted(comps[:2], key=lambda c: -c[0])
+        dfs = max(up[0] - lo[0], 2.0)
+    f0 = 0.5 * (up[0] + lo[0]) if len(comps) > 1 else up[0] - dfs / 2
+    curv_up, curv_lo = 2 * up[1], 2 * lo[1]  # alpha kappa^2
+    kappa = float(np.clip(np.sqrt(np.sqrt(curv_up * curv_lo) / alpha_mid), 0.5, 8.0))
+    return dict(alpha1=float(np.clip(curv_up / kappa**2, 0.5, 8.0)), alpha2=float(np.clip(curv_lo / kappa**2, 0.5, 8.0)), dfs=float(np.clip(dfs, 2.0, 30.0)),
+                f0=float(np.clip(f0, -5.0, 5.0)), field_scale=kappa, x0=x0, n_tracks=len(comps))

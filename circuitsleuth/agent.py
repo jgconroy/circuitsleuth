@@ -321,8 +321,9 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
         def cb(params, loss):
             _emit(progress, "fit_progress", hypothesis=h.label, params=params, loss=loss, lines={k: v.tolist() for k, v in fit.predict_lines(h, params, x_grid).items()})
 
-        return fit.fit_hypothesis(pts_fit, h, band, init=init, bounds=bounds, maxiter=maxiter, popsize=cfg.popsize, seed=cfg.seed, workers=cfg.workers, callback=cb,
-                                  c_local=cfg.c_local, c_global=scales["c_global"], n_starts=cfg.n_starts if n_starts is None else n_starts)
+        return fit.fit_hypothesis(pts_fit, h, band, init=init, bounds=bounds, maxiter=max(maxiter, 1), popsize=cfg.popsize, seed=cfg.seed, workers=cfg.workers, callback=cb,
+                                  c_local=cfg.c_local, c_global=scales["c_global"], n_starts=cfg.n_starts if n_starts is None else n_starts,
+                                  do_global=maxiter > 0, trim=(10 * cfg.c_local if maxiter == 0 else None))  # maxiter 0 = trimmed local polish from a geometric prior
 
     def run(h: fit.Hypothesis, init: dict | None):
         pts_fit = _fit_points_for(h, points, flat)
@@ -333,6 +334,29 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
             b["period"] = (0.97, 1.03)
             b["offset"] = (-0.03, 0.03)
             candidates = [(b, dict(init or {}, period=1.0, offset=0.0), cfg.maxiter)]
+        elif h.family in ("charge_qubit", "rydberg_atom"):
+            # geometric prior from the track shapes (hyperbola vertex + arm slope; two Stark parabolas): a narrowed search
+            # around it is a second candidate, scored against the wide search like the circuit calibration candidates
+            est = (extract.estimate_dqd_init if h.family == "charge_qubit" else extract.estimate_stark_init)(pts_fit, df_tol=scales["df_tol"])
+            if est:
+                b = fit.default_bounds(h, pts_fit[:, 0])
+                span = float(np.ptp(pts_fit[:, 0]))
+                ini = {}
+                for n_, v in est.items():
+                    if n_ not in b:
+                        continue
+                    lo_, hi_ = b[n_]
+                    if n_ in fit.LOG_PARAMS and h.family != "rydberg_atom":  # the Stark prior's curvatures/kappa are only rough: keep them wide
+                        b[n_] = (max(lo_, v / 2.5), min(hi_, v * 2.5))
+                    elif n_ == "x0":
+                        b[n_] = (max(lo_, v - 0.15 * span), min(hi_, v + 0.15 * span))
+                    elif n_ == "f0":
+                        b[n_] = (max(lo_, v - 3.0), min(hi_, v + 3.0))
+                    ini[n_] = float(np.clip(v, b[n_][0], b[n_][1]))
+                if all(b[n_][1] > b[n_][0] for n_ in ini):
+                    candidates.append((b, ini, max(20, int(cfg.maxiter * 0.6))))  # narrowed global search around the prior
+                    candidates.append((b, ini, 0))  # and a plain local polish from it (cheap, exact when the prior is close)
+                    _emit(progress, "estimate", family=h.family, estimate={k: (round(v, 4) if isinstance(v, float) else v) for k, v in est.items()})
         elif h.flux_dependent and h.platform == "circuit":
             cal = extract.estimate_flux_calibration(pts_fit)
             if cal["period"]:

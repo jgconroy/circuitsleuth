@@ -261,6 +261,20 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
   `artifacts/lanthanum_blind_circuit.jsonl`; QEC1 finishing the OLD-code 200-map table, then new env + atom/nv/ion/dot tables (n = 200 each,
   minutes); optional Lanthanum retrain `run_train.py start --n 400000 --epochs 40 --workers 30 --width 3` after 01:30 (adopt only if better).
 
+### Sun ~00:50 PDT: scale tables + dot/atom geometric priors
+- QEC 200-map tables (v2 code): atom 57 %, nv 72 %, ion 74 %, dot 58 % within 5 % (family 200/200 everywhere); v3 (relabel) rerun:
+  ion 86 %, dot 59 %.  Files `artifacts/qec_blind_<platform>[ _v3].jsonl`; `scripts/summarize_blind.py` makes the README table.
+- Dot failures = steep V (lever arm 14–30) with 10–30 visible points among 2–3 spur lines: the soft-L1 polish is dragged to a flat spur
+  (lever_arm → its 2.0 bound) and the DE never finds the V.  Fix: `extract.estimate_dqd_init` (x0 grid; f² linear in (x−x0)² → lever, t_c
+  by least squares on the longest tracks) + two candidates in `agent.run()` (narrowed DE around the prior; and a TWO-STAGE TRIMMED local
+  polish `fit_hypothesis(do_global=False, trim=10 c_local)` that fits only points within 4·trim then trim of the prior's lines).  Worst QEC
+  cases 40 and 193 now exact; cases with < 20 track points still fail.
+- Atom: `extract.estimate_stark_init` (x0 grid; f linear in (x−x0)² per track; arms merged into components; κ set so geometric-mean α = 2).
+  `link_tracks` max_tol now scales with df_tol (5.6×; atoms were fragmented at the 0.45 MHz cap).  Only x0/f0 bounds are narrowed for atoms.
+  Worst case 23 now right in the observable curvatures; 7/17/75 still wrong (second component not found in the tracks).
+- Test: `tests/test_platforms.py::test_geometric_priors_recover_dot_and_stark_parameters`.  8-map laptop reruns (Sun ~00:55): dot **8/8**
+  (was 5/8), atom 6/8 by demo.py's curvature rule, ion 7/8, NV 7/8.  Pending: QEC v4 reruns of dot and atom; `tests/test_agent.py` v5 (background).
+
 ## 5. Pending / in progress (check before starting new work)
 - (done Sat ~19:30) Circuit blind rerun with the validity-fixed generator: family **7/10**, params <5 % 2/10 (unchanged causes: fixed-transmon
   EJ/EC degeneracy without a 2-photon line; tunable+resonator mistaken for fluxonium in 2 maps; one faint fluxonium -> transmon+res).

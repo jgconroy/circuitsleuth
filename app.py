@@ -532,6 +532,8 @@ if run:
             say("fitted", f"{p['hypothesis']}: score {p['score']:.3f}, {100*s['inlier_frac']:.0f}% explained, RMS {s['rms_inliers_MHz']:.1f} MHz" + (f" · {note}" if note else ""), "blue")
         elif kind == "calibration":
             say("symmetry", f"flux period ≈ {p['period']:.3g} control units; sweet spots at " + ", ".join(f"{a['x']:.3g} ({a['type']})" for a in p["axes"][:3]))
+        elif kind == "estimate":
+            say("shape", "geometric prior from the track shapes: " + ", ".join(f"{k} ≈ {v:.3g}" for k, v in p["estimate"].items() if isinstance(v, float)))
         elif kind == "skip":
             row_for(p["hypothesis"]).update(status="skipped")
             draw_race()

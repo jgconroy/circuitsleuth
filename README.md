@@ -35,7 +35,7 @@ in as families. Four are included beyond superconducting circuits:
 
 On hand-picked hidden maps both come back to better than 1 % (`tests/test_platforms.py`); on random
 hidden maps (`python demo.py --platform nv|dot`) the family is always identified and every parameter is
-within tolerance in 6 of 8 (NV), 6 of 8 (quantum dot), 7 of 8 (trapped ion) and 5 of 8 (Rydberg, judged on the observable Stark curvatures) cases, the misses being maps with fewer than
+within tolerance in 7 of 8 (NV), 8 of 8 (quantum dot), 7 of 8 (trapped ion) and 6 of 8 (Rydberg, judged on the observable Stark curvatures) cases, the misses being maps with fewer than
 about twenty usable features, which the report flags as low confidence. Adding a
 platform means writing its transition frequencies in `models.py` and declaring its control axis; the
 extraction, robust fitting, hold-out verification, unexplained-feature and next-measurement logic are shared.
@@ -197,6 +197,20 @@ The failures are tunable-transmon-plus-resonator maps mistaken for fluxonium (tw
 faint fluxonium: these are the cases we would want more data for, and the report says so. Mean runtime in
 that run was 9 min per map because the test shared the laptop with the test suite; alone, with four workers,
 a map takes about 2 min with the 'fast' preset and 5–6 min with 'normal' (which is what the saved demo results use).
+
+### Blind test at scale (200 random hidden devices per platform, 20-core machine, `bigmachine/run_blind.py`)
+
+| platform | family identified | family + every parameter within 5 % | mean runtime | what still fails |
+|---|---|---|---|---|
+| trapped ion | 200 / 200 | 86 % (was 74 % before the relabel step) | 1 s | radial frequency when the radial sidebands are faint |
+| NV centre | 200 / 200 | 72 % | 4 s | field direction 5–8 % off (near-degenerate orientations) |
+| quantum dot | 200 / 200 | 59 % → rerun pending with the geometric prior | 1 s | steep V with 10–30 visible points among spurs |
+| Rydberg atom | 200 / 200 | 57 % → rerun pending with the geometric prior | 2 s | components swapped or search stuck at a bound |
+
+Parameters are judged with the symmetry-aware metrics of `run_blind.py` (NV field vector up to the tetrahedral symmetry, Rydberg
+Stark curvatures α·κ², offsets modulo the period). Tables: `artifacts/qec_blind_*.jsonl`; `python scripts/summarize_blind.py <files>`
+regenerates this table. The 200-map superconducting-circuit table (normal preset, 32 min per map per core) is in progress on a
+32-core machine; the previous-code baseline on 200 maps was 70 % family identification with fluxonium the weak spot.
 
 ### Proposer (CNN on 64×64 thumbnails, 190 000 synthetic maps, 30 epochs, trained on a 32-core machine)
 

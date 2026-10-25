@@ -90,3 +90,29 @@ def test_agent_recovers_rydberg_atom():
     assert abs(b["alpha1"] * b["field_scale"] ** 2 - 2.5 * 2.5**2) / (2.5 * 2.5**2) < 0.03
     assert abs(b["alpha2"] * b["field_scale"] ** 2 - 4.0 * 2.5**2) / (4.0 * 2.5**2) < 0.03
     assert abs(b["dfs"] - 12.0) < 0.5 and abs(b["x0"] - 0.12) < 0.02
+
+
+def test_geometric_priors_recover_dot_and_stark_parameters():
+    """The track-shape estimators (hyperbola vertex + arm slope; two Stark parabolas) used to seed the search."""
+    from circuitsleuth import extract, models, synth
+
+    cfg = synth.SynthConfig(nx=81, nf=400)
+    # charge qubit: a V with steep arms, the regime where the global search used to settle on a flat spur
+    truth = dict(family="charge_qubit", platform="dot", coupled=False, params=dict(t_c=0.7, lever_arm=20.0, x0=0.15), period=1.0, offset=0.0,
+                 x_lo=-1.0, x_hi=1.0, f_lo=1.0, f_hi=12.0, linewidth=0.04, noise=0.05, two_photon=False, sign=1, spurs=[dict(f=5.0, amp=0.6, sideband=0.0)])
+    r = synth.render(truth, cfg, np.random.default_rng(3))
+    pts = extract.extract_points(r["image"], r["x"], r["f"])
+    est = extract.estimate_dqd_init(pts, df_tol=models.platform_scales("dot")["df_tol"])
+    assert est is not None
+    assert abs(est["t_c"] - 0.7) / 0.7 < 0.15 and abs(est["lever_arm"] - 20.0) / 20.0 < 0.15 and abs(est["x0"] - 0.15) < 0.06, est
+    # Rydberg: two parabolas with different curvature; only x0, f0, dfs and the curvature products are observable
+    truth = dict(family="rydberg_atom", platform="atom", coupled=False, params=dict(alpha1=2.5, alpha2=4.0, dfs=12.0, f0=0.0, field_scale=2.5, x0=0.12),
+                 period=1.0, offset=0.0, x_lo=-1.0, x_hi=1.0, f_lo=-80.0, f_hi=20.0, linewidth=0.5, noise=0.05, two_photon=False, sign=1, spurs=[])
+    r = synth.render(truth, cfg, np.random.default_rng(5))
+    pts = extract.extract_points(r["image"], r["x"], r["f"])
+    est = extract.estimate_stark_init(pts, df_tol=models.platform_scales("atom")["df_tol"])
+    assert est is not None and est["n_tracks"] == 2, est
+    assert abs(est["x0"] - 0.12) < 0.05 and abs(est["f0"] - 0.0) < 2.0 and abs(est["dfs"] - 12.0) < 2.0, est
+    for a, a_true in (("alpha1", 2.5), ("alpha2", 4.0)):
+        curv, curv_true = est[a] * est["field_scale"] ** 2, a_true * 2.5**2
+        assert abs(curv - curv_true) / curv_true < 0.15, (a, curv, curv_true)
