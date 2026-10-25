@@ -10,9 +10,9 @@ LINE_COLORS = {"0-1": "#d95926", "0-2": "#c98500", "0-3": "#9085e9", "0-2/2ph": 
 
 def _layout(fig, title, xlab, ylab, height):
     fig.update_layout(title=dict(text=title, font=dict(size=14, color=TEXT), x=0.01), paper_bgcolor=SURFACE, plot_bgcolor=SURFACE,
-                      font=dict(family="IBM Plex Sans, Inter, Helvetica Neue, Arial, sans-serif", color=TEXT, size=12), margin=dict(l=56, r=16, t=40, b=44), height=height,
-                      xaxis=dict(title=xlab, gridcolor=GRID, zerolinecolor=GRID, color=MUTED), yaxis=dict(title=ylab, gridcolor=GRID, zerolinecolor=GRID, color=MUTED),
-                      legend=dict(orientation="h", y=-0.28, x=0, bgcolor="rgba(0,0,0,0)", font=dict(size=11)))
+                      font=dict(family="IBM Plex Sans, Inter, Helvetica Neue, Arial, sans-serif", color=TEXT, size=12), margin=dict(l=56, r=16, t=40, b=84), height=height,
+                      xaxis=dict(title=dict(text=xlab, standoff=8), gridcolor=GRID, zerolinecolor=GRID, color=MUTED), yaxis=dict(title=ylab, gridcolor=GRID, zerolinecolor=GRID, color=MUTED),
+                      legend=dict(orientation="h", y=-0.42, x=0, bgcolor="rgba(0,0,0,0)", font=dict(size=11)))
     return fig
 
 
