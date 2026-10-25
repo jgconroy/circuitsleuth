@@ -191,7 +191,8 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
 - Claude explainer verified live (credits added Sun ~02:30).
 
 ### Test status at Sun ~04:10
-- All quick suites pass (models, synth/extract, platforms, lab_features incl. design, loop, posterior).
+- All quick suites pass (models, synth/extract, platforms, lab_features incl. design, loop, posterior): 32 tests, 18 s, re-run Sun ~04:15
+  after the relabel change. `tests/test_fit.py` 7/7 pass (6 min, Sun ~04:20) incl. the new relabel test.
 - `tests/test_agent.py`: **4/4 pass** on the final code. `test_agent_identifies_fixed_transmon` re-passed Sun ~04:10 after the relabel fix
   (5.5 min; transmon EJ 15.023 / EC 0.280, truth 15 / 0.28; transmon+resonator second at 0.810). The other three passed Sun ~03:00 on
   code that differs only by the relabel step, which runs for control-independent circuit hypotheses only.
