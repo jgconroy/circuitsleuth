@@ -51,8 +51,7 @@ for name, v, s_, pv in rows:
     at.text(0.0, y, name, fontsize=11, color=TEXT, transform=at.transAxes)
     at.text(0.40, y, f"{v:.2f} ± {s_:.2f}" if s_ else f"{v:.2f}", fontsize=11, color=AMBER, family="monospace", transform=at.transAxes)
     at.text(0.84, y, f"{pv:.2f}", fontsize=11, color="#86b6ef", family="monospace", transform=at.transAxes); y -= 0.085
-y -= 0.03
-at.text(0.0, y, "Published map, no tuning.", fontsize=10, color=MUTED, transform=at.transAxes)
+
 fig.tight_layout()
 fig.savefig("artifacts/fig_real_fit_vs_paper.png", dpi=160)
 print("wrote artifacts/fig_real_fit_vs_paper.png")
