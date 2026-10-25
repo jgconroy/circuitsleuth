@@ -127,6 +127,17 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
   without splitting are labelled "uncoupled mode / pump tone"; report carries `holdout_columns`; summary text uses the same numbers as tiles.
 - `?demo=C&load=1` URL parameters select a demo and auto-load its saved result (pitch links, screenshots).
 
+### Sat night: redesign landed
+- New UI (app.py + ui/theme.py, plots.py, schematic.py, evidence.py): IBM Plex, verdict band hero, hypothesis race, stepper, evidence section
+  (map with legend below, residual strip, held-out overlay, avoided-crossing zoom with 2g bracket), physics panel with Φ slider and transition
+  arrows, spec-sheet cards, numbered look-here cards, truth strip + pull plot, "Details & export" strip. Verified: apptest_quick, NV/DQD AppTest,
+  and REAL browser runs on port 8502 (`scripts/screenshot.py ... --click "Identify circuit"`): demo C live in ~80 s, demo A loaded.
+- Resonator acceptance now additionally requires a gain >= 0.02 on FLUX-DEPENDENT features (a flat extra line is not evidence). Demo C live:
+  resonator correctly rejected; answer transmon EJ 14.2±0.3 / EC 0.300±0.007 (truth 15 / 0.28; fixed transmons stay EJ–EC degenerate).
+- `agent.prune_look_here` drops suggestion boxes covering >20 % of the map and the thermal 1-2 line unless tiny; applied in the app too.
+- Demo A regenerated: EJmax 25.01±0.10, EC 0.2998, d 0.300, fr 7.002, g 0.0996, period 1.300, offset 0.200 (offset now reported mod period).
+- README screenshot `artifacts/ui_results.png` is the new loaded-A page.
+
 ## 5. Pending / in progress (check before starting new work)
 - (done Sat ~19:30) Circuit blind rerun with the validity-fixed generator: family **7/10**, params <5 % 2/10 (unchanged causes: fixed-transmon
   EJ/EC degeneracy without a 2-photon line; tunable+resonator mistaken for fluxonium in 2 maps; one faint fluxonium -> transmon+res).
