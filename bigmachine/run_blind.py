@@ -1,4 +1,4 @@
-"""Blind accuracy benchmark at scale.  python run_blind.py --n 200 --platform circuit --workers 28 [--effort normal]
+"""Blind accuracy benchmark at scale.  python run_blind.py --n 200 --platform circuit --workers 28 [--effort normal] [--family fluxonium]
 Each map is identified in its own process; rows go to blind_<platform>.jsonl (resumable), summary printed at the end.
 Run `--bench` first: it times 2 maps and projects the total."""
 import os
@@ -18,10 +18,10 @@ ABS = {"D": 0.002, "E": 0.002, "theta": 0.05, "phi": 0.05, "x0": 0.03, "d": 0.06
 
 
 def one(job):
-    i, platform, effort, seed = job
+    i, platform, effort, seed, family = job
     cfg = synth.SynthConfig(nx=81, nf=400, noise_range=(0.03, 0.1))
     rng = np.random.default_rng(seed)
-    t = synth.sample_truth(rng, cfg, platform=platform)
+    t = synth.sample_truth(rng, cfg, platform=platform, family=family)  # family=None -> the platform's mix
     r = synth.render(t, cfg, rng)
     fams = tuple(models.PLATFORMS[platform]["families"])
     acfg = agent.AgentConfig(workers=1, families=fams if platform != "circuit" else (), try_coupled="auto" if platform == "circuit" else "never", **PRESETS[effort])
@@ -67,12 +67,13 @@ def main():
     ap.add_argument("--effort", default="normal", choices=list(PRESETS))
     ap.add_argument("--seed", type=int, default=5000)
     ap.add_argument("--bench", action="store_true")
+    ap.add_argument("--family", default=None, choices=list(models.FAMILIES), help="restrict the hidden devices to one family (targeted table, e.g. fluxonium)")
     a = ap.parse_args()
-    out = os.path.join(os.path.dirname(os.path.abspath(__file__)), f"blind_{a.platform}.jsonl")
+    out = os.path.join(os.path.dirname(os.path.abspath(__file__)), f"blind_{a.platform}{'_' + a.family if a.family else ''}.jsonl")
     done = set()
     if os.path.exists(out) and not a.bench:
         done = {json.loads(l)["case"] for l in open(out) if l.strip()}
-    jobs = [(i, a.platform, a.effort, a.seed + i) for i in range(a.n) if i not in done]
+    jobs = [(i, a.platform, a.effort, a.seed + i, a.family) for i in range(a.n) if i not in done]
     if a.bench:
         t0 = time.time(); rows = [one(j) for j in jobs[:2]]; dt = (time.time() - t0) / 2
         print(f"{dt:.0f} s per map in one process -> {a.n} maps on {a.workers} workers ≈ {a.n*dt/a.workers/60:.0f} min"); return
