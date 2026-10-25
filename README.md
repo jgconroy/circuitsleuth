@@ -2,7 +2,7 @@
 
 ![CI](https://github.com/jgconroy/qholmes/actions/workflows/ci.yml/badge.svg)
 
-*Formerly CircuitSleuth; the Python package, repository and script names keep the old name. Brand kit: `docs/BRAND.md`, assets in `static/brand/`.*
+*Formerly CircuitSleuth; the Python package and script names keep the old name.*
 
 **Shazam for quantum chips.** Give it a two-tone spectroscopy map of a superconducting qubit and it tells you
 *what circuit you built*, recovers the Hamiltonian parameters and the flux calibration, overlays the fitted
