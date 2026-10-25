@@ -1,5 +1,7 @@
 # Ĥolmes
 
+![CI](https://github.com/jgconroy/circuitsleuth/actions/workflows/ci.yml/badge.svg)
+
 *Formerly CircuitSleuth; the Python package, repository and script names keep the old name. Brand kit: `docs/BRAND.md`, assets in `static/brand/`.*
 
 **Shazam for quantum chips.** Give it a two-tone spectroscopy map of a superconducting qubit and it tells you
@@ -33,7 +35,7 @@ in as families. Four are included beyond superconducting circuits:
 
 On hand-picked hidden maps both come back to better than 1 % (`tests/test_platforms.py`); on random
 hidden maps (`python demo.py --platform nv|dot`) the family is always identified and every parameter is
-within tolerance in 6 of 8 (NV), 5 of 8 (quantum dot), 5 of 8 (trapped ion) and 5 of 8 (Rydberg, judged on the observable Stark curvatures) cases, the misses being maps with fewer than
+within tolerance in 6 of 8 (NV), 6 of 8 (quantum dot), 7 of 8 (trapped ion) and 5 of 8 (Rydberg, judged on the observable Stark curvatures) cases, the misses being maps with fewer than
 about twenty usable features, which the report flags as low confidence. Adding a
 platform means writing its transition frequencies in `models.py` and declaring its control axis; the
 extraction, robust fitting, hold-out verification, unexplained-feature and next-measurement logic are shared.
@@ -90,6 +92,13 @@ NV centres and quantum dots, each with hidden demo circuits and a "surprise" ran
   maximum flux sensitivity, tuning range, qubit–resonator detuning, dispersive shift and Purcell factor; for NV centres the
   strain splitting and per-orientation axial field; for quantum dots the gap in µeV and the lever arm.
 - **Operating points.** Type a target f01 and get the control values that reach it (marked on the map).
+- **Bayesian model comparison.** Every fitted hypothesis also gets a Laplace-approximated marginal likelihood under a proper robust
+  likelihood (each feature is either on a predicted line, Gaussian, or background, uniform over the band). The Occam factor
+  (½ log det Σ − log prior volume) is included, so a needless resonator loses a few nats to the bare circuit while a model
+  that explains one more line wins by hundreds. The hypothesis race shows the posterior model probability P next to the
+  explained-track score, and the verdict band quotes the Bayes factor against the runner-up family (`fit.log_evidence`,
+  `fit.model_posterior`; tests in `tests/test_evidence.py`). The decision itself stays with the feature-level score, which is
+  robust to pump tones that no likelihood models.
 - **Optimal next measurement.** Beyond the heuristic "look here" boxes, Ĥolmes computes the Fisher information of the
   fit from every explained feature and ranks candidate sweeps (a transition over a block of control values) by expected
   information gain in bits (log-determinant ratio of the information matrix, discounted by line visibility and cost), names the
@@ -122,12 +131,25 @@ far-detuned resonator leaves no trace), which a 2000-map smoke run already class
 
 ```bash
 python3.12 -m venv .venv && . .venv/bin/activate
-pip install -e .
+pip install -r requirements.txt -e .
 pytest -q                       # physics vs scqubits, extraction, fitting, end-to-end agent
-streamlit run app.py            # UI with demo circuits, CSV / NPZ / screenshot upload
-python demo.py --n 12           # blind test on random hidden circuits
-python scripts/run_real.py data/demo/nguyen2019_devA.npz   # the published fluxonium map
 ```
+
+- **Streamlit app:** `streamlit run app.py` — hidden demo devices on five platforms, CSV / NPZ / HDF5 / screenshot upload, live fit overlay.
+- **CLI batch:** `python batch.py <folder> [--platform circuit|nv|dot|ion|atom] [--effort fast|normal] [--workers 4]` — identifies every
+  `.npz` (keys image, x, f), 2-D grid CSV (first row = control values, first column = frequencies) or point-list CSV (x, f[, weight]) in
+  the folder; writes `circuitsleuth_results.csv` (one row per device: hypothesis, confidence, hold-out score, parameters ± σ, runtime)
+  plus a `*_report.json` next to each map.
+- **REST API:** `uvicorn api:app --host 0.0.0.0 --port 8000` (interactive docs at `/docs`). `GET /health`, `GET /demos`,
+  `POST /identify` with `{"image","x","f"}` or `{"points","band"}` plus optional `preset`, `families`, `try_coupled`, `workers`,
+  and `POST /identify/demo` for the built-in devices:
+  ```bash
+  curl -s -X POST localhost:8000/identify/demo -H 'content-type: application/json' \
+       -d '{"platform":"nv","name":"F","preset":"fast"}' | python -m json.tool | head -40
+  ```
+- **Docker:** `docker build -t holmes .`, then `docker run -p 8501:8501 holmes` (UI) or
+  `docker run -p 8000:8000 holmes uvicorn api:app --host 0.0.0.0 --port 8000` (API). CPU-only torch, ports 8501 and 8000 exposed.
+  CI (`.github/workflows/ci.yml`) runs the quick suites including `tests/test_api.py` on every push and pull request.
 
 Optional: `ANTHROPIC_API_KEY=...` in `.env` enables the Claude explanation layer;
 `python scripts/train_classifier.py` (re)trains the CNN proposer on synthetic maps.

@@ -580,7 +580,11 @@ if rep and rep.get("status") == "ok":
 
     # ---- B. verdict band
     level = conf.get("level") or "not assessed"
-    eyebrow_txt = (f'IDENTIFIED · <span class="cs-num">{len(rep["hypotheses"])}</span> hypotheses · <span class="cs-num">{rep.get("runtime_s", "?")}</span> s · confidence {theme.esc(level)}')
+    mp = rep.get("model_posterior") or {}
+    _bf = mp.get("log10_bayes_factor_vs_other_family")
+    _bf_txt = (f' · Bayes factor vs {theme.esc(str(mp.get("runner_up_family", "")).replace("_", " "))} 10<sup><span class="cs-num">{_bf:.0f}</span></sup>'
+               if isinstance(_bf, (int, float)) and np.isfinite(_bf) else "")
+    eyebrow_txt = (f'IDENTIFIED · <span class="cs-num">{len(rep["hypotheses"])}</span> hypotheses · <span class="cs-num">{rep.get("runtime_s", "?")}</span> s · confidence {theme.esc(level)}{_bf_txt}')
     kpis: list[tuple[str, str]] = []
     if ho:
         n_test = ho.get("n_test_points")
@@ -625,8 +629,13 @@ if rep and rep.get("status") == "ok":
 
     # ---- C. hypotheses tested (the race in its final state)
     race_rows = st.session_state.get("race_rows") or [dict(name=h["hypothesis"], status="fitted", score=float(h["track_score"]), best=[]) for h in rep["hypotheses"]]
-    theme.md(theme.section("Hypotheses tested", f"{len(rep['hypotheses'])} candidates · score = explained track weight − penalties"))
-    theme.md(theme.race_html(race_rows, finished=True, winner=best["hypothesis"]))
+    _post = {h["hypothesis"]: h.get("posterior") for h in rep["hypotheses"] if h.get("posterior") is not None}
+    theme.md(theme.section("Hypotheses tested", f"{len(rep['hypotheses'])} candidates · score = explained track weight − penalties"
+                           + (" · P = Bayesian model probability (Laplace evidence, Occam factor included)" if _post else "")))
+    theme.md(theme.race_html(race_rows, finished=True, winner=best["hypothesis"], posterior=_post or None))
+    if mp.get("families") and len(mp["families"]) > 1:
+        theme.md(theme.caption("Model posterior by family: " + " · ".join(f"{theme.title_case(k.replace('_', ' '))} {v:.3g}" if v >= 1e-3 else f"{theme.title_case(k.replace('_', ' '))} < 10⁻³" for k, v in mp["families"].items())
+                               + ". Likelihood: each feature is on a predicted line (Gaussian) or background (uniform); evidence by Laplace approximation with log-uniform priors on energies."))
 
     # ---- D. evidence
     theme.md(theme.section("Evidence", "annotated map", "Explained features are filled green, unexplained ones hollow red; numbered amber boxes are where to look next."))
@@ -865,6 +874,14 @@ if rep and rep.get("status") == "ok":
         pc2.caption(f"acceptance {_post['acceptance_rate']:.2f} · {_post['n_kept']} kept samples · {_post['seconds']:.1f} s")
     elif _post and _post.get("error"):
         st.caption("posterior sampling unavailable for this result")
+
+    # ---- G3. Ask Ĥolmes: Claude answers questions about this device by calling the physics engine as tools (never guesses numbers)
+    try:
+        from ui import ask_panel as _ask
+
+        _ask.render(rep, platform)
+    except Exception:  # noqa: BLE001  (optional panel; never breaks the page)
+        pass
 
     # ---- H. details & export
     theme.md(theme.section("Details & export"))

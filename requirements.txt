@@ -1,0 +1,21 @@
+# Runtime dependencies of Ĥolmes. Install with `pip install -r requirements.txt -e .`
+# (pyproject.toml lists the core subset for the package alone).
+# torch: the CPU wheel is enough for the proposer; `pip install torch --index-url https://download.pytorch.org/whl/cpu`
+# first avoids the 2 GB CUDA download (the Dockerfile and CI do this).
+numpy
+scipy
+scqubits
+scikit-learn
+torch
+matplotlib
+pillow
+plotly
+h5py
+streamlit
+anthropic
+python-dotenv
+# REST API (api.py) and its tests
+fastapi
+uvicorn[standard]
+httpx
+pytest

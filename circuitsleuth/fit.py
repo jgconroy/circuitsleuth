@@ -349,60 +349,67 @@ def brightest_points(points: np.ndarray) -> np.ndarray:
 
 
 def relabel_alternatives(points: np.ndarray, res: FitResult, band: tuple[float, float], bounds: dict, c_local: float = 0.012, c_global: float = 0.08,
-                         model_kw: dict | None = None, workers: int = 1) -> list[FitResult]:
-    """Label ambiguity of a control-independent spectrum (fixed transmon): every line is flat, so a second track can be
-    read two ways, e.g. the two-photon 0-2 line at f01 - EC/2 or the thermal 1-2 line at f01 - EC.  Both pass through the
-    same points, so the robust loss cannot tell them apart and the search lands on either (EC differs by 2x).  For each
-    (used weaker line, unused brighter line) pair, solve for the parameters that put the brighter line on the track while
-    keeping the 0-1 line fixed, polish locally, and return the refits: the caller ranks them with the visibility-aware
-    score, where the labelling that leaves a bright predicted line with nothing under it loses."""
+                         model_kw: dict | None = None, workers: int = 1, max_alternatives: int = 6) -> list[FitResult]:
+    """Label ambiguity: a track can be read as more than one transition and the robust loss cannot always tell the readings
+    apart.  Examples: a fixed transmon's second flat line as the two-photon 0-2/2 (f01 - EC/2) or the thermal 1-2 (f01 - EC)
+    line (EC differs by 2x); an ion's first-order axial sidebands as the second-order ones (volt_scale halves); a dot's 0-1
+    hyperbola as its two-photon copy (t_c and lever arm double).  For each (used weaker line u, unused brighter line m) pair,
+    solve the relabelled least-squares problem (points on u move to m, every other inlier stays on its line), polish locally
+    and return the refits.  The caller ranks them with the visibility-aware score, where the reading that leaves a bright
+    predicted line with nothing under it loses."""
     hyp = res.hyp
-    if hyp.platform != "circuit" or hyp.flux_dependent:
-        return []
     obj = Objective(hyp, points, band, c_local, model_kw)
     keys = list(predict_lines(hyp, res.params, obj.x_cols[:1], model_kw).keys())
-    if "0-1" not in keys:
-        return []
     L = obj.line_matrix(res.theta)
     D = np.abs(obj.f[None, :] - L[:, obj.col_idx])
     assign = np.argmin(D, axis=0)
     inl = D[assign, np.arange(len(assign))] < 3 * c_local
     counts = {k: int(np.sum(inl & (assign == i))) for i, k in enumerate(keys)}
     n_in = {k: int(np.sum(np.isfinite(L[i]) & (L[i] > band[0]) & (L[i] < band[1]))) for i, k in enumerate(keys)}
-    if counts["0-1"] == 0:
-        return []
     vis = models.line_weights(hyp.family)
-    # "unused": a predicted in-band line with (almost) nothing under it; a couple of stray noise points do not count
-    missing = [k for k in keys if k != "res" and n_in[k] >= 3 and counts[k] <= max(2, 0.1 * n_in[k])]
-    used = [k for k in keys if k not in ("0-1", "res") and counts[k] >= 3]
-    f01 = float(np.median(obj.f[inl & (assign == keys.index("0-1"))]))
+    # "unused": a predicted in-band line with (almost) nothing under it; a couple of stray noise points do not count.  A predicted
+    # line that does not move with the control (an ion's carrier) is skipped: the fit points exclude flat features by design.
+    if hyp.flux_dependent:
+        flat_pred = {k: bool(np.nanmax(L[i][np.isfinite(L[i])]) - np.nanmin(L[i][np.isfinite(L[i])]) < 3 * c_local) if np.isfinite(L[i]).any() else True for i, k in enumerate(keys)}
+    else:  # a control-independent spectrum is all flat lines and is fitted on all features
+        flat_pred = {k: False for k in keys}
+    missing = [k for k in keys if k != "res" and n_in[k] >= 3 and counts[k] <= max(2, 0.1 * n_in[k]) and not flat_pred[k]]
+    used = [k for k in keys if k != "res" and counts[k] >= 3 and not flat_pred[k]]
+    pairs = [(u, m) for u in used for m in missing if vis.get(m, 0.0) > vis.get(u, 0.0)]
+    if not pairs:
+        return []
     names = hyp.names
     tb = theta_bounds(bounds, names)
     lo = np.array([b[0] for b in tb])
     hi = np.array([b[1] for b in tb])
-    x0 = obj.x_cols[:1]
     out: list[FitResult] = []
-    for u in used:
-        f_u = float(np.median(obj.f[inl & (assign == keys.index(u))]))
-        for m in missing:
-            if vis.get(m, 0.0) <= vis.get(u, 0.0):
-                continue
+    # most plausible first: the largest visibility gap, weighted by how many points move
+    pairs.sort(key=lambda um: -(vis.get(um[1], 0.0) - vis.get(um[0], 0.0)) * counts[um[0]])
+    primary = 0  # the family's brightest line (0-1, carrier, NV1-, ...) anchors the solve; other lines are free to follow
+    for u, m in pairs[:max_alternatives]:
+        target = assign.copy()
+        target[assign == keys.index(u)] = keys.index(m)  # the relabelled assignment
+        sel = inl & ((assign == keys.index(u)) | (assign == primary))
+        if sel.sum() < len(names):
+            continue
+        f_sel, col_sel, line_sel = obj.f[sel], obj.col_idx[sel], target[sel]
+        w_sel = np.sqrt(obj.w[sel] * len(obj.w))
 
-            def resid(theta, _m=m):
-                lines = predict_lines(hyp, from_theta(theta, names), x0, model_kw)
-                return np.nan_to_num(np.array([lines["0-1"][0] - f01, lines[_m][0] - f_u]), nan=1e3, posinf=1e3, neginf=-1e3)
+        def resid(theta, _col=col_sel, _line=line_sel, _f=f_sel, _w=w_sel):
+            Lm = obj.line_matrix(theta)
+            r = Lm[_line, _col] - _f
+            return _w * np.nan_to_num(r, nan=1e3, posinf=1e3, neginf=-1e3)
 
-            try:
-                sol = least_squares(resid, np.clip(res.theta, lo + 1e-9, hi - 1e-9), bounds=(lo, hi), xtol=1e-10, ftol=1e-10, max_nfev=200)
-                if np.max(np.abs(sol.fun)) > 3 * c_local:
-                    continue
-                alt = _fit_once(points, hyp, band, bounds=bounds, init=from_theta(sol.x, names), c_global=c_global, c_local=c_local, model_kw=model_kw,
-                                do_global=False, workers=workers)
-            except (np.linalg.LinAlgError, ValueError, FloatingPointError):
-                continue
-            if all(np.max(np.abs(alt.theta - o.theta)) > 1e-3 for o in out) and np.max(np.abs(alt.theta - res.theta)) > 1e-3:
-                alt.history = [dict(relabel=f"{u} -> {m}")]
-                out.append(alt)
+        try:
+            # plain least squares on purpose: a robust loss would flatten the pull of the 1 MHz residuals this step must close
+            sol = least_squares(resid, np.clip(res.theta, lo + 1e-9, hi - 1e-9), bounds=(lo, hi), xtol=1e-9, ftol=1e-9, max_nfev=300)
+            alt = _fit_once(points, hyp, band, bounds=bounds, init=from_theta(sol.x, names), c_global=c_global, c_local=c_local, model_kw=model_kw,
+                            do_global=False, workers=workers)
+        except (np.linalg.LinAlgError, ValueError, FloatingPointError):
+            continue
+        if np.max(np.abs(alt.theta - res.theta)) > 1e-3 and all(np.max(np.abs(alt.theta - o.theta)) > 1e-3 for o in out):
+            alt.history = [dict(relabel=f"{u} -> {m}")]
+            out.append(alt)
     return out
 
 
@@ -705,3 +712,93 @@ def sample_posterior(points: np.ndarray, result: FitResult, band: tuple[float, f
         n_steps=int(n_steps), n_kept=int(len(P)), thin=int(thin), burn_in=int(n_burn), n_points=int(len(pts_all)), n_points_used=int(len(sub)),
         seconds=float(_time.perf_counter() - t0),
     )
+
+
+# ----------------------------------------------------------------------------- Bayesian model comparison (Laplace evidence)
+def mixture_loglik(obj: Objective, theta: np.ndarray, w: np.ndarray, sigma: float, eps: float, width: float) -> tuple[float, np.ndarray, np.ndarray]:
+    """Proper robust likelihood for model comparison: every feature is either on a predicted line (Gaussian, width `sigma`)
+    or background (uniform over the measured band of width `width`) with prior outlier fraction `eps`:
+        L_i = (1 - eps) N(r_i; 0, sigma) + eps / width.
+    Unlike soft-L1 this is bounded, so an unexplained feature costs the same finite amount under every hypothesis and the
+    Bayes factors are driven by what each model explains.  Returns (sum_i w_i log L_i, residuals r_i, inlier responsibilities)."""
+    try:
+        r = obj.residuals(theta)
+    except (np.linalg.LinAlgError, ValueError, FloatingPointError):
+        return -np.inf, np.array([]), np.array([])
+    r = np.where(np.isfinite(r), r, 1e3)
+    g = (1.0 - eps) * np.exp(-0.5 * (r / sigma) ** 2) / (sigma * np.sqrt(2.0 * np.pi))
+    b = eps / max(width, 1e-9)
+    li = g + b
+    return float(np.sum(w * np.log(li))), r, g / li
+
+
+def log_evidence(points: np.ndarray, result, band: tuple[float, float], c_local: float, model_kw: dict | None = None, max_cols: int = 31,
+                 eps: float = 0.1) -> dict | None:
+    """Laplace approximation to the log marginal likelihood  log Z = log ∫ L(θ) π(θ) dθ  of one hypothesis:
+        log Z ≈ log L(θ*) + (k/2) log 2π + ½ log det Σ − log V_prior,
+    with L the Gaussian + uniform-background likelihood (``mixture_loglik``, σ = c_local), θ* the robust-fit optimum refined by a
+    few Gauss-Newton steps, Σ the Gauss-Newton posterior covariance (responsibility-weighted) and π uniform on the fit's parameter
+    box (log-uniform for energies).  The last three terms are the Occam factor: a model with more or less-constrained parameters
+    pays for the prior volume it does not use.  `result` needs ``.hyp`` and ``.theta``.  Returns None when the curvature is singular."""
+    hyp = result.hyp
+    names = list(hyp.names)
+    pts_all = np.asarray(points, float)
+    if len(pts_all) < max(8, len(names) + 2):
+        return None
+    x_all = np.unique(pts_all[:, 0])
+    tb = theta_bounds(default_bounds(hyp, x_all), names)
+    lo = np.array([b[0] for b in tb])
+    hi = np.array([b[1] for b in tb])
+    theta0 = np.clip(np.asarray(result.theta, float), lo + 1e-9, hi - 1e-9)
+    sub = subsample(pts_all, max_cols=max_cols)
+    obj = Objective(hyp, sub, band, c_local, model_kw)
+    w = sub[:, 2] / max(float(sub[:, 2].sum()), 1e-12) * len(pts_all)  # the subsample stands in for the whole cloud
+    width = float(band[1] - band[0])
+    theta_m = gauss_newton_recentre(obj, theta0, w, c_local, lo, hi)
+    ll, r0, gamma = mixture_loglik(obj, theta_m, w, c_local, eps, width)
+    if not np.isfinite(ll) or r0.size == 0:
+        return None
+    try:
+        _, J = signed_residual_jacobian(obj, theta_m)
+    except (np.linalg.LinAlgError, ValueError, FloatingPointError):
+        return None
+    H = (J * (w * gamma / c_local**2)[:, None]).T @ J  # Gauss-Newton Hessian of -log L, outliers carry no curvature
+    if not np.all(np.isfinite(H)) or np.trace(H) <= 0:
+        return None
+    H = H + np.eye(len(theta_m)) * (1e-9 * np.trace(H) / len(theta_m))
+    cov = np.linalg.pinv(H)
+    sd = np.sqrt(np.clip(np.diag(cov), 1e-300, None))
+    scale = np.minimum(1.0, 0.5 * (hi - lo) / sd)  # an unidentified direction cannot claim more volume than the prior box
+    cov = cov * scale[:, None] * scale[None, :]
+    sign, logdet = np.linalg.slogdet(cov)
+    if sign <= 0 or not np.isfinite(logdet):
+        return None
+    k = len(theta_m)
+    log_prior_vol = float(np.sum(np.log(hi - lo)))
+    occam = 0.5 * k * np.log(2.0 * np.pi) + 0.5 * float(logdet) - log_prior_vol
+    return dict(log_evidence=float(ll + occam), log_lik=float(ll), occam=float(occam), k=int(k), n_points=int(len(pts_all)),
+                n_inliers=float(np.sum(gamma > 0.5)), family=hyp.family, label=hyp.label, coupled=bool(hyp.coupled))
+
+
+def model_posterior(evidence: dict) -> dict:
+    """Posterior model probabilities from Laplace evidences with equal prior odds: P_m ∝ exp(log Z_m).  Families aggregate their
+    bare and resonator-coupled variants.  Also returns log10 Bayes factors of the best model against every other one."""
+    labels = [l for l, e in evidence.items() if e and np.isfinite(e.get("log_evidence", np.nan))]
+    if not labels:
+        return {}
+    lz = np.array([evidence[l]["log_evidence"] for l in labels], float)
+    p = np.exp(lz - lz.max())
+    p /= p.sum()
+    post = {l: float(v) for l, v in zip(labels, p)}
+    fams: dict[str, float] = {}
+    for l in labels:
+        fams[evidence[l]["family"]] = fams.get(evidence[l]["family"], 0.0) + post[l]
+    order = sorted(labels, key=lambda l: -post[l])
+    best = order[0]
+    bf = {l: float((evidence[best]["log_evidence"] - evidence[l]["log_evidence"]) / np.log(10.0)) for l in labels}
+    best_fam = evidence[best]["family"]
+    other_fams = [l for l in order if evidence[l]["family"] != best_fam]
+    return dict(method="Laplace evidence of a Gaussian + uniform-background likelihood; equal prior odds; log-uniform priors on energies",
+                posteriors=post, families={k: float(v) for k, v in sorted(fams.items(), key=lambda kv: -kv[1])}, best=best,
+                log10_bayes_factor={l: v for l, v in bf.items()},
+                log10_bayes_factor_vs_other_family=(bf[other_fams[0]] if other_fams else None), runner_up_family=(evidence[other_fams[0]]["family"] if other_fams else None))

@@ -29,6 +29,8 @@ The method is "spectrum versus a control knob, explained by a small Hamiltonian"
 ## It decides what to measure next, optimally
 "Where to look next" is not a heuristic: from every explained feature we build the Fisher information of the fit and rank candidate sweeps by expected information gain (bits, from the log-determinant ratio of the information matrix, discounted by visibility and cost). On the transmon demo it immediately finds the EJ–EC degeneracy (correlation −1) and asks for the two-photon sweep that breaks it. This is Bayesian experimental design on top of a physics fit, computed in a tenth of a second.
 
+Model selection is Bayesian too: each hypothesis gets a Laplace evidence under a Gaussian-plus-uniform-background likelihood, with the Occam factor from the posterior volume, and the UI shows the posterior model probability of every candidate and the Bayes factor against the runner-up family. The engine is also exposed as a REST API (FastAPI, `/identify`), ships with a Dockerfile, and runs its physics, extraction and API suites in GitHub Actions on every push.
+
 ## It drives the experiment
 Autopilot closes the loop on a digital twin: start from a partial sweep, identify, let the information-gain design pick the next block of control values, measure it, refit, repeat, and watch the parameter uncertainties fall round by round. The function that reads the twin is the one a lab replaces with an instrument driver. When two circuit families both fit, a discrimination design names the single control value where their predictions differ by hundreds of sigma.
 

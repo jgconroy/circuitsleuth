@@ -1,0 +1,13 @@
+# keep the image to the code, the trained proposer (artifacts/classifier.pt) and the real-data demo (data/demo)
+.venv
+.git
+dist
+scratch
+data/synth
+artifacts/*.npz
+__pycache__
+**/__pycache__
+.pytest_cache
+.DS_Store
+.env
+.streamlit/secrets.toml

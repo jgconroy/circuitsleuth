@@ -3,24 +3,24 @@
   "case": 0,
   "truth": "trapped_ion",
   "n_points": 301,
-  "runtime_s": 3.6,
+  "runtime_s": 4.2,
   "found": "trapped_ion",
   "family_ok": true,
-  "max_rel_err": 0.499,
-  "max_rel_err_all": 0.499,
+  "max_rel_err": 0.002,
+  "max_rel_err_all": 0.006,
   "errs": {
-   "f_rad0": 0.006,
-   "volt_scale": 0.499,
-   "x0": 0.008
+   "f_rad0": 0.002,
+   "volt_scale": 0.001,
+   "x0": 0.006
   },
-  "track_score": 0.3869,
-  "holdout": 0.8320692288624464
+  "track_score": 0.4709,
+  "holdout": 0.8676131463670895
  },
  {
   "case": 1,
   "truth": "trapped_ion",
   "n_points": 330,
-  "runtime_s": 3.6,
+  "runtime_s": 4.2,
   "found": "trapped_ion",
   "family_ok": true,
   "max_rel_err": 0.0,
@@ -30,31 +30,31 @@
    "volt_scale": 0.0,
    "x0": 0.001
   },
-  "track_score": 0.4648,
+  "track_score": 0.496,
   "holdout": 1.0
  },
  {
   "case": 2,
   "truth": "trapped_ion",
   "n_points": 149,
-  "runtime_s": 3.6,
+  "runtime_s": 4.0,
   "found": "trapped_ion",
   "family_ok": true,
-  "max_rel_err": 0.501,
-  "max_rel_err_all": 0.501,
+  "max_rel_err": 0.002,
+  "max_rel_err_all": 0.003,
   "errs": {
-   "f_rad0": 0.045,
-   "volt_scale": 0.501,
-   "x0": 0.001
+   "f_rad0": 0.001,
+   "volt_scale": 0.002,
+   "x0": 0.003
   },
-  "track_score": 0.4432,
-  "holdout": 0.8613914121356987
+  "track_score": 0.7243,
+  "holdout": 1.0000000000000002
  },
  {
   "case": 3,
   "truth": "trapped_ion",
   "n_points": 551,
-  "runtime_s": 3.8,
+  "runtime_s": 4.1,
   "found": "trapped_ion",
   "family_ok": true,
   "max_rel_err": 0.003,
@@ -64,14 +64,14 @@
    "volt_scale": 0.003,
    "x0": 0.01
   },
-  "track_score": 0.2303,
+  "track_score": 0.2553,
   "holdout": 0.8268285041676601
  },
  {
   "case": 4,
   "truth": "trapped_ion",
   "n_points": 130,
-  "runtime_s": 3.7,
+  "runtime_s": 4.1,
   "found": "trapped_ion",
   "family_ok": true,
   "max_rel_err": 0.001,
@@ -81,14 +81,14 @@
    "volt_scale": 0.001,
    "x0": 0.003
   },
-  "track_score": 0.6544,
+  "track_score": 0.6876,
   "holdout": 0.9580443994610196
  },
  {
   "case": 5,
   "truth": "trapped_ion",
   "n_points": 136,
-  "runtime_s": 1.8,
+  "runtime_s": 2.1,
   "found": "trapped_ion",
   "family_ok": true,
   "max_rel_err": 0.003,
@@ -98,14 +98,14 @@
    "volt_scale": 0.003,
    "x0": 0.011
   },
-  "track_score": 0.7054,
+  "track_score": 0.7299,
   "holdout": 0.9782182804566961
  },
  {
   "case": 6,
   "truth": "trapped_ion",
   "n_points": 308,
-  "runtime_s": 3.5,
+  "runtime_s": 4.2,
   "found": "trapped_ion",
   "family_ok": true,
   "max_rel_err": 0.5,
@@ -115,14 +115,14 @@
    "volt_scale": 0.5,
    "x0": 0.001
   },
-  "track_score": 0.3263,
+  "track_score": 0.3583,
   "holdout": 0.6592317026581785
  },
  {
   "case": 7,
   "truth": "trapped_ion",
   "n_points": 228,
-  "runtime_s": 1.9,
+  "runtime_s": 2.0,
   "found": "trapped_ion",
   "family_ok": true,
   "max_rel_err": 0.001,
@@ -132,7 +132,7 @@
    "volt_scale": 0.001,
    "x0": 0.002
   },
-  "track_score": 0.6368,
+  "track_score": 0.6553,
   "holdout": 1.0
  }
 ]

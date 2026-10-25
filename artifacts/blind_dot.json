@@ -2,110 +2,110 @@
  {
   "case": 0,
   "truth": "charge_qubit",
-  "n_points": 218,
-  "runtime_s": 6.1,
+  "n_points": 248,
+  "runtime_s": 4.2,
   "found": "charge_qubit",
   "family_ok": true,
-  "max_rel_err": 0.006,
-  "max_rel_err_all": 0.006,
+  "max_rel_err": 0.021,
+  "max_rel_err_all": 0.026,
   "errs": {
    "t_c": 0.001,
-   "lever_arm": 0.006,
-   "x0": 0.005
+   "lever_arm": 0.021,
+   "x0": 0.026
   },
-  "track_score": 0.2046,
-  "holdout": 0.7813675336043316
+  "track_score": 0.0906,
+  "holdout": 0.7689805442537408
  },
  {
   "case": 1,
   "truth": "charge_qubit",
-  "n_points": 190,
-  "runtime_s": 5.6,
+  "n_points": 203,
+  "runtime_s": 3.9,
   "found": "charge_qubit",
   "family_ok": true,
   "max_rel_err": 0.002,
-  "max_rel_err_all": 0.002,
+  "max_rel_err_all": 0.004,
   "errs": {
    "t_c": 0.001,
    "lever_arm": 0.002,
-   "x0": 0.002
+   "x0": 0.004
   },
-  "track_score": 0.062,
-  "holdout": 0.7480038497738539
+  "track_score": 0.0589,
+  "holdout": 0.8199174652597605
  },
  {
   "case": 2,
   "truth": "charge_qubit",
-  "n_points": 49,
-  "runtime_s": 3.0,
+  "n_points": 62,
+  "runtime_s": 3.9,
   "found": "charge_qubit",
   "family_ok": true,
-  "max_rel_err": 0.007,
-  "max_rel_err_all": 0.007,
+  "max_rel_err": 0.005,
+  "max_rel_err_all": 0.005,
   "errs": {
-   "t_c": 0.007,
+   "t_c": 0.005,
    "lever_arm": 0.001,
    "x0": 0.001
   },
-  "track_score": 0.7642,
-  "holdout": 1.0
+  "track_score": 0.7327,
+  "holdout": 0.9577461538070218
  },
  {
   "case": 3,
   "truth": "charge_qubit",
-  "n_points": 358,
-  "runtime_s": 7.5,
+  "n_points": 396,
+  "runtime_s": 3.9,
   "found": "charge_qubit",
   "family_ok": true,
   "max_rel_err": 2.883,
   "max_rel_err_all": 2.883,
   "errs": {
    "t_c": 2.883,
-   "lever_arm": 0.909,
-   "x0": 0.284
+   "lever_arm": 0.908,
+   "x0": 0.208
   },
-  "track_score": -0.271,
-  "holdout": 0.11881866103982192
+  "track_score": -0.2831,
+  "holdout": 0.00842882180346483
  },
  {
   "case": 4,
   "truth": "charge_qubit",
-  "n_points": 29,
-  "runtime_s": 6.8,
+  "n_points": 40,
+  "runtime_s": 3.9,
   "found": "charge_qubit",
   "family_ok": true,
-  "max_rel_err": 0.021,
-  "max_rel_err_all": 0.021,
+  "max_rel_err": 0.025,
+  "max_rel_err_all": 0.025,
   "errs": {
-   "t_c": 0.003,
-   "lever_arm": 0.021,
-   "x0": 0.008
+   "t_c": 0.004,
+   "lever_arm": 0.025,
+   "x0": 0.012
   },
-  "track_score": 0.7846,
-  "holdout": 0.804890198053485
+  "track_score": 0.7398,
+  "holdout": 0.9999999999999999
  },
  {
   "case": 5,
   "truth": "charge_qubit",
-  "n_points": 20,
-  "runtime_s": 6.9,
+  "n_points": 22,
+  "runtime_s": 2.0,
   "found": "charge_qubit",
   "family_ok": true,
-  "max_rel_err": 1.009,
-  "max_rel_err_all": 1.009,
+  "max_rel_err": 0.001,
+  "max_rel_err_all": 0.001,
   "errs": {
-   "t_c": 0.987,
-   "lever_arm": 1.009,
-   "x0": 0.001
+   "t_c": 0.001,
+   "lever_arm": 0.001,
+   "x0": 0.0
   },
-  "track_score": 0.6259,
-  "holdout": 0.8801711249769543
+  "track_score": 0.7938,
+  "holdout": 1.0
  },
  {
   "case": 6,
   "truth": "charge_qubit",
-  "n_points": 66,
-  "runtime_s": 3.0,
+  "n_points": 72,
+  "runtime_s": 4.0,
   "found": "charge_qubit",
   "family_ok": true,
   "max_rel_err": 0.001,
@@ -115,24 +115,24 @@
    "lever_arm": 0.0,
    "x0": 0.0
   },
-  "track_score": 0.8554,
-  "holdout": 0.9852900990103634
+  "track_score": 0.8147,
+  "holdout": 1.0
  },
  {
   "case": 7,
   "truth": "charge_qubit",
-  "n_points": 75,
-  "runtime_s": 6.0,
+  "n_points": 89,
+  "runtime_s": 3.8,
   "found": "charge_qubit",
   "family_ok": true,
   "max_rel_err": 0.886,
   "max_rel_err_all": 0.886,
   "errs": {
-   "t_c": 0.281,
+   "t_c": 0.286,
    "lever_arm": 0.886,
-   "x0": 0.094
+   "x0": 0.033
   },
-  "track_score": -0.1868,
-  "holdout": 0.2859269974232726
+  "track_score": -0.2205,
+  "holdout": 0.3069479265941689
  }
 ]

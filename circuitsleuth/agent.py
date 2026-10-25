@@ -504,6 +504,19 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
         dyn = seg_ok if seg_ok.sum() >= 5 else np.ones(len(points), bool)
     w = points[dyn, 2]
     explained_dynamic = float(np.sum(w * best_inl[dyn]) / max(np.sum(w), 1e-12))
+    # ---- 6. Bayesian model comparison: Laplace evidence of every fitted hypothesis on one common point set (the control-dependent
+    #         features when there are enough of them, as the fits themselves use; flat pump/spur lines would otherwise reward any
+    #         model with a flat line).  Shown next to the track score; the decision above stays score-based.
+    evidence: dict = {}
+    try:
+        ev_pts = points[~flat] if int((~flat).sum()) >= max(10, 0.2 * len(points)) else points
+        for res_i, _sc_i, _ in results:
+            e = fit.log_evidence(ev_pts, res_i, band, cfg.c_local)
+            if e:
+                evidence[res_i.hyp.label] = e
+    except Exception:  # noqa: BLE001  (optional: must never fail a run)
+        evidence = {}
+    model_post = fit.model_posterior(evidence) if evidence else {}
     unexpl = unexplained_features(points, ids, best_inl, flat, qubit_line=best.lines.get("0-1"))
     nxt = next_measurements(best, points, band, x_grid, cfg.c_local)
     report = dict(
@@ -514,7 +527,11 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
         band_GHz=[round(float(band[0]), 3), round(float(band[1]), 3)],
         flat_lines_GHz=[round(v, 3) for v in flat_lines],
         proposals=[dict(hypothesis=fit.Hypothesis(p["family"], p["coupled"]).label, prob=round(p["prob"], 3)) for p in proposals],
-        hypotheses=[dict(res.summary(), track_score=round(sc, 4)) for res, sc, _ in results],
+        hypotheses=[dict(res.summary(), track_score=round(sc, 4),
+                         log_evidence=(round(evidence[res.hyp.label]["log_evidence"], 2) if res.hyp.label in evidence else None),
+                         posterior=(round(model_post["posteriors"][res.hyp.label], 4) if model_post and res.hyp.label in model_post.get("posteriors", {}) else None))
+                    for res, sc, _ in results],
+        model_posterior=model_post,
         best=dict(res_summary(best), track_score=round(best_score, 4), explained_dynamic=round(float(explained_dynamic), 4), note=note, platform=best.hyp.platform, confidence=confidence),
         unexplained=unexpl,
         next_measurements=nxt,

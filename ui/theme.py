@@ -146,6 +146,11 @@ section[data-testid="stSidebar"] .cs-param-tex p { margin:0; line-height:1.2; }
 .cs-row.active { border-left-color:var(--amber); animation:cs-pulse 1.2s ease-in-out infinite; }
 .cs-row.dim { opacity:.4; }
 .cs-row .top { display:grid; grid-template-columns:minmax(0, 1fr) 140px 64px 72px; gap:12px; align-items:center; }
+.cs-row .top.with-p { grid-template-columns:minmax(0, 1fr) 140px 64px 64px 72px; }
+.cs-row .score.p { color:var(--muted); }
+.cs-race-head { display:grid; grid-template-columns:minmax(0, 1fr) 140px 64px 64px 72px; gap:12px; padding:0 0 4px 14px; }
+.cs-race-head span { font-family:var(--sans); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); text-align:right; }
+.cs-race-head span:first-child, .cs-race-head span:nth-child(2) { text-align:left; }
 .cs-row .name { font-family:var(--sans); font-size:14px; line-height:20px; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .cs-row .bar { height:6px; background:rgba(240,239,236,.08); border-radius:3px; overflow:hidden; }
 .cs-row .bar div { height:100%; background:rgba(240,239,236,.45); border-radius:3px; transition:width .4s ease; }
@@ -347,11 +352,13 @@ def _sparkline_svg(values, width: int = 600, height: int = 40) -> str:
             f'<polyline points="{pts}" stroke="#fab219" stroke-width="1.5" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg>')
 
 
-def race_html(rows: list[dict], active: str | None = None, finished: bool = False, winner: str | None = None) -> str:
+def race_html(rows: list[dict], active: str | None = None, finished: bool = False, winner: str | None = None, posterior: dict | None = None) -> str:
     """One row per hypothesis in the order tried. Each row: name, status (queued / fitting / fitted / rejected / accepted / skipped),
-    score (float or None), best (list of best-so-far losses for the sparkline)."""
+    score (float or None), best (list of best-so-far losses for the sparkline).  `posterior` maps a hypothesis name to its Bayesian
+    model probability (Laplace evidence); when given, a P column is shown after the score."""
     if not rows:
         return '<div class="cs-race"><div class="cs-spec-empty">Waiting for hypotheses…</div></div>'
+    has_p = bool(posterior)
     scores = [float(r["score"]) for r in rows if r.get("score") is not None]
     top = max([s for s in scores if s > 0] or [1.0])
     out = []
@@ -372,15 +379,21 @@ def race_html(rows: list[dict], active: str | None = None, finished: bool = Fals
             status_txt = status
         width = 0.0 if score is None else max(0.0, min(100.0, 100.0 * max(float(score), 0.0) / top))
         sc = "" if score is None else f"{float(score):.3f}".replace("-", "−")
-        top_html = (f'<div class="top"><span class="name" title="{esc(name)}">{esc(title_case(name))}</span><div class="bar"><div style="width:{width:.1f}%"></div></div>'
-                    f'<span class="score">{sc}</span><span class="status {esc(status_txt)}">{esc(status_txt)}</span></div>')
+        p_html = ""
+        if has_p:
+            pv = (posterior or {}).get(name)
+            p_txt = "" if pv is None else (f"{pv:.3f}" if pv >= 5e-4 else ("<10⁻³" if pv >= 1e-6 else "≈0"))
+            p_html = f'<span class="score p" title="posterior model probability (Laplace evidence)">{p_txt}</span>'
+        top_html = (f'<div class="top{" with-p" if has_p else ""}"><span class="name" title="{esc(name)}">{esc(title_case(name))}</span><div class="bar"><div style="width:{width:.1f}%"></div></div>'
+                    f'<span class="score">{sc}</span>{p_html}<span class="status {esc(status_txt)}">{esc(status_txt)}</span></div>')
         spark = ""
         if is_active:
             best = r.get("best") or []
             cur = f'{best[-1]:.4f}' if best else "…"
             spark = (f'<div class="spark">{_sparkline_svg(best)}<span class="sv" title="best-so-far search loss">best loss {cur}</span></div>')
         out.append(f'<div class="{" ".join(cls)}">{top_html}{spark}</div>')
-    return f'<div class="cs-race">{"".join(out)}</div>'
+    head = ('<div class="cs-race-head"><span>hypothesis</span><span></span><span>score</span><span>P</span><span></span></div>' if has_p else "")
+    return f'<div class="cs-race">{head}{"".join(out)}</div>'
 
 
 # ------------------------------------------------------------------ verdict band (B)

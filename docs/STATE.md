@@ -78,7 +78,7 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
   confusion (2), one faint fluxonium. Runtime 5-9 min/map when the laptop is shared. A rerun with the validity fix was
   started Sat ~12:30 (log in the session scratchpad; writes `artifacts/blind_results.json`) - first 3 rows identical to before.
 - NV (8 maps): family **8/8**, params within tolerance **6/8** (misses: E off by ~3 MHz, field_scale 12 %). ~4 s/map.
-- DQD (8 maps): family **8/8**, params within tolerance **5/8** (misses are maps with <20 usable features / spur-dominated). ~5 s/map.
+- DQD (8 maps): family **8/8**, params within tolerance **6/8** after the generalised relabel step (Sun ~00:50; was 5/8; the two misses have 10–25 usable features). ~4 s/map.
 ### Proposer (CNN)
 - v1: 20k maps, 12 epochs: fam acc 0.857, "coupled" acc 0.552 (unlearnable target), param rmse 0.241 (`artifacts/classifier_v1.*`).
 - v2 (adopted, `artifacts/classifier.pt`): 40k maps, 20 epochs: fam acc **0.888**, coupled acc 0.587, param rmse 0.230.
@@ -150,7 +150,7 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
   Known parameters to get α. Recovery: curvatures within 1 %, dfs 11.95 (12), x0 0.1207 (0.12).
 - Frequency units are per platform (`PLATFORMS[...]["freq_unit"/"freq_label"]`, MHz for ion/atom); all numeric code is unit-agnostic.
 - URL params now: `?platform=ion&demo=J`, `?demo=A&load=1`.
-- Blind (8 maps each): ion family 8/8, params 5/8; atom family 8/8, curvatures/dfs/x0 within tolerance 5/8. ~4 s/map.
+- Blind (8 maps each): ion family 8/8, params **7/8** after the generalised relabel step (Sun ~00:50; was 5/8: volt_scale halved); atom family 8/8, curvatures/dfs/x0 within tolerance 5/8. ~4 s/map.
 - Unit bug fixed: RMS-to-MHz conversion now uses `models.to_MHz(family)` (1 for MHz platforms); the ion/atom hero had shown 1000× values.
 
 ### Sat ~midnight status
@@ -230,6 +230,36 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
   Streamlit 1.66 puts the "expand sidebar" button. Now only the toolbar actions / main menu are hidden; verified the » button is 28×28 px.
 - Verified: `scripts/apptest_quick.py` (no exceptions), headless autopilot replay + posterior sampling (no exceptions), Playwright
   screenshots of landing, loaded demo A (full page) and a live NV run. `scripts/screenshot.py` waits for "Identify Circuit" now.
+
+### Sun ~00:40 PDT: final-stretch additions (in progress; see "Pending")
+- **Bayesian model comparison** (`fit.mixture_loglik`, `fit.log_evidence`, `fit.model_posterior`): Laplace evidence per hypothesis under a
+  Gaussian + uniform-background likelihood (σ = c_local, ε = 0.1), Gauss-Newton Hessian with inlier responsibilities, σ capped at half the
+  prior box, log-uniform priors on energies.  Computed in `agent.identify` (step 6) on ONE common point set (dynamic features when ≥ 20 %,
+  as the fits use) → `report["model_posterior"]` and per-hypothesis `log_evidence` / `posterior`.  Decision stays score-based.  Saved demo
+  reports backfilled with `scripts/backfill_evidence.py` (A: P(tunable+res) = 1.0, log10 BF vs fluxonium 306; B: bare fluxonium 0.993 vs
+  +resonator 0.007 = Occam at work).  UI: P column + header in the race, Bayes factor in the verdict eyebrow, caption with family posteriors.
+  Tests: `tests/test_evidence.py` (3, 4 s).
+- **Relabel alternatives generalised to every platform** (`fit.relabel_alternatives`): for each (used weaker line, unused brighter line) pair,
+  a plain least-squares solve moves the points of the weaker line onto the brighter one with the family's primary line as anchor, then a local
+  polish; the agent scores alternatives with `_score`.  Flat predicted lines (ion carrier) are skipped for control-dependent hypotheses.
+  Fixes the ×2 failures: ions reading first-order axial sidebands as second-order (volt_scale/2), dots reading the 0-1 hyperbola as its
+  two-photon copy (t_c, lever arm ×2).  Root cause of the ion cases is upstream: at noise ≈ 0.08 the 4σ extractor misses most faint sidebands,
+  so the loss barely separates the two readings; the scorer's missing-line penalty does.
+- **REST API + Docker + CI** (subagent): `api.py` (FastAPI: /health, /demos, /identify, /identify/demo), `tests/test_api.py` (5 tests),
+  `requirements.txt` (new), `Dockerfile`, `.dockerignore`, `.github/workflows/ci.yml` (quick suites + API tests), README "Run it" + badge.
+- **Ask Ĥolmes** (DONE, verified live): `circuitsleuth/ask.py` = 9 pure tools over the report (summary, derived, control_for_frequency with
+  sensitivities, predict_transitions, next_measurements + design, hypotheses with acceptance rules, unexplained, uncertainties + correlation,
+  scqubits_code) + `answer()` running the Anthropic beta tool runner (claude-opus-5-5, adaptive thinking, effort low, prompt caching,
+  never raises).  `ui/ask_panel.py` chat section (3 suggested questions, tools-called caption), wired into app.py after the Posterior
+  check (section G3).  Tests `tests/test_ask.py` (8, no API).  Live answers cite tool numbers only (~6 s, < 2 ¢ each).
+- Old-code QEC table (200 maps, `artifacts/qec_oldcode_blind_circuit.jsonl`): family 70 %, params 37 %; fluxonium 34/65 with most misses
+  read as a FIXED transmon.  Checked the suspected cause on the current code (flat-feature mask swallowing a heavy fluxonium's plateau):
+  on 60 synthetic fluxonium maps the mask removes a median 3 % of the circuit's own points, > 30 % in 4/60, and the skip rule
+  ("< 20 % dynamic features") wrongly trips in 3/60 (tunable: 2/60).  So that mechanism explains ~5–10 % of maps, not 46 %; wait for
+  the Lanthanum new-code table before chasing it further (`scripts/flat_stats2.py` in the session scratchpad).
+- Big machines tonight: Lanthanum circuit table (normal preset, n = 120, 32 min/map/core, started Sat 23:20, ETA ~01:30) → copy back as
+  `artifacts/lanthanum_blind_circuit.jsonl`; QEC1 finishing the OLD-code 200-map table, then new env + atom/nv/ion/dot tables (n = 200 each,
+  minutes); optional Lanthanum retrain `run_train.py start --n 400000 --epochs 40 --workers 30 --width 3` after 01:30 (adopt only if better).
 
 ## 5. Pending / in progress (check before starting new work)
 - (done Sat ~19:30) Circuit blind rerun with the validity-fixed generator: family **7/10**, params <5 % 2/10 (unchanged causes: fixed-transmon
