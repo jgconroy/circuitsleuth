@@ -41,6 +41,19 @@ def one(job):
             errs[k] = abs(b["params"][k] - v) / ABS[k] * 0.05 if k in ABS else abs(b["params"][k] - v) / abs(v)
     if "period" in b["params"] and models.FAMILIES[t["family"]]["flux_dependent"]:
         errs["period"] = abs(b["params"]["period"] - t["period"]) / t["period"]
+    if t["family"] == "rydberg_atom":  # only alpha * field_scale^2 is observable
+        for a_name in ("alpha1", "alpha2"):
+            tv = t["params"][a_name] * t["params"]["field_scale"] ** 2
+            fv = b["params"][a_name] * b["params"]["field_scale"] ** 2
+            errs[a_name + "_curv"] = abs(fv - tv) / tv
+            errs.pop(a_name, None)
+        errs.pop("field_scale", None)
+        errs["f0"] = abs(b["params"]["f0"] - t["params"]["f0"]) / 0.5 * 0.05
+    if t["family"] == "nv_ensemble":  # field direction up to tetrahedral symmetry
+        pt = models.nv_projections(t["params"]["theta"], t["params"]["phi"]) * t["params"]["field_scale"]
+        pf = models.nv_projections(b["params"]["theta"], b["params"]["phi"]) * b["params"]["field_scale"]
+        errs["field_vector"] = float(np.max(np.abs(pf - pt) / np.maximum(pt, 1.0)))
+        errs.pop("field_scale", None)
     row["errs"] = {k: round(v, 4) for k, v in errs.items()}
     row["max_err"] = round(max(errs.values()), 4) if errs else None
     return row
