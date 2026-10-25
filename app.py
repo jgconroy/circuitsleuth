@@ -409,8 +409,8 @@ has_result = auto_load or bool(prev_rep and prev_rep.get("status") == "ok")
 pts_preview = points if points is not None else extract.extract_points(image, x, f)
 
 if param_bounds:
-    theme.md(theme.pill("known") + theme.pills((f"{n} = {known_store[n]['value']:.4g}" + (" fixed" if known_store[n]["tol"] == 0 else f" ± {known_store[n]['tol']:g}%")
-                                                for n in param_bounds), "amber"))
+    theme.md(theme.pill("known") + theme.pills_html((f"{theme.param_html(n)} = {known_store[n]['value']:.4g}" + (" fixed" if known_store[n]["tol"] == 0 else f" ± {known_store[n]['tol']:g}%")
+                                                     for n in param_bounds), "amber"))
 if not has_result:
     # ---- landing state: the input map on the left, the run card with the pipeline stepper on the right
     st.markdown(f"Upload a two-tone spectroscopy map. {theme.BRAND_NAME} proposes circuit hypotheses, fits each against the detected "
@@ -494,7 +494,7 @@ if run:
         state["draw"] += 1  # a fresh key per redraw: the placeholder replaces the element, keys never collide
         map_slot.plotly_chart(plots.map_figure(image, x, f, points=pts_preview, lines=p["lines"], x_grid=x, title=title, xlabel=xlabel, ylabel=ylabel), key=f"map_live_{state['draw']}", **PLOT)
         if p.get("params"):
-            map_caption.markdown(theme.pills(f"{k} = {v:.4g}" for k, v in p["params"].items()), unsafe_allow_html=True)
+            map_caption.markdown(theme.pills_html(f"{theme.param_html(k)} = {v:.4g}" for k, v in p["params"].items()), unsafe_allow_html=True)
         draw_race()
 
     def progress(kind, p):
@@ -584,9 +584,7 @@ if rep and rep.get("status") == "ok":
     level = conf.get("level") or "not assessed"
     mp = rep.get("model_posterior") or {}
     _bf = mp.get("log10_bayes_factor_vs_other_family")
-    _bf_txt = (f' · Bayes factor vs {theme.esc(str(mp.get("runner_up_family", "")).replace("_", " "))} 10<sup><span class="cs-num">{_bf:.0f}</span></sup>'
-               if isinstance(_bf, (int, float)) and np.isfinite(_bf) else "")
-    eyebrow_txt = (f'IDENTIFIED · <span class="cs-num">{len(rep["hypotheses"])}</span> hypotheses · <span class="cs-num">{rep.get("runtime_s", "?")}</span> s · confidence {theme.esc(level)}{_bf_txt}')
+    eyebrow_txt = (f'IDENTIFIED · <span class="cs-num">{len(rep["hypotheses"])}</span> hypotheses · <span class="cs-num">{rep.get("runtime_s", "?")}</span> s · confidence {theme.esc(level)}')
     kpis: list[tuple[str, str]] = []
     if ho:
         n_test = ho.get("n_test_points")
@@ -601,6 +599,8 @@ if rep and rep.get("status") == "ok":
         kpis.append((f"{gap:+.3f}".replace("-", "−"), "margin to runner-up family"))
     else:
         kpis.append(("—", "margin · single family"))
+    if isinstance(_bf, (int, float)) and np.isfinite(_bf):  # Bayesian model comparison: evidence ratio against the best other family
+        kpis.append((f'10<sup>{_bf:.0f}</sup>', f"Bayes factor vs {theme.esc(str(mp.get('runner_up_family', '')).replace('_', ' '))}"))
     right = (schematic.schematic_svg(fam, coupled, values=sch_values(best)) + theme.eyebrow("Recovered Hamiltonian") + ham_table_html(best))
     with st.container(border=True, key="hero"):
         h_l, h_r = st.columns([3, 2], gap="large")
@@ -627,7 +627,7 @@ if rep and rep.get("status") == "ok":
     summary = theme.two_sentences(ex.get("summary", "")) if isinstance(ex, dict) else ""
     conf_txt = conf.get("text", "")
     if summary or conf_txt:
-        theme.md(f'<div class="cs-block"><div class="cs-body">{theme.esc(summary)}</div>' + (f'<div class="cs-body muted">{theme.esc(conf_txt[:1].upper() + conf_txt[1:])}.</div>' if conf_txt else "") + "</div>")
+        theme.md(f'<div class="cs-block"><div class="cs-body">{theme.mathify(theme.esc(summary))}</div>' + (f'<div class="cs-body muted">{theme.mathify(theme.esc(conf_txt[:1].upper() + conf_txt[1:]))}.</div>' if conf_txt else "") + "</div>")
 
     # ---- C. hypotheses tested (the race in its final state)
     race_rows = st.session_state.get("race_rows") or [dict(name=h["hypothesis"], status="fitted", score=float(h["track_score"]), best=[]) for h in rep["hypotheses"]]
@@ -732,7 +732,7 @@ if rep and rep.get("status") == "ok":
                                          f"control {n['x']:.3g} · {plots.pretty(n['line'])} line at {n['f']:.3g}" + ("" if n.get("inside_window") else " (outside the measured window)"), n["why"], muted_badge=True))
         elif n["kind"] == "constrain_parameter":
             rel = n["rel_sigma"]
-            cards.append(theme.card_html("σ", f"constrain {n['parameter']}", f"{theme.esc(n['parameter'])} <span class='u'>{f'±{100*rel:.0f}%' if rel < 5 else 'unconstrained'}</span>",
+            cards.append(theme.card_html("σ", f"constrain {n['parameter']}", f"{theme.param_html(n['parameter'])} <span class='u'>{f'±{100*rel:.0f}%' if rel < 5 else 'unconstrained'}</span>",
                                          "poorly determined by the current data", n["why"], muted_badge=True))
     if cards:
         theme.md(theme.grid_html(cards))

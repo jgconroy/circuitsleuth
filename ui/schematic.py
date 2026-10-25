@@ -39,11 +39,23 @@ def _wire(x1, y1, x2, y2, color=STROKE) -> str:
     return f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{color}"/>'
 
 
+def _sub(base: str, sub: str, rest: str = "") -> str:
+    """base + subscript (+ rest) as SVG tspans (dy shifts, no baseline-shift dependence)."""
+    return f'{html.escape(base)}<tspan dy="4" font-size="75%">{html.escape(sub)}</tspan>' + (f'<tspan dy="-4">{html.escape(rest)}</tspan>' if rest else "")
+
+
+LABEL_SVG = {  # component labels typeset for the label row
+    "EC": _sub("E", "C"), "EJ": _sub("E", "J"), "EL": _sub("E", "L"), "EJmax · d": _sub("E", "J,max", " · d"), "fr  (L‖C)": _sub("f", "r", "  (L‖C)"),
+    "t_c": _sub("t", "c"), "f_rad0": _sub("f", "r,0"), "√V scale": _sub("κ", "V"), "Δ_fs": _sub("Δ", "fs"),
+}
+
+
 def _text(x, y, s, anchor="middle", color=MUTED, size=None, cls="", delay_ms: int | None = None) -> str:
     sz = f' font-size="{size}"' if size else ""
     c = f' class="{cls}"' if cls else ""
     d = f' style="animation-delay:{delay_ms}ms"' if delay_ms is not None else ""
-    return f'<text x="{x}" y="{y}" text-anchor="{anchor}" fill="{color}" stroke="none"{sz}{c}{d}>{html.escape(str(s))}</text>'
+    body = LABEL_SVG.get(str(s), html.escape(str(s)))
+    return f'<text x="{x}" y="{y}" text-anchor="{anchor}" fill="{color}" stroke="none"{sz}{c}{d}>{body}</text>'
 
 
 def _cap_v(x, yt=TOP, yb=BOT, half=15, gap=8) -> str:

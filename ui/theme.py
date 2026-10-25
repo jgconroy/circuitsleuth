@@ -32,9 +32,15 @@ div[class*="stToast"], [data-testid="stHeaderActionElements"] { display:none !im
 [data-testid="stExpandSidebarButton"] { display:inline-flex !important; visibility:visible !important; opacity:1 !important; }
 header[data-testid="stHeader"] { background:transparent; box-shadow:none; height:2.25rem; }
 .block-container { max-width:1200px; padding:24px 32px 64px; }
-section[data-testid="stSidebar"] { width:280px !important; min-width:280px !important; max-width:280px !important; }
-section[data-testid="stSidebar"] > div:first-child { width:280px !important; }
+section[data-testid="stSidebar"][data-collapsed="false"] { width:280px !important; min-width:280px !important; max-width:280px !important; }
+section[data-testid="stSidebar"][data-collapsed="false"] > div:first-child { width:280px !important; }
+section[data-testid="stSidebar"][data-collapsed="true"] { width:0 !important; min-width:0 !important; }
 section[data-testid="stSidebar"] .block-container { padding-top:1.25rem; }
+/* the sidebar has a fixed width: no resize handle (it showed a col-resize cursor that did nothing) */
+[data-testid="stSidebarResizeHandle"] { display:none !important; }
+section[data-testid="stSidebar"] { cursor:default; }
+/* with the sidebar collapsed the main column fills the window */
+section[data-testid="stSidebar"][data-collapsed="true"] ~ div .block-container { max-width:none; padding-left:48px; padding-right:48px; }
 .stApp * { box-shadow:none !important; }
 /* ---- type */
 .stApp, .stApp p, .stApp li, .stApp label, .stApp summary, .stApp button, .stApp [data-testid="stMarkdownContainer"],
@@ -581,7 +587,48 @@ _MATHIFY = [
     (re.compile(r"\balpha([12])\b"), r"α<sub>\1</sub>"),
     (re.compile(r"\bvolt_scale\b"), "κ<sub>V</sub>"),
     (re.compile(r"\bfield_scale\b"), "κ"),
+    (re.compile(r"\blever_arm\b"), "lever arm"),
+    (re.compile(r"\bdfs\b"), "Δ<sub>fs</sub>"),
+    (re.compile(r"\bf0\b"), "f<sub>0</sub>"),
+    (re.compile(r"\btheta\b"), "θ"),
+    (re.compile(r"\bphi\b"), "φ"),
+    (re.compile(r"Φ0\b"), "Φ<sub>0</sub>"),
+    (re.compile(r"\bPhi0\b"), "Φ<sub>0</sub>"),
+    (re.compile(r"(?<![\d.])(\d)-(\d)(?![\d.])"), "\\1→\\2"),  # transition labels 0-1 -> 0→1 (not decimal ranges)
 ]
+_TEXIFY = [
+    (re.compile(r"\bE(J|C|L)max\b"), r"$E_{\1,\\max}$"),
+    (re.compile(r"\bE([JCL])\b"), r"$E_{\1}$"),
+    (re.compile(r"\bf(01|12|02|03)\b"), r"$f_{\1}$"),
+    (re.compile(r"\bfr\b"), r"$f_r$"),
+    (re.compile(r"\bf_rad0\b"), r"$f_{r,0}$"),
+    (re.compile(r"\bt_c\b"), r"$t_c$"),
+    (re.compile(r"\bx0\b"), r"$x_0$"),
+    (re.compile(r"\bf0\b"), r"$f_0$"),
+    (re.compile(r"\bdfs\b"), r"$\\Delta_{\\mathrm{fs}}$"),
+    (re.compile(r"\balpha([12])\b"), r"$\\alpha_{\1}$"),
+    (re.compile(r"\btheta\b"), r"$\\theta$"),
+    (re.compile(r"\bphi\b"), r"$\\varphi$"),
+    (re.compile(r"\bvolt_scale\b"), r"$\\kappa_V$"),
+    (re.compile(r"\bfield_scale\b"), r"$\\kappa$"),
+    (re.compile(r"\blever_arm\b"), "lever arm"),
+    (re.compile(r"Φ0\b|\bPhi0\b"), r"$\\Phi_0$"),
+    (re.compile(r"(?<![\d.])(\d)-(\d)(?![\d.])"), "\\1→\\2"),
+]
+
+
+def texify_prose(text: str) -> str:
+    """Markdown variant of mathify: parameter tokens in plain prose become inline KaTeX ($E_{J,\\max}$); code spans are left alone."""
+    parts = re.split(r"(`[^`]*`|\$[^$]*\$)", str(text or ""))
+    for i in range(0, len(parts), 2):
+        for rx, repl in _TEXIFY:
+            parts[i] = rx.sub(repl, parts[i])
+    return "".join(parts)
+
+
+def pills_html(items, kind: str = "") -> str:
+    """Pills whose text is already HTML (typeset parameter names)."""
+    return "".join(f'<span class="cs-pill {kind}">{t}</span>' for t in items)
 
 
 def mathify(escaped_text: str) -> str:
@@ -598,7 +645,7 @@ def _tex_num(v, sig: int = 4) -> str:
     if "e" in txt:  # scientific notation -> \times 10^{}
         m, e = txt.split("e")
         txt = f"{m}\\times 10^{{{int(e)}}}"
-    return r"\textcolor{#fab219}{" + txt + "}"
+    return r"\textcolor{#fab219}{(" + txt + ")}"  # parentheses: the fitted numbers read as substituted values, not coefficients
 
 
 def hamiltonian_tex(family: str, params: dict, coupled: bool) -> str:

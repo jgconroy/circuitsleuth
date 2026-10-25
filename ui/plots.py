@@ -158,11 +158,11 @@ def _draw_well(fig, phi, U, levels, xmax=None):
         segs.append(seg)
         if seg is None:
             continue
-        fig.add_trace(go.Scatter(x=list(seg), y=[E, E], mode="lines", line=dict(color=BLUE, width=2), name=f"E{n}", showlegend=False,
-                                 hovertemplate=f"E{n} = {E:.3f} GHz<extra></extra>"))
+        fig.add_trace(go.Scatter(x=list(seg), y=[E, E], mode="lines", line=dict(color=BLUE, width=2), name=f"E<sub>{n}</sub>", showlegend=False,
+                                 hovertemplate=f"E<sub>{n}</sub> = {E:.3f} GHz<extra></extra>"))
     span = float(levels.max() - U.min()) or 1.0
     for y, text in _label_groups(np.asarray(levels, float), span):
-        fig.add_annotation(x=xmax if xmax is not None else float(phi.max()), y=y, text=text, showarrow=False, xanchor="right", yanchor="middle",
+        fig.add_annotation(x=xmax if xmax is not None else float(phi.max()), y=y, text=re.sub(r"E(\d)", r"E<sub>\1</sub>", text), showarrow=False, xanchor="right", yanchor="middle",
                            xshift=-4, font=dict(size=12, color=LIGHT_BLUE, family=MONO))
     return segs
 

@@ -40,7 +40,7 @@ def _tools_caption(tool_calls) -> str:
 
 def _show_turn(turn: dict) -> None:
     with st.chat_message(turn["role"]):
-        st.markdown(turn.get("text") or "")
+        st.markdown(theme.texify_prose(turn.get("text") or ""))
         if turn["role"] == "assistant":
             theme.md(theme.caption(turn.get("tools_caption") or _tools_caption(turn.get("tool_calls"))))
 
@@ -91,7 +91,7 @@ def _render(report: dict, platform_key: str) -> None:
                 with st.spinner("consulting the physics engine …"):
                     res = ask.answer(pending, report, history=[dict(role=t["role"], text=t.get("text", "")) for t in hist])
                 text = res.get("text") or "(no answer)"
-                st.markdown(text)
+                st.markdown(theme.texify_prose(text))
                 cap = _tools_caption(res.get("tool_calls"))
                 theme.md(theme.caption(cap))
         hist.append(dict(role="user", text=pending))

@@ -81,10 +81,10 @@ def control_bounds(family: str) -> dict:
 PLATFORMS = {
     # scale = typical line precision / separation in GHz; the fitter, linker and flat-line detector scale with it
     "circuit": dict(label="Superconducting circuits", families=["transmon", "tunable_transmon", "fluxonium"], control_label="flux bias (arbitrary units)", scale=0.012, linewidth=(0.01, 0.08), freq_unit="GHz", freq_label="drive frequency (GHz)"),
+    "atom": dict(label="Neutral atoms (Rydberg)", families=["rydberg_atom"], control_label="field-plate voltage (arbitrary units)", scale=0.15, linewidth=(0.2, 0.8), freq_unit="MHz", freq_label="laser detuning (MHz)"),
+    "ion": dict(label="Trapped ions", families=["trapped_ion"], control_label="endcap voltage (arbitrary units)", scale=0.01, linewidth=(0.02, 0.05), freq_unit="MHz", freq_label="detuning from carrier (MHz)"),
     "nv": dict(label="NV centres in diamond", families=["nv_ensemble"], control_label="coil current (arbitrary units)", scale=0.0015, linewidth=(0.002, 0.008), freq_unit="GHz", freq_label="microwave frequency (GHz)"),
     "dot": dict(label="Semiconductor quantum dots", families=["charge_qubit"], control_label="detuning gate voltage (arbitrary units)", scale=0.012, linewidth=(0.02, 0.08), freq_unit="GHz", freq_label="drive frequency (GHz)"),
-    "ion": dict(label="Trapped ions", families=["trapped_ion"], control_label="endcap voltage (arbitrary units)", scale=0.01, linewidth=(0.02, 0.05), freq_unit="MHz", freq_label="detuning from carrier (MHz)"),
-    "atom": dict(label="Neutral atoms (Rydberg)", families=["rydberg_atom"], control_label="field-plate voltage (arbitrary units)", scale=0.15, linewidth=(0.2, 0.8), freq_unit="MHz", freq_label="laser detuning (MHz)"),
 }
 
 

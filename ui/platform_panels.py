@@ -45,7 +45,7 @@ def nv_levels_figure(params: dict, B_max: float = 300.0):
     Hz = models.GAMMA_E * (bz * models._SZ + bperp * models._SX)
     ev = np.linalg.eigvalsh(H0[None] + B[:, None, None] * Hz[None])
     fig = go.Figure()
-    names = ["m_s = 0", "m_s = -1", "m_s = +1"]
+    names = ["m<sub>s</sub> = 0", "m<sub>s</sub> = −1", "m<sub>s</sub> = +1"]
     cols = [MUTED, BLUE, ORANGE]
     for i in range(3):
         fig.add_trace(go.Scatter(x=B, y=ev[:, i], mode="lines", name=names[i], line=dict(color=cols[i], width=2), hovertemplate="B = %{x:.0f} G<br>E = %{y:.4f} GHz<extra></extra>"))
@@ -81,9 +81,9 @@ def ion_modes_figure(params: dict, x_range: tuple[float, float] | None = None):
     wr2 = fr0**2 - 0.5 * wz**2
     wr = np.where(wr2 > 0, np.sqrt(np.clip(wr2, 0, None)), np.nan)
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=V, y=wz, mode="lines", name="axial ω_z", line=dict(color=ORANGE, width=2), hovertemplate="V = %{x:.3f}<br>ω_z = %{y:.3f} MHz<extra></extra>"))
-    fig.add_trace(go.Scatter(x=V, y=wr, mode="lines", name="radial ω_r", line=dict(color=BLUE, width=2), hovertemplate="V = %{x:.3f}<br>ω_r = %{y:.3f} MHz<extra></extra>"))
-    fig.add_trace(go.Scatter(x=V, y=2 * wz, mode="lines", name="2 ω_z", line=dict(color=MUTED, width=1, dash="dot"), hoverinfo="skip"))
+    fig.add_trace(go.Scatter(x=V, y=wz, mode="lines", name="axial ω<sub>z</sub>", line=dict(color=ORANGE, width=2), hovertemplate="V = %{x:.3f}<br>ω<sub>z</sub> = %{y:.3f} MHz<extra></extra>"))
+    fig.add_trace(go.Scatter(x=V, y=wr, mode="lines", name="radial ω<sub>r</sub>", line=dict(color=BLUE, width=2), hovertemplate="V = %{x:.3f}<br>ω<sub>r</sub> = %{y:.3f} MHz<extra></extra>"))
+    fig.add_trace(go.Scatter(x=V, y=2 * wz, mode="lines", name="2ω<sub>z</sub>", line=dict(color=MUTED, width=1, dash="dot"), hoverinfo="skip"))
     fig.add_vline(x=x0, line=dict(color=AMBER, width=1, dash="dot"))
     fig.add_annotation(x=x0, y=0.95 * np.nanmax(wr), text="V₀: confinement vanishes", showarrow=False, font=dict(color=AMBER, size=11), xanchor="left", xshift=6)
     return _layout(fig, "Trap secular frequencies vs endcap voltage", "endcap voltage (control units)", "secular frequency (MHz)")
@@ -98,8 +98,8 @@ def stark_figure(params: dict, x_range: tuple[float, float] | None = None):
     f1 = f0 + 0.5 * dfs - 0.5 * a1 * E**2
     f2 = f0 - 0.5 * dfs - 0.5 * a2 * E**2
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=V, y=f1, mode="lines", name="|m_j| = 1/2", line=dict(color=ORANGE, width=2), hovertemplate="V = %{x:.3f}<br>Δf = %{y:.2f} MHz<extra></extra>"))
-    fig.add_trace(go.Scatter(x=V, y=f2, mode="lines", name="|m_j| = 3/2", line=dict(color=BLUE, width=2), hovertemplate="V = %{x:.3f}<br>Δf = %{y:.2f} MHz<extra></extra>"))
+    fig.add_trace(go.Scatter(x=V, y=f1, mode="lines", name="|m<sub>j</sub>| = 1/2", line=dict(color=ORANGE, width=2), hovertemplate="V = %{x:.3f}<br>Δf = %{y:.2f} MHz<extra></extra>"))
+    fig.add_trace(go.Scatter(x=V, y=f2, mode="lines", name="|m<sub>j</sub>| = 3/2", line=dict(color=BLUE, width=2), hovertemplate="V = %{x:.3f}<br>Δf = %{y:.2f} MHz<extra></extra>"))
     fig.add_vline(x=x0, line=dict(color=AMBER, width=1, dash="dot"))
     fig.add_annotation(x=x0, y=f0 + 0.5 * dfs, text=f"stray-field null at V = {x0:.3f}", showarrow=False, font=dict(color=AMBER, size=11), xanchor="left", xshift=6, yshift=12)
     return _layout(fig, "Rydberg Stark map: the parabola vertex is the stray-field null", "plate voltage (control units)", "detuning (MHz)")

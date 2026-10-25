@@ -218,8 +218,21 @@ def _heatmap(image, x, f) -> go.Heatmap:
 def _add_lines(fig: go.Figure, report: dict, **kw):
     xg, lines = _line_arrays(report)
     for name, v in lines.items():
-        fig.add_trace(go.Scatter(x=xg, y=v, mode="lines", name=name, line=LINE_STYLE.get(name, OTHER_LINE), connectgaps=False,
+        fig.add_trace(go.Scatter(x=xg, y=v, mode="lines", name=_pretty(name), line=LINE_STYLE.get(name, OTHER_LINE), connectgaps=False,
                                  hovertemplate=f"{name}: %{{y:.3f}} GHz at %{{x:.3f}}<extra></extra>"), **kw)
+
+
+def _pretty(name: str) -> str:
+    """Legend text for a transition key (0-1 -> 0→1, res -> resonator)."""
+    from ui.plots import pretty
+
+    return pretty(str(name))
+
+
+def _param_html(name: str) -> str:
+    from ui.theme import PARAM_HTML
+
+    return PARAM_HTML.get(str(name), str(name))
 
 
 def _label_order(labels) -> list[str]:
@@ -276,7 +289,7 @@ def residual_figure(report: dict, c_local: float = 0.012, height: int = 220) -> 
         color = LINE_STYLE.get(lab, OTHER_LINE)["color"]
         symbols = np.where(held[m], "circle-open", "circle").tolist()
         custom = np.column_stack([pred[m], np.where(held[m], "held-out column", "fit column")]).tolist()
-        fig.add_trace(go.Scatter(x=P[m, 0], y=r[m], mode="markers", name=f"{lab} ({int((ok & (label == lab)).sum())})", customdata=custom,
+        fig.add_trace(go.Scatter(x=P[m, 0], y=r[m], mode="markers", name=f"{_pretty(lab)} ({int((ok & (label == lab)).sum())})", customdata=custom,
                                  marker=dict(symbol=symbols, size=8, color=color, line=dict(width=1.5, color=color)),
                                  hovertemplate=f"control %{{x:.3f}}<br>residual %{{y:+.1f}} MHz<br>nearest line {lab} at %{{customdata[0]:.3f}} GHz"
                                                "<br>%{customdata[1]}<extra></extra>"))
@@ -329,7 +342,7 @@ def holdout_figure(report: dict, image, x, f, height: int = 420) -> go.Figure | 
                                  marker=dict(size=4, color=MUTED, opacity=0.6, line=dict(width=0)), hovertemplate=HOVER_PT))
     for m, color, nm in ((test & inl, GREEN, "held-out · within 3σ"), (test & ~inl, RED, "held-out · outside 3σ")):
         if m.any():
-            fig.add_trace(go.Scatter(x=P[m, 0], y=P[m, 1], mode="markers", name=f"{nm} ({int(m.sum())})",
+            fig.add_trace(go.Scatter(x=P[m, 0], y=P[m, 1], mode="markers", name=f"{_pretty(nm)} ({int(m.sum())})",
                                      marker=dict(symbol="square-open", size=9, color=color, line=dict(width=1.5, color=color)), hovertemplate=HOVER_PT))
     _add_lines(fig, report)
     hd = (report.get("best") or {}).get("holdout") or {}
@@ -439,11 +452,11 @@ def crossing_zoom_figure(report: dict, image, x, f, height: int = 360) -> go.Fig
             d01 = _interp(xg, lines.get("0-1", np.full(len(xg), np.nan)), xw)
             dres = _interp(xg, lines.get("res", np.full(len(xg), np.nan)), xw)
         xd, d01b, dresb = _break_swaps(xw, d01, dres, g)
-        fig.add_trace(go.Scatter(x=xw, y=bare_w, mode="lines", name="bare 0-1 (no resonator)", legendgroup="bare", showlegend=first,
+        fig.add_trace(go.Scatter(x=xw, y=bare_w, mode="lines", name="bare 0→1 (no resonator)", legendgroup="bare", showlegend=first,
                                  line=dict(color=MUTED, width=2, dash="dash"), hovertemplate="bare 0-1: %{y:.3f} GHz at %{x:.3f}<extra></extra>"), **kw)
-        fig.add_trace(go.Scatter(x=[x0, x1], y=[fr, fr], mode="lines", name=f"fr = {fr:.3f} GHz", legendgroup="fr", showlegend=first,
+        fig.add_trace(go.Scatter(x=[x0, x1], y=[fr, fr], mode="lines", name=f"f<sub>r</sub> = {fr:.3f} GHz", legendgroup="fr", showlegend=first,
                                  line=dict(color=TEXT, width=1.5, dash="dash"), hoverinfo="skip"), **kw)
-        fig.add_trace(go.Scatter(x=xd, y=d01b, mode="lines", name="dressed 0-1", legendgroup="d01", showlegend=first, connectgaps=False,
+        fig.add_trace(go.Scatter(x=xd, y=d01b, mode="lines", name="dressed 0→1", legendgroup="d01", showlegend=first, connectgaps=False,
                                  line=dict(color=LINE_STYLE["0-1"]["color"], width=3), hovertemplate="dressed 0-1: %{y:.3f} GHz at %{x:.3f}<extra></extra>"), **kw)
         fig.add_trace(go.Scatter(x=xd, y=dresb, mode="lines", name="dressed resonator", legendgroup="res", showlegend=first, connectgaps=False,
                                  line=dict(color=LINE_STYLE["res"]["color"], width=2), hovertemplate="dressed resonator: %{y:.3f} GHz at %{x:.3f}<extra></extra>"), **kw)
@@ -468,11 +481,12 @@ def crossing_zoom_figure(report: dict, image, x, f, height: int = 360) -> go.Fig
                 fig.add_shape(type="line", x0=xa, x1=xb, y0=y0, y1=y1, line=dict(color=ACCENT, width=2), **kw)
             text = f"2g ≈ {2000 * g:.0f} ± {2000 * sigma_g:.0f} MHz" if np.isfinite(sigma_g) else f"2g ≈ {2000 * g:.0f} MHz"
             if abs(gap - 2000 * g) > 0.05 * 2000 * g:
-                text += f"<br><span style='color:{MUTED}'>branch gap here {gap:.0f} MHz = 2g·|⟨0|n|1⟩|</span>"
-            fig.add_annotation(x=xc, y=0.5 * (ylo + yhi), text=text, showarrow=False, xanchor="left", yanchor="middle", xshift=8,
-                               font=dict(size=12, color=ACCENT, family=MONO), align="left", **kw)
+                text += f"<br><span style='color:{MUTED}'>gap here {gap:.0f} MHz</span>"  # 2g·|⟨0|n|1⟩| at this flux
+            left_side = c == 1 or n == 1  # later sub-plots annotate to the left of the crossing so the text stays inside the panel
+            fig.add_annotation(x=xc, y=0.5 * (ylo + yhi), text=text, showarrow=False, xanchor="left" if left_side else "right", yanchor="middle",
+                               xshift=8 if left_side else -8, font=dict(size=12, color=ACCENT, family=MONO), align="left" if left_side else "right", **kw)
         fig.update_xaxes(range=[xc - hw, xc + hw], title_text="control", showgrid=False, **kw)
-    title = f"avoided crossing{'s' if n > 1 else ''}: the bare 0-1 line would cross fr = {fr:.3f} GHz; the data follow the dressed branches split by 2g ≈ {2000 * g:.0f} MHz"
+    title = f"Avoided crossing{'s' if n > 1 else ''} at f<sub>r</sub> = {fr:.3f} GHz: dressed branches split by 2g ≈ {2000 * g:.0f} MHz"
     _style(fig, height, title=title, margin=dict(l=62, r=14, t=64, b=108))
     fig.update_yaxes(range=[f_lo, f_hi], showgrid=False)
     fig.update_yaxes(title_text="drive frequency (GHz)", row=1, col=1)
@@ -526,10 +540,10 @@ def pull_figure(report: dict, truth_params: dict, height: int = 260) -> go.Figur
         fig.add_annotation(x=xv, yref="paper", y=1.0, yanchor="bottom", xanchor="left", xshift=2, text=txt, showarrow=False, font=dict(size=12, color=col, family=MONO))
     if beyond.any():
         fig.add_annotation(xref="paper", yref="paper", x=0.996, y=0.02, xanchor="right", yanchor="bottom", showarrow=False, align="right",
-                           text="off scale: " + ", ".join(f"{n} {v:+.1f}σ" for n, v, b in zip(names, pulls, beyond) if b), font=dict(size=12, color=RED, family=MONO))
+                           text="off scale: " + ", ".join(f"{_param_html(n)} {v:+.1f}σ" for n, v, b in zip(names, pulls, beyond) if b), font=dict(size=12, color=RED, family=MONO))
     _style(fig, height, title="pull per parameter", legend=False, margin=dict(l=72, r=16, t=52, b=48))
     fig.update_xaxes(title_text="(fit − truth) / σ", range=[-lim, lim], dtick=1, showgrid=True)
-    fig.update_yaxes(tickvals=ys, ticktext=names, range=[len(rows) - 0.4, -0.6], showgrid=False, tickfont=dict(size=12, color=TEXT))  # first parameter on top
+    fig.update_yaxes(tickvals=ys, ticktext=[_param_html(n) for n in names], range=[len(rows) - 0.4, -0.6], showgrid=False, tickfont=dict(size=12, color=TEXT))  # first parameter on top
     fig.update_layout(meta=dict(kind="pull", pulls={n: round(float(v), 3) for n, v in zip(names, pulls)}, n_beyond=int(beyond.sum())))
     return fig
 
