@@ -1,6 +1,6 @@
 # Demo runbook: exactly what to do and say
 
-Works for the recorded video and for a live screen share. Total on-camera time about 60 seconds; preparation about 10 minutes.
+Works for the recorded video and for a live screen share. Total on-camera time about 90 seconds; preparation about 10 minutes.
 
 ## A. Preparation (do all of this before recording or sharing)
 
@@ -26,34 +26,34 @@ Works for the recorded video and for a live screen share. Total on-camera time a
    If it is a bare template or missing, the API key or credits are the problem; the demo still works, just skip any mention of Claude.
 7. Go back to Tab 1, top of the page. Start recording / sharing.
 
-## B. The 60-second demo, click by click
+## B. The 90-second demo, click by click
 
-Each step: what you do, what is on screen, what you say. Keep the voice relaxed; the numbers do the work.
+Each step: what you do, what is on screen, what you say. The lines are written to be spoken; keep a relaxed pace and let the screen carry the numbers.
 
-**Step 1 (0:00–0:14) Tab 1, top of page.**
+**Step 1 (0:00–0:20) Tab 1, top of page.**
 Do: nothing, just hover over the verdict band.
-Screen: the big title, the Hamiltonian with amber numbers in parentheses, the KPI tiles (held-out RMS, % explained, margin, Bayes factor), the schematic.
-Say: "This is qĤolmes. It reads the Hamiltonian of a quantum device straight off its spectroscopy map. A raw map goes in. This comes out: the circuit, its Hamiltonian with the fitted numbers in place, the held-out error, and a Bayes factor against the next-best family. Every number comes from a physics fit checked against scqubits."
+Screen: the big title, the Hamiltonian with amber numbers in parentheses, the KPI tiles, the schematic.
+Say: "This is qĤolmes. Every lab that brings up a new quantum chip starts with the same picture, a spectroscopy map full of lines, and then spends hours working out by hand which circuit made them and what its energies are. qĤolmes reads that off the map. What you are looking at is the result for one device: the circuit it identified, the Hamiltonian with the fitted energies written in, how well it predicts the columns it never saw, and a Bayes factor against the next-best family. Every number here comes from a physics fit that is checked against scqubits in the test suite, not from a neural network."
 
-**Step 2 (0:12–0:27) Tab 1, scroll down past "Hypotheses Tested" to "Evidence".**
-Do: scroll until the large annotated map is in view, pause two seconds, then scroll a little further to the two small panels (held-out columns; avoided crossings).
-Screen: the map with coloured fitted lines over the data, numbered amber boxes; then the crossing zoom with the orange and white branches.
-Say: "It found the readout resonator by itself, from the bend the bare circuit left at 7 GHz; here is the splitting it measured. The one line it cannot explain, it calls a pump tone, because the qubit crosses it without splitting."
+**Step 2 (0:20–0:40) Tab 1, scroll down past "Hypotheses Tested" to "Evidence".**
+Do: scroll until the large annotated map is in view, pause two seconds, then on to the two small panels (held-out columns; avoided crossings).
+Screen: the map with coloured fitted lines over the data and numbered amber boxes; then the crossing zoom with the orange and white branches.
+Say: "The map behind it is the raw data with the fitted transitions drawn on top. Notice that it found the readout resonator on its own: the bare circuit could not explain the bend at seven gigahertz, so it hypothesised a coupled resonator and then measured the splitting there. Just as important is what it refuses to explain. That flat line at five gigahertz is a pump tone, and it says so, because the qubit crosses it without any splitting."
 
-**Step 3 (0:27–0:42) Tab 1, scroll to "Next Measurements", then "Autopilot".**
-Do: pause on the ranked table (right side) for a beat, then scroll to the Autopilot result and drag the **Round** slider from 0 to 2.
-Screen: the ranked sweeps with bits; then the autopilot map changing per round and the σ-versus-round chart.
-Say: "It ranks the next sweep by information gain in bits, and the autopilot runs that loop on a digital twin: 40 % of the sweep, choose, measure, refit. Watch the error bars fall."
+**Step 3 (0:40–1:00) Tab 1, scroll to "Next Measurements", then "Autopilot".**
+Do: pause on the ranked table for a beat, then scroll to the Autopilot result and drag the **Round** slider from 0 to 3.
+Screen: the ranked sweeps in bits; then the autopilot map changing round by round and the σ-versus-round chart.
+Say: "Because it knows what it has not explained, it can also say what to measure next. These sweeps are ranked by expected information gain, in bits, from the Fisher information of the fit. And in autopilot mode it closes the loop on a digital twin: it starts from forty percent of the sweep, picks the most informative block, measures it, refits, and you can watch the error bars collapse round by round. Swap one function for an instrument driver and this is self-driving spectroscopy."
 
-**Step 4 (0:42–0:52) Tab 2.**
-Do: switch to Tab 2 and press **Identify Circuit**. It finishes in under ten seconds; let the stepper run while you talk.
+**Step 4 (1:00–1:15) Tab 2.**
+Do: switch to Tab 2 and press **Identify Circuit**; let the stepper run while you talk (under ten seconds).
 Screen: the pipeline stepper lighting up, then the NV verdict band with the spin Hamiltonian.
-Say: "Same engine on an NV-centre map: zero-field splitting, strain, field direction, in seconds. Quantum dots, trapped ions and Rydberg atoms work the same way."
+Say: "None of this is specific to superconducting circuits. This is the same engine on an NV-centre map, and in a few seconds it returns the zero-field splitting, the strain, the field direction and the coil calibration. Quantum dots, trapped-ion sidebands and Rydberg Stark maps work the same way, each with its own Hamiltonian."
 
-**Step 5 (0:52–1:00) Tab 3.**
+**Step 5 (1:15–1:30) Tab 3.**
 Do: switch to Tab 3, scroll to Diagnostics (the Truth and Design tab is already selected) and switch the **Reveal Hidden Truth (Demo)** toggle ON.
-Screen: a table "fitted ± σ | truth | within 2σ" with green ticks; the paper's E_J, E_C, E_L beside the fit.
-Say: "A published fluxonium map, no tuning: the parameters match the paper. It knows when it is wrong, it says what to measure next, and the same engine is a CLI and a REST API. github.com/jgconroy/qholmes."
+Screen: a table of fitted values against the paper's values, with green ticks.
+Say: "Finally, real data. This is a fluxonium map digitised from a 2019 PRX paper, run with no tuning at all, and the three energies land on the published values within their error bars. It knows when it is wrong, it tells you what to measure next, and the same engine is available as a command line and a REST API. The code is at github.com/jgconroy/qholmes."
 
 Stop recording.
 
