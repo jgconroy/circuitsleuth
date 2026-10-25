@@ -412,8 +412,8 @@ if param_bounds:
                                                      for n in param_bounds), "amber"))
 if not has_result:
     # ---- landing state: the input map on the left, the run card with the pipeline stepper on the right
-    st.markdown(f"Upload a two-tone spectroscopy map. {theme.BRAND_NAME} proposes circuit hypotheses, fits each against the detected "
-                "features with a robust physics model (checked against scqubits), verifies on held-out flux columns, lists what it "
+    st.markdown(f"Upload a spectroscopy map. {theme.BRAND_NAME} proposes candidate Hamiltonians, fits each against the detected "
+                "features with a robust physics model, verifies on held-out columns, lists what it "
                 "**cannot** explain, and tells you **where to measure next**.")
     left, right = st.columns([1.15, 1])
     with left:
