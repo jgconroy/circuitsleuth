@@ -195,7 +195,7 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
 ### Test status at Sun ~04:10
 - All quick suites pass (models, synth/extract, platforms, lab_features incl. design, loop, posterior): 32 tests, 18 s, re-run Sun ~04:15
   after the relabel change. `tests/test_fit.py` 7/7 pass (6 min, Sun ~04:20) incl. the new relabel test.
-- `tests/test_agent.py`: **4/4 pass** again Sun ~00:25 PDT (33 min) with the Bayesian evidence + generalised relabel step in place (geometric priors
+- `tests/test_agent.py`: **4/4 pass** again Sun ~04:40 PDT (33 min) with escalation + fluxonium valley sweep; and Sun ~00:25 PDT with the Bayesian evidence + generalised relabel step in place (geometric priors
   touch dots/atoms only). Earlier: `test_agent_identifies_fixed_transmon` re-passed Sat ~21:10 PDT after the relabel fix
   (5.5 min; transmon EJ 15.023 / EC 0.280, truth 15 / 0.28; transmon+resonator second at 0.810). The other three passed Sun ~03:00 on
   code that differs only by the relabel step, which runs for control-independent circuit hypotheses only.
