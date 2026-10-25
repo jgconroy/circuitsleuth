@@ -127,7 +127,31 @@ def _score(res: fit.FitResult, pts_all, ids, flat, band, c_local, model_kw=None)
     return float(ts - 0.02 * len(res.params) - rms_pen), inl
 
 
-def unexplained_features(pts_all, ids, inlier_all, flat, qubit_line=None) -> list[dict]:
+def unexplained_features(pts_all, ids, inlier_all, flat, qubit_line=None, tol: float = 0.02) -> list[dict]:
+    """Unexplained tracks, merged when their frequency ranges overlap (within `tol`): one spur that the linker split into several
+    segments is one feature for the reader, not four cards."""
+    out = _unexplained_tracks(pts_all, ids, inlier_all, flat, qubit_line)
+    out.sort(key=lambda s: s["f_lo"])
+    merged: list[dict] = []
+    for s in out:
+        if merged and s["f_lo"] <= merged[-1]["f_hi"] + tol:
+            m = merged[-1]
+            n0, n1 = m["n_points"], s["n_points"]
+            m["f_mean"] = (m["f_mean"] * n0 + s["f_mean"] * n1) / (n0 + n1)
+            m["unexplained_frac"] = round((m["unexplained_frac"] * n0 + s["unexplained_frac"] * n1) / (n0 + n1), 2)
+            if (n1 > n0) or (s["flat"] and not m["flat"] and n1 >= 0.5 * n0):
+                m["interpretation"], m["flat"] = s["interpretation"], s["flat"]
+            m["n_points"] = n0 + n1
+            m["f_lo"], m["f_hi"] = min(m["f_lo"], s["f_lo"]), max(m["f_hi"], s["f_hi"])
+            m["x_lo"], m["x_hi"] = min(m["x_lo"], s["x_lo"]), max(m["x_hi"], s["x_hi"])
+            m["weight"] = max(m["weight"], s["weight"])
+            m["merged_tracks"] = m.get("merged_tracks", 1) + 1
+        else:
+            merged.append(dict(s))
+    return merged
+
+
+def _unexplained_tracks(pts_all, ids, inlier_all, flat, qubit_line=None) -> list[dict]:
     out = []
     for s in extract.summarize_tracks(pts_all, ids):
         m = ids == s["track"]
@@ -602,7 +626,7 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
     except Exception:  # noqa: BLE001  (optional: must never fail a run)
         evidence = {}
     model_post = fit.model_posterior(evidence) if evidence else {}
-    unexpl = unexplained_features(points, ids, best_inl | art, flat, qubit_line=best.lines.get("0-1"))  # artefact columns are not unexplained physics
+    unexpl = unexplained_features(points, ids, best_inl | art, flat, qubit_line=best.lines.get("0-1"), tol=scales["flat_tol"])  # artefact columns are not unexplained physics
     nxt = next_measurements(best, points, band, x_grid, cfg.c_local)
     report = dict(
         status="ok",
