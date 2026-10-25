@@ -315,6 +315,21 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
   fixed-transmon confusion is documented as the main circuit limitation.
 - Note for the next person: blind tables are EVALUATIONS of the physics fitter (nothing accumulates); only the CNN proposer is trained.
 
+### Sun ~02:40 PDT: overnight plan and morning checklist (user asleep from ~02:20)
+- Overnight trainer `bigmachine/overnight.py` (package v8): self-regulating (measure → generate 40 % of budget → epochs that fit → keeps
+  `classifier_best.pt/json` → stops before deadline).  User started it on Lanthanum (`--hours 6.5 --workers 30 --width 3`) and QEC1
+  (`--hours 6.0 --workers 14 --width 2`) from fresh v7 folders with the patched overnight.py (older-interpreter annotation fix).
+- **Morning (user):** copy `classifier_best.pt` + `classifier_best.json` from both machines into e.g. `out/lanthanum_v7/` and `out/qec1_v7/`,
+  plus any finished `blind_*.jsonl`.  Then: `python scripts/adopt_classifier.py out/lanthanum_v7/classifier_best.pt out/qec1_v7/classifier_best.pt`
+  (adopts the better one only if fam_acc beats 0.9363; keeps classifier_prev.*), `python scripts/apptest_quick.py`, restart streamlit.
+- Devpost: `docs/devpost_submission.md` (paragraphs unwrapped; the About block was also pasted in chat).  Demo: `docs/demo_runbook.md`.
+- Ask qĤolmes stress test (10 questions, 3 reports): 0 errors, 3–7 s, grounded, refuses "ignore your tools", says T1 is not measurable.
+- Surprise demo seed study (fast preset): seed 1 (tunable transmon) exact → default seed set to 1.  Seeds 4/6/7 are family misses (flux-tunable
+  read as fixed transmon / fluxonium), seeds 2/3/5 fluxonium with EJ–EC 25–55 % off while EL is right: the fast-preset fluxonium
+  parameter weakness (10-map fluxonium table with the skip fix: family 10/10, params within 5 % 3/10; normal preset is far better).
+- Running: `scratchpad/prior_exp.log` compares prior_weight 0.05 vs 0.25 on six hard maps (seeds 4/7/6, fluxonium cases 2/3/7) to
+  decide whether the pipeline should lean on the CNN proposer more (the user's request).  Adopt only if it fixes misses without new ones.
+
 ## 5. Pending / in progress (check before starting new work)
 - (done Sat ~19:30) Circuit blind rerun with the validity-fixed generator: family **7/10**, params <5 % 2/10 (unchanged causes: fixed-transmon
   EJ/EC degeneracy without a 2-photon line; tunable+resonator mistaken for fluxonium in 2 maps; one faint fluxonium -> transmon+res).
