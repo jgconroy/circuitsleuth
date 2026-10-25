@@ -140,6 +140,15 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
 - Resonator scenario (tests/test_agent.py -k resonator_and_spur) re-passed under the flux-dependent-evidence rule (12 min): EJmax 25.3, EC 0.296, fr 7.003, g 0.099.
 - Demo B regenerated: EJ 5.998, EC 1.000, EL 0.600, offset −0.300. A full `tests/test_agent.py` run with the FINAL code has not completed yet (one with the new extractor but the old acceptance rule was running Sat ~22:00); rerun it when the laptop is idle and record the result here.
 
+### Sat late: two more platforms
+- `trapped_ion` (platform "ion"): sideband detunings in MHz vs endcap voltage; ω_z = volt_scale·√(V − x0), ω_r² = f_rad0² − ω_z²/2; lines carrier,
+  ±ω_z, ±ω_r, ±2ω_z. Hand-picked recovery exact (f_rad0 3.2009, volt_scale 1.7995, x0 −1.2996), seconds.
+- `rydberg_atom` (platform "atom"): two |mj| components with quadratic Stark shifts vs plate voltage; E = field_scale·(V − x0). α and field_scale are
+  degenerate (only α·field_scale² is observable): the derived table reports the Stark curvature per unit² and says to fix field_scale under
+  Known parameters to get α. Recovery: curvatures within 1 %, dfs 11.95 (12), x0 0.1207 (0.12).
+- Frequency units are per platform (`PLATFORMS[...]["freq_unit"/"freq_label"]`, MHz for ion/atom); all numeric code is unit-agnostic.
+- URL params now: `?platform=ion&demo=J`, `?demo=A&load=1`.
+
 ## 5. Pending / in progress (check before starting new work)
 - (done Sat ~19:30) Circuit blind rerun with the validity-fixed generator: family **7/10**, params <5 % 2/10 (unchanged causes: fixed-transmon
   EJ/EC degeneracy without a 2-photon line; tunable+resonator mistaken for fluxonium in 2 maps; one faint fluxonium -> transmon+res).

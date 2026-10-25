@@ -20,12 +20,14 @@ the flux period all come back within 1 % (precomputed result shipped with the ap
 ## Not just circuit QED
 
 The pipeline is "spectrum versus a control knob, explained by a small Hamiltonian", so other platforms plug
-in as families. Two are included beyond superconducting circuits:
+in as families. Four are included beyond superconducting circuits:
 
 | platform | measurement | model | parameters recovered |
 |---|---|---|---|
 | NV centres in diamond | ODMR lines vs coil current | S = 1 Hamiltonian D Sz² + E(Sx² − Sy²) + γ B·S for the four ⟨111⟩ orientations | D, E, field direction (θ, φ), gauss per unit current, zero-field current |
 | Semiconductor double quantum dot | charge-qubit spectroscopy vs detuning gate | f = √(ε² + (2 t_c)²), ε = lever arm × (V − V₀) | tunnel coupling t_c, lever arm, detuning zero |
+| Trapped ion | motional-sideband spectrum (detuning from the carrier) vs endcap voltage | ω_z = a√(V − V₀), ω_r² = f_r0² − ω_z²/2; sidebands at ±ω_z, ±ω_r, ±2ω_z | axial and radial secular frequencies, voltage-to-frequency calibration, the voltage where confinement vanishes |
+| Neutral atom (Rydberg) | Stark map of an nD line vs field-plate voltage | Δf = f₀ ± Δ_fs/2 − ½ α E², E = s(V − V₀) | the stray-field null voltage, the two polarisabilities (as Stark curvatures unless the plate calibration is fixed), the component splitting |
 
 On hand-picked hidden maps both come back to better than 1 % (`tests/test_platforms.py`); on random
 hidden maps (`python demo.py --platform nv|dot`) the family is always identified and every parameter is

@@ -8,7 +8,7 @@
 
 **1:30 – 2:05  What it cannot explain and where to look next.**  The 5.1 GHz line card: "the qubit crosses it with no splitting, so it is a tone, not a coupled mode." The numbered 'look here' cards matching the badges on the map. The spec sheet: sweet-spot bias values, dispersive shift by exact diagonalisation, flux-noise Tφ. "A fitter's most useful output is the list of things it could not fit, and the measurement that would settle them."
 
-**2:05 – 2:25  Not just circuit QED.**  Switch platform to "NV centres in diamond", pick the demo, click Identify (it finishes in seconds): "Same engine, different Hamiltonian: zero-field splitting, strain, the field direction and the gauss-per-amp calibration, from an ODMR map. Quantum dots work the same way. A new platform is one function."
+**2:05 – 2:25  Not just circuit QED.**  Switch platform to "NV centres in diamond", pick the demo, click Identify (it finishes in seconds): "Same engine, different Hamiltonian: zero-field splitting, strain, the field direction and the gauss-per-amp calibration, from an ODMR map. Quantum dots, trapped-ion sidebands and Rydberg Stark maps work the same way; five platforms, and a new one is one function."
 
 **2:25 – 2:45  Real data.**  Switch to demo E: a 2019 PRX fluxonium map digitised from the paper. Show the recovered EJ, EC, EL next to the paper's values, and the flux period coming out as one flux quantum because the paper's axis was already calibrated. "No tuning for this dataset. Same code."
 

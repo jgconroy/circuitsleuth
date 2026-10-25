@@ -38,6 +38,13 @@ def main():
             if "period" in b["params"] and synth.models.FAMILIES[t["family"]]["flux_dependent"]:
                 errs["period"] = abs(b["params"]["period"] - t["period"]) / t["period"]
             circuit_errs = {k: v for k, v in errs.items() if k not in ("fr", "g", "x0", "phi", "theta")}  # resonator params need a crossing; angles/offsets judged below
+            if t["family"] == "rydberg_atom":  # alpha and the plate calibration only enter as alpha * field_scale^2
+                for a_name in ("alpha1", "alpha2"):
+                    tv = t["params"][a_name] * t["params"]["field_scale"] ** 2; fv = b["params"][a_name] * b["params"]["field_scale"] ** 2
+                    circuit_errs[a_name + "_curv"] = abs(fv - tv) / tv
+                    circuit_errs.pop(a_name, None)
+                circuit_errs.pop("field_scale", None)
+                circuit_errs["f0"] = abs(b["params"]["f0"] - t["params"]["f0"]) / 0.5 * 0.05  # 0.5 MHz absolute
             if t["family"] == "nv_ensemble":  # field direction up to tetrahedral symmetry, scaled by gauss-per-unit
                 pt, pf = synth.models.nv_projections(t["params"]["theta"], t["params"]["phi"]) * t["params"]["field_scale"], synth.models.nv_projections(b["params"]["theta"], b["params"]["phi"]) * b["params"]["field_scale"]
                 circuit_errs["field_vector"] = float(np.max(np.abs(pf - pt) / np.maximum(pt, 1.0)))
