@@ -10,7 +10,7 @@ transitions live, lists every feature it **cannot** explain, and tells you **whe
 
 Built in 36 hours at Cal Hacks 13.0 (Oct 2026).
 
-![real data](artifacts/fig_real.png)
+![real data: qĤolmes fit vs the paper](artifacts/fig_real_fit_vs_paper.png)
 
 *Above: a published fluxonium spectroscopy map (Nguyen et al., PRX 9, 041041, 2019, device A), digitised
 from the paper's vector PDF. Ĥolmes was told nothing except "this is a map between 0 and 5 GHz".*
