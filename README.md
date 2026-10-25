@@ -213,8 +213,11 @@ a map takes about 2 min with the 'fast' preset and 5–6 min with 'normal' (whic
 Parameters are judged with the symmetry-aware metrics of `run_blind.py` (NV field vector up to the tetrahedral symmetry, Rydberg
 Stark curvatures α·κ², offsets modulo the period). Tables: `artifacts/qec_blind_*.jsonl`, `artifacts/lanthanum_blind_circuit.jsonl`,
 `artifacts/qec_fast_blind_circuit.jsonl`; `python scripts/summarize_blind.py <files>` regenerates this table. For circuits the
-confusion is almost entirely one-directional (a flux-tunable device read as a fixed transmon plus a resonator); the previous-code
-baseline on 200 maps was 70 % family, and a rerun with the fixed skip rule (`agent.DYN_MIN_ABS`) is in progress.
+confusion is almost entirely one-directional (a flux-tunable device read as a fixed transmon plus a resonator). Part of it was a
+rule that skipped the flux-tunable families when fewer than 20 % of the features vary with flux, which three pump lines can trigger
+on a 50-point fluxonium; with an absolute floor instead (`agent.DYN_MIN_ABS`) a 10-map fluxonium-only table went from 8/10 to
+10/10 families identified. Fluxonium *parameters* with the fast preset remain the weak spot (3/10 within 5 % on that table; the
+normal preset, which the saved demos use, recovers 16/20 on the 120-map table).
 
 ### Proposer (CNN on 64×64 thumbnails, 190 000 synthetic maps, 30 epochs, trained on a 32-core machine)
 
