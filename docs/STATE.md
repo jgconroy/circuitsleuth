@@ -275,6 +275,13 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
 - Test: `tests/test_platforms.py::test_geometric_priors_recover_dot_and_stark_parameters`.  8-map laptop reruns (Sun ~00:55): dot **8/8**
   (was 5/8), atom 6/8 by demo.py's curvature rule, ion 7/8, NV 7/8.  QEC v4 reruns (Sun ~00:15, `artifacts/qec_blind_{dot,atom}_v4.jsonl`): **dot 58 % → 78 %**, **atom 57 % → 63 %** within 5 %. Pending: `tests/test_agent.py` v5 (background).
 
+### Sun ~00:35 PDT: qĤolmes + reliability flag
+- User asked for a q in front of the name in the UI: `theme.BRAND_NAME = "qĤolmes"` (header wordmark, tab title, Ask panel, API title,
+  LLM prompts).  README / Devpost / BRAND.md still say Ĥolmes (user said "in the UI"); file names stay `holmes_*`.
+- `agent.identify`: confidence gets `poorly_explained=True` and level "low" when the winning track score < 0.1 (on the 200-map tables the
+  wrong-parameter maps average −0.18 (dots) / 0.17 (atoms) vs 0.36 / 0.45 for correct ones).  All demos stay above 0.46.
+- `artifacts/ui_results.png` regenerated with the new header.
+
 ## 5. Pending / in progress (check before starting new work)
 - (done Sat ~19:30) Circuit blind rerun with the validity-fixed generator: family **7/10**, params <5 % 2/10 (unchanged causes: fixed-transmon
   EJ/EC degeneracy without a 2-photon line; tunable+resonator mistaken for fluxonium in 2 maps; one faint fluxonium -> transmon+res).
