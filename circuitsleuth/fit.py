@@ -373,7 +373,7 @@ def fit_hypothesis(points, hyp, band, bounds=None, init=None, c_global=0.08, c_l
         best = _fit_once(points, hyp, band, bounds=nar, init=resA.params, c_global=c_global, c_local=c_local, maxiter=max(20, int(maxiter * 0.7)), popsize=popsize,
                          seed=seed + 13, workers=workers, callback=callback, model_kw=model_kw, do_global=True)
         if best.inlier_frac > 0.97:
-            return best
+            return _normalise_offset(best, x_all)
     for k in range(max(1, n_starts) if do_global else 1):
         res = _fit_once(points, hyp, band, bounds=base_bounds, init=init, c_global=c_global, c_local=c_local, maxiter=maxiter, popsize=popsize,
                         seed=seed + 1000 * k, workers=workers, callback=callback, model_kw=model_kw, do_global=do_global)
