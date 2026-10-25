@@ -18,6 +18,8 @@
 
 **Q&A ammunition**
 - How is the winner chosen? Two independent criteria agree: a feature-level score (explained track weight minus penalties, robust to pump tones) and a Bayesian model posterior from Laplace evidences under a Gaussian-plus-uniform-background likelihood. The score decides; the posterior is shown.
+- Can I talk to it? Yes: the "Ask qĤolmes" panel at the bottom. Claude answers questions about the device by calling the physics engine as tools (bias point for 5 GHz, why the resonator model won, what to measure next); every number in an answer comes from a tool call and the tools used are listed. Good 20-second demo if a judge asks about the LLM.
+- Does it know when it is wrong? When the winning model explains little of the coherent data (score below 0.1) the confidence box says so and points at the unexplained features; on the 200-map tables that flag catches most of the wrong-parameter maps.
 - Can a lab script it? Yes: `python batch.py <folder>` for a directory of maps, `uvicorn api:app` for a REST endpoint (`POST /identify`), a Dockerfile, and GitHub Actions running the physics, extraction and API suites on every push.
 - Why not just least squares? Spurs and missing lines break it; Geman–McClure bounds the cost of any outlier; features are scored, not pixels.
 - Does the neural net decide anything? No. It proposes families and starting points; every number is from the physics fit, with Jacobian uncertainties.
