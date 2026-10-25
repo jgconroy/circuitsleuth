@@ -293,6 +293,16 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
   tspans, legends, level labels), parentheses around fitted numbers in the KaTeX Hamiltonian, Bayes factor as a KPI, no sidebar resize
   handle, main column fills the window when the sidebar is collapsed (`[data-collapsed]` selectors), platform order circuit → atom → ion → nv → dot.
 
+### Sun ~01:50 PDT: circuit skip rule, sentence capitals
+- **Fluxonium failure mode found and fixed** (before Lanthanum's table): with 2–3 pump lines (81 points each) the rule "skip flux-tunable
+  families when < 20 % of features vary with flux" tripped on 45–75-point fluxonium maps, and with the CNN proposing only tunable families the
+  run ended in "no hypothesis could be fitted".  Now `agent.DYN_MIN_ABS = 40`: the threshold is max(10, min(0.2 n, 40)) (same rule in
+  `_fit_points_for` and the evidence point set), and the fixed transmon is fitted as a fallback when every proposed family was skipped.
+  `tests/test_agent.py -k "fixed_transmon or points_input"` still pass (12 min).  10-map fluxonium table rerunning (`scratchpad/flux_table_v6.log`).
+- `theme.cap_first` (guarded: symbols such as g, f01, φ untouched) applied to captions, notes, status lines, pills, card sub/why lines and,
+  through `plots.capitalize_labels`, to every chart's legend entries, axis titles and annotations (called last in each figure builder).
+  Crossing-zoom annotations are now centred at the top of each sub-plot.
+
 ## 5. Pending / in progress (check before starting new work)
 - (done Sat ~19:30) Circuit blind rerun with the validity-fixed generator: family **7/10**, params <5 % 2/10 (unchanged causes: fixed-transmon
   EJ/EC degeneracy without a 2-photon line; tunable+resonator mistaken for fluxonium in 2 maps; one faint fluxonium -> transmon+res).

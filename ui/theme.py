@@ -276,7 +276,7 @@ def eyebrow(text: str, amber: bool = False) -> str:
 
 def pill(text: str, kind: str = "") -> str:
     """A small status label. kind in {"", "amber", "green", "red", "blue"}."""
-    return f'<span class="cs-pill {kind}">{esc(text)}</span>'
+    return f'<span class="cs-pill {kind}">{esc(cap_first(text))}</span>'
 
 
 def pills(items, kind: str = "") -> str:
@@ -285,7 +285,7 @@ def pills(items, kind: str = "") -> str:
 
 def status_html(label: str, text: str, kind: str = "", t: float | None = None) -> str:
     ts = f'<span class="t">{t:5.1f} s</span>' if t is not None else ""
-    return f'<div class="cs-status">{pill(label, kind)}{ts}<span class="m" title="{esc(text)}">{esc(text)}</span></div>'
+    return f'<div class="cs-status">{pill(label, kind)}{ts}<span class="m" title="{esc(text)}">{mathify(esc(cap_first(text)))}</span></div>'
 
 
 def log_html(lines, keep: int | None = None) -> str:
@@ -293,12 +293,22 @@ def log_html(lines, keep: int | None = None) -> str:
     return f'<div class="cs-log">{body}</div>'
 
 
+def cap_first(text: str) -> str:
+    """Sentence-start capital: upper-case the first letter when the text opens with an ordinary lower-case word (two or more
+    letters, no digits); symbols such as g, d, f01 or φ, and strings that open with a tag, are left alone."""
+    s = str(text or "")
+    m = re.match(r"^([a-z][a-z'’-]+)\b", s)
+    if not m or m.group(1) in _KEEP_WORDS:
+        return s
+    return s[0].upper() + s[1:]
+
+
 def caption(text: str) -> str:
-    return f'<div class="cs-caption">{esc(text)}</div>'
+    return f'<div class="cs-caption">{mathify(esc(cap_first(text)))}</div>'
 
 
 def note(text: str) -> str:
-    return f'<div class="cs-note">{esc(text)}</div>'
+    return f'<div class="cs-note">{mathify(esc(cap_first(text)))}</div>'
 
 
 def num(value, unit: str = "", sigma=None, sig: int = 4) -> str:
@@ -469,7 +479,7 @@ def hamiltonian_html(family: str, params: dict, coupled: bool) -> str:
 def spec_rows_html(rows: list[tuple[str, str, str]]) -> str:
     """rows: (label, value_html, note) -> dim label left, mono value right, note as a tooltip."""
     if not rows:
-        return '<div class="cs-spec-empty">nothing to show for this result</div>'
+        return '<div class="cs-spec-empty">Nothing to show for this result</div>'
     out = []
     for label, value, note_txt in rows:
         title = f' title="{esc(note_txt)}"' if note_txt else ""
@@ -485,8 +495,8 @@ def card_html(badge: str | None, kicker: str, big: str, sub: str, why: str, mute
     b = f'<span class="cs-badge{" muted" if muted_badge else ""}">{esc(badge)}</span>' if badge is not None else ""
     k = f'<div class="cs-eyebrow">{mathify(esc(title_case(kicker)))}</div>' if kicker else ""
     big_html = f'<div class="f">{big}</div>' if big else ""
-    sub_html = f'<div class="x">{mathify(esc(sub))}</div>' if sub else ""
-    why_html = f'<div class="why">{mathify(esc(why))}</div>' if why else ""
+    sub_html = f'<div class="x">{mathify(esc(cap_first(sub)))}</div>' if sub else ""
+    why_html = f'<div class="why">{mathify(esc(cap_first(why)))}</div>' if why else ""
     return f'<div class="cs-card cs-look"><div class="head">{b}{k}</div>{big_html}{sub_html}{why_html}</div>'
 
 

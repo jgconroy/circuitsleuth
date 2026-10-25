@@ -44,6 +44,23 @@ def line_color(name: str) -> str:
     return LINE_STYLE.get(name, OTHER_LINE)["color"]
 
 
+def capitalize_labels(fig: go.Figure) -> go.Figure:
+    """Sentence-start capitals on legend entries, axis titles and annotations (symbols and digits untouched)."""
+    from ui.theme import cap_first
+
+    for tr in fig.data:
+        if getattr(tr, "name", None):
+            tr.name = cap_first(tr.name)
+    for ax in ("xaxis", "yaxis", "xaxis2", "yaxis2", "xaxis3", "yaxis3"):
+        a = getattr(fig.layout, ax, None)
+        if a is not None and a.title is not None and a.title.text:
+            a.title.text = cap_first(a.title.text)
+    for an in fig.layout.annotations or ():
+        if an.text:
+            an.text = cap_first(an.text)
+    return fig
+
+
 def _style(fig: go.Figure, height: int, title: str | None = None, legend: bool = True, margin: dict | None = None, legend_below: bool = True) -> go.Figure:
     if legend_below:
         leg = dict(orientation="h", x=0, y=-0.14, xanchor="left", yanchor="top", bgcolor="rgba(0,0,0,0)", borderwidth=0,
@@ -66,7 +83,7 @@ def _style(fig: go.Figure, height: int, title: str | None = None, legend: bool =
                 tickfont=dict(size=12, color=MUTED, family=MONO), title_font=dict(size=13, color=MUTED, family=FONT))
     fig.update_xaxes(**axis)
     fig.update_yaxes(**axis)
-    return fig
+    return capitalize_labels(fig)
 
 
 def _finite(vals) -> np.ndarray:
@@ -126,7 +143,7 @@ def map_figure(image, x, f, points=None, inlier=None, lines=None, x_grid=None, l
     _style(fig, height, title=title, margin=dict(l=62, r=14, t=40 if title else 14, b=92))
     fig.update_xaxes(title_text=xlabel, range=[float(x[0]), float(x[-1])], showgrid=False)
     fig.update_yaxes(title_text=ylabel, range=[float(f[0]), float(f[-1])], showgrid=False)
-    return fig
+    return capitalize_labels(fig)
 
 
 # ------------------------------------------------------------------ potential well
@@ -218,7 +235,7 @@ def potential_figure(family: str, params: dict, coupled: bool = False, phi_ext: 
             _ticks(fig, -np.pi, np.pi, title_text="phase φ")
             top = max(EJ, float(levels.max()) + 0.1 * EJ)
             fig.update_yaxes(title_text="energy (GHz)", range=[-1.08 * EJ, 1.08 * top])
-            return fig
+            return capitalize_labels(fig)
         if family == "fluxonium":
             EJ, EC, EL = float(params["EJ"]), float(params["EC"]), float(params["EL"])
             phi = np.linspace(-3 * np.pi, 3 * np.pi, 700)
@@ -233,7 +250,7 @@ def potential_figure(family: str, params: dict, coupled: bool = False, phi_ext: 
             Umin, Emax = float(U.min()), float(levels.max())
             R = (Emax - Umin) or 1.0
             fig.update_yaxes(title_text="energy (GHz)", range=[Umin - 0.1 * R, Emax + 0.55 * R])
-            return fig
+            return capitalize_labels(fig)
     except Exception:
         return None
     return None

@@ -691,7 +691,7 @@ if rep and rep.get("status") == "ok":
             st.plotly_chart(physics, key="physics", **PLOT)
         with st.container(border=True):
             theme.md(theme.eyebrow("Readout"))
-            theme.md(theme.spec_rows_html(groups["Readout"]) if groups["Readout"] else '<div class="cs-spec-empty">no readout resonator in the accepted model</div>')
+            theme.md(theme.spec_rows_html(groups["Readout"]) if groups["Readout"] else '<div class="cs-spec-empty">No readout resonator in the accepted model</div>')
     with sp_col:
         with st.container(border=True):
             theme.md(theme.eyebrow("Qubit"))
@@ -868,9 +868,9 @@ if rep and rep.get("status") == "ok":
                 rows_p.append([theme.param_html(n), f"{psd:.3g}", f"{lap:.3g}", f"{psd / lap:.2f}" if lap else "–"])
             with pc2:
                 theme.md(theme.table_html(("parameter", "posterior σ", "Laplace σ", "ratio"), rows_p, numeric=(1, 2, 3)))
-            pc2.caption(f"acceptance {_post['acceptance_rate']:.2f} · {_post['n_kept']} kept samples · {_post['seconds']:.1f} s")
+            pc2.caption(f"Acceptance {_post['acceptance_rate']:.2f} · {_post['n_kept']} kept samples · {_post['seconds']:.1f} s")
         elif _post and _post.get("error"):
-            st.caption("posterior sampling unavailable for this result")
+            st.caption("Posterior sampling unavailable for this result")
     with tab_truth:
         if truth_rep is None and not design_rows:
             theme.md('<div class="cs-body muted cs-block">Nothing to compare against: this is not a demo with a hidden truth, and no design values were entered (sidebar → Explain → Compare with Design Values).</div>')

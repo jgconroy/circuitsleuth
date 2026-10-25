@@ -77,12 +77,15 @@ def _apply_user_bounds(bounds: dict, cfg: "AgentConfig") -> dict:
     return b
 
 
+DYN_MIN_ABS = 40  # flux-dependent features needed before a flux-tunable family is fitted (see identify)
+
+
 def _fit_points_for(hyp: fit.Hypothesis, pts_all: np.ndarray, flat: np.ndarray) -> np.ndarray:
     """Flux-dependent circuit hypotheses are fitted on the flux-dependent features only (flat lines are
     pumps/spurs/fixed neighbours); a fixed-frequency circuit's own lines are flat, so it is fitted on
     everything, and so are the other platforms (a charge qubit far from zero detuning is nearly flat)."""
     n_dyn = int((~flat).sum())
-    if hyp.flux_dependent and n_dyn >= max(10, 0.2 * len(pts_all)):
+    if hyp.flux_dependent and n_dyn >= max(10, min(0.2 * len(pts_all), DYN_MIN_ABS)):
         return pts_all[~flat]
     return pts_all
 
@@ -394,14 +397,22 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
         return best_res, best_sc
 
     n_dyn = int((~flat).sum())
+    # a flux-tunable circuit needs flux-dependent features: skip the tunable families when there are (almost) none.  The threshold is
+    # an absolute count with a 20 % cap, not a plain fraction: three pump lines of 81 points each must not hide a 50-point fluxonium.
+    dyn_needed = max(10, min(0.2 * len(points), DYN_MIN_ABS))
+    skipped_tunable = False
     for h, p in bare:
-        if h.platform == "circuit" and h.flux_dependent and n_dyn < max(10, 0.2 * len(points)):
+        if h.platform == "circuit" and h.flux_dependent and n_dyn < dyn_needed:
             _emit(progress, "skip", hypothesis=h.label, reason=f"only {n_dyn} of {len(points)} features vary with flux")
+            skipped_tunable = True
             continue  # (almost) everything is flux-independent: a flux-tunable circuit cannot be the explanation
         init = None
         if p is not None:
             init = {k: v for k, v in p["seed"].items() if k in h.names}
         run(h, init)
+    if not results and skipped_tunable and platform == "circuit":
+        # every proposed family was flux-tunable and all were skipped: the flux-independent data call for the fixed transmon
+        run(fit.Hypothesis("transmon", False), None)
     if not results:
         return dict(error="no hypothesis could be fitted", n_points=int(len(points)))
     results.sort(key=lambda r: -r[1])
@@ -540,7 +551,7 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
     #         model with a flat line).  Shown next to the track score; the decision above stays score-based.
     evidence: dict = {}
     try:
-        ev_pts = points[~flat] if int((~flat).sum()) >= max(10, 0.2 * len(points)) else points
+        ev_pts = points[~flat] if int((~flat).sum()) >= max(10, min(0.2 * len(points), DYN_MIN_ABS)) else points
         for res_i, _sc_i, _ in results:
             e = fit.log_evidence(ev_pts, res_i, band, cfg.c_local)
             if e:

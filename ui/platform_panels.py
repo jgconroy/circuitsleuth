@@ -30,7 +30,9 @@ def _layout(fig, title, xlab, ylab, height=360):
         legend=dict(orientation="h", x=0, y=-0.16, xanchor="left", yanchor="top", bgcolor="rgba(0,0,0,0)", borderwidth=0, font=dict(size=12)),
         hoverlabel=dict(bgcolor="#222221", bordercolor=GRID, font=dict(family=MONO, size=12, color=TEXT)),
     )
-    return fig
+    from ui.plots import capitalize_labels
+
+    return capitalize_labels(fig)
 
 
 def nv_levels_figure(params: dict, B_max: float = 300.0):

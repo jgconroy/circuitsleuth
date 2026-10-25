@@ -20,7 +20,9 @@ def _layout(fig, title, xlab, ylab, height):
                       font=dict(family="IBM Plex Sans, Inter, Helvetica Neue, Arial, sans-serif", color=TEXT, size=12), margin=dict(l=56, r=16, t=40, b=84), height=height,
                       xaxis=dict(title=dict(text=xlab, standoff=8), gridcolor=GRID, zerolinecolor=GRID, color=MUTED), yaxis=dict(title=ylab, gridcolor=GRID, zerolinecolor=GRID, color=MUTED),
                       legend=dict(orientation="h", y=-0.42, x=0, bgcolor="rgba(0,0,0,0)", font=dict(size=11)))
-    return fig
+    from ui.plots import capitalize_labels
+
+    return capitalize_labels(fig)
 
 
 def gain_figure(design: dict, xlabel: str = "control", height: int = 260):

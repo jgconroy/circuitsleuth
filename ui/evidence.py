@@ -65,7 +65,9 @@ def _style(fig: go.Figure, height: int, title: str | None = None, legend: bool =
                 tickfont=dict(size=12, color=MUTED, family=MONO), title_font=dict(size=13, color=MUTED, family=FONT))
     fig.update_xaxes(**axis)
     fig.update_yaxes(**axis)
-    return fig
+    from ui.plots import capitalize_labels
+
+    return capitalize_labels(fig)
 
 
 def _finite(vals) -> np.ndarray:
@@ -222,6 +224,12 @@ def _add_lines(fig: go.Figure, report: dict, **kw):
                                  hovertemplate=f"{name}: %{{y:.3f}} GHz at %{{x:.3f}}<extra></extra>"), **kw)
 
 
+def capitalize_labels(fig):
+    from ui.plots import capitalize_labels as _cl
+
+    return _cl(fig)
+
+
 def _pretty(name: str) -> str:
     """Legend text for a transition key (0-1 -> 0→1, res -> resonator)."""
     from ui.plots import pretty
@@ -311,7 +319,7 @@ def residual_figure(report: dict, c_local: float = 0.012, height: int = 220) -> 
     fig.update_layout(meta=dict(kind="residual", n_points=int(len(P)), n_assigned=int(ok.sum()), n_heldout=int(held.sum()), n_outside=n_out,
                                 rms_MHz=None if not np.isfinite(rms) else round(rms, 3), clip_MHz=round(clip, 1), band_MHz=round(band, 1),
                                 n_heldout_columns=int(len(cols))))
-    return fig
+    return capitalize_labels(fig)
 
 
 # ----------------------------------------------------------------------------- 2. hold-out map
@@ -355,7 +363,7 @@ def holdout_figure(report: dict, image, x, f, height: int = 420) -> go.Figure | 
     fig.update_yaxes(title_text="drive frequency (GHz)", range=[float(f[0]), float(f[-1])], showgrid=False)
     fig.update_layout(meta=dict(kind="holdout", n_columns=int(len(cols)), n_test=int(test.sum()), n_test_inlier=int((test & inl).sum()),
                                 n_rest=int(rest.sum()), title=title, reported=dict(hd)))
-    return fig
+    return capitalize_labels(fig)
 
 
 # ----------------------------------------------------------------------------- 3. avoided-crossing zoom
@@ -482,9 +490,9 @@ def crossing_zoom_figure(report: dict, image, x, f, height: int = 360) -> go.Fig
             text = f"2g ≈ {2000 * g:.0f} ± {2000 * sigma_g:.0f} MHz" if np.isfinite(sigma_g) else f"2g ≈ {2000 * g:.0f} MHz"
             if abs(gap - 2000 * g) > 0.05 * 2000 * g:
                 text += f"<br><span style='color:{MUTED}'>gap here {gap:.0f} MHz</span>"  # 2g·|⟨0|n|1⟩| at this flux
-            left_side = c == 1 or n == 1  # later sub-plots annotate to the left of the crossing so the text stays inside the panel
-            fig.add_annotation(x=xc, y=0.5 * (ylo + yhi), text=text, showarrow=False, xanchor="left" if left_side else "right", yanchor="middle",
-                               xshift=8 if left_side else -8, font=dict(size=12, color=ACCENT, family=MONO), align="left" if left_side else "right", **kw)
+            # centred at the top of the sub-plot: the text then never runs into the neighbouring panel
+            fig.add_annotation(x=xc, y=f_hi - 0.03 * (f_hi - f_lo), text=text, showarrow=False, xanchor="center", yanchor="top",
+                               font=dict(size=12, color=ACCENT, family=MONO), align="center", **kw)
         fig.update_xaxes(range=[xc - hw, xc + hw], title_text="control", showgrid=False, **kw)
     title = f"Avoided crossing{'s' if n > 1 else ''} at f<sub>r</sub> = {fr:.3f} GHz: dressed branches split by 2g ≈ {2000 * g:.0f} MHz"
     _style(fig, height, title=title, margin=dict(l=62, r=14, t=64, b=108))
@@ -492,7 +500,7 @@ def crossing_zoom_figure(report: dict, image, x, f, height: int = 360) -> go.Fig
     fig.update_yaxes(title_text="drive frequency (GHz)", row=1, col=1)
     fig.update_layout(meta=dict(kind="crossing", n_crossings=len(crossings), crossings=[round(v, 4) for v in crossings], shown=[round(v, 4) for v in chosen],
                                 two_g_MHz=round(2000 * g, 1), sigma_two_g_MHz=None if not np.isfinite(sigma_g) else round(2000 * sigma_g, 1), branch_gap_MHz=gaps))
-    return fig
+    return capitalize_labels(fig)
 
 
 # ----------------------------------------------------------------------------- 4. pull plot
@@ -545,7 +553,7 @@ def pull_figure(report: dict, truth_params: dict, height: int = 260) -> go.Figur
     fig.update_xaxes(title_text="(fit − truth) / σ", range=[-lim, lim], dtick=1, showgrid=True)
     fig.update_yaxes(tickvals=ys, ticktext=[_param_html(n) for n in names], range=[len(rows) - 0.4, -0.6], showgrid=False, tickfont=dict(size=12, color=TEXT))  # first parameter on top
     fig.update_layout(meta=dict(kind="pull", pulls={n: round(float(v), 3) for n, v in zip(names, pulls)}, n_beyond=int(beyond.sum())))
-    return fig
+    return capitalize_labels(fig)
 
 
 # ----------------------------------------------------------------------------- 5. spec cards
