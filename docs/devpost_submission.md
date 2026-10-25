@@ -74,7 +74,11 @@ Also that blind tables are the fastest way to find the failure mode you did not 
 
 ## What's next for qĤolmes
 
-Connect the "look here" suggestion to an instrument driver so the autopilot runs on the real fridge; add 0–π and coupled-transmon
+Real data, from real labs. One published fluxonium map is a start, not a validation set: the next step is collecting raw spectroscopy
+maps from groups working on superconducting circuits, NV centres, quantum dots, trapped ions and Rydberg atoms, with their own fits as
+ground truth, and tuning the extractor and the priors against that instead of against our synthetic generator. We want each subfield
+to tell us what its maps really look like (the pumps, the drifts, the line shapes) and what it needs read off them. From there:
+connect the "look here" suggestion to an instrument driver so the autopilot runs on the real fridge; add 0–π and coupled-transmon
 families; ridge-following extraction for very noisy maps; and a defect census that catches small avoided crossings along the qubit line.
 
 ## Built with (tags)
