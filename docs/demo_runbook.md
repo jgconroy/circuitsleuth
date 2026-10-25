@@ -30,10 +30,10 @@ Works for the recorded video and for a live screen share. Total on-camera time a
 
 Each step: what you do, what is on screen, what you say. The lines are written to be spoken; keep a relaxed pace and let the screen carry the numbers.
 
-**Step 1 (0:00–0:15) Tab 1, top of page.**
+**Step 1 (0:00–0:10) Tab 1, top of page.**
 Do: nothing, just hover over the verdict band.
 Screen: the big title, the Hamiltonian with amber numbers in parentheses, the KPI tiles, the schematic.
-Say: "This is qĤolmes. Every new quantum chip starts as a spectroscopy map full of lines, and someone spends hours working out which circuit made them and what its energies are. qĤolmes reads that off the map. This is the result for one device: the circuit it identified, the Hamiltonian with the fitted energies written in, how well it predicts the columns it never saw, and a Bayes factor against the next-best family, all from a physics fit checked against scqubits, the standard open-source library for superconducting-circuit Hamiltonians."
+Say: "This is the qĤolmes demo. This is the result for one device: the circuit it identified, the Hamiltonian with the fitted energies written in, how well it predicts the columns it never saw, and a Bayes factor against the next-best family, all from a physics fit checked against the scqubits library."
 
 **Step 2 (0:20–0:40) Tab 1, scroll down past "Hypotheses Tested" to "Evidence".**
 Do: scroll until the large annotated map is in view, pause two seconds, then on to the two small panels (held-out columns; avoided crossings).
@@ -43,7 +43,7 @@ Say: "The map behind it is the raw data with the fitted transitions drawn on top
 **Step 3 (0:40–1:00) Tab 1, scroll to "Next Measurements", then "Autopilot".**
 Do: pause on the ranked table for a beat, then scroll to the Autopilot result and drag the **Round** slider from 0 to 3.
 Screen: the ranked sweeps in bits; then the autopilot map changing round by round and the σ-versus-round chart.
-Say: "Because it knows what it has not explained, it can also say what to measure next. These sweeps are ranked by expected information gain, in bits, from the Fisher information of the fit. And in autopilot mode it closes the loop on a digital twin: it starts from forty percent of the sweep, picks the most informative block, measures it, refits, and you can watch the error bars collapse round by round. Swap one function for an instrument driver and this is self-driving spectroscopy."
+Say: "It can also suggest next steps. These sweeps are ranked by expected information gain, in bits, from the Fisher information of the fit. And in autopilot mode it closes the loop on a digital twin: it starts from forty percent of the sweep, picks the most informative block, measures it, refits, and you can watch the error bars collapse round by round. Swap one function for an instrument driver and this is self-driving spectroscopy."
 
 **Step 4 (1:00–1:15) Tab 2.**
 Do: switch to Tab 2 and press **Identify Circuit**; let the stepper run while you talk (under ten seconds).
@@ -53,7 +53,7 @@ Say: "None of this is specific to superconducting circuits. This is the same eng
 **Step 5 (1:15–1:30) Tab 3.**
 Do: switch to Tab 3, scroll to Diagnostics (the Truth and Design tab is already selected) and switch the **Reveal Hidden Truth (Demo)** toggle ON.
 Screen: a table of fitted values against the paper's values, with green ticks.
-Say: "Finally, real data. This is a fluxonium map digitised from a 2019 PRX paper, run with no tuning at all, and the three energies land on the published values within their error bars. It knows when it is wrong, it tells you what to measure next, and the same engine is available as a command line and a REST API. The code is at github.com/jgconroy/qholmes."
+Say: "Finally, real data. This is a fluxonium map digitised from a 2019 PRX paper, run with no tuning at all, and the three energies land on the published values within their error bars. In summary, it knows when it is wrong, it tells you what to measure next, and the same engine is available as a command line and a REST API."
 
 Stop recording.
 
