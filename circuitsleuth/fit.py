@@ -310,6 +310,37 @@ def _fit_once(
                 if v < best_v:
                     best_t, best_v = t, v
         theta0 = best_t
+    # fluxonium: the same kind of valley.  With mostly the 0-1 line visible, EJ and EC trade off at (nearly) fixed splitting at
+    # half flux; scan EC, solve EJ for the same half-flux f01 (monotonic in EJ), keep the lowest fine-scale loss, polish from there.
+    if hyp.family == "fluxonium" and all(nm in names for nm in ("EJ", "EC", "EL")):
+        from scipy.optimize import brentq
+
+        i_ej, i_ec = names.index("EJ"), names.index("EC")
+        p0 = from_theta(theta0, names)
+
+        def f01_half(ej, ec):
+            e = models.qubit_energies("fluxonium", dict(EJ=ej, EC=ec, EL=p0["EL"]), np.array([0.5]), nlev=2, cutoff=40)[0]
+            return float(e[1] - e[0])
+
+        try:
+            target = f01_half(p0["EJ"], p0["EC"])
+            obj_sweep = Objective(hyp, points, band, 3 * c_local, model_kw, line_filter)
+            best_t, best_v = theta0, obj_sweep(theta0)
+            for ec in np.exp(np.linspace(np.log(p0["EC"] * 0.5), np.log(p0["EC"] * 2.0), 13)):
+                lo_e, hi_e = np.log(p0["EJ"] / 4), np.log(p0["EJ"] * 4)
+                g_lo, g_hi = f01_half(np.exp(lo_e), ec) - target, f01_half(np.exp(hi_e), ec) - target
+                if not np.isfinite(g_lo) or not np.isfinite(g_hi) or g_lo * g_hi > 0:
+                    continue
+                ej = float(np.exp(brentq(lambda le: f01_half(np.exp(le), ec) - target, lo_e, hi_e, xtol=1e-4)))
+                t = theta0.copy()
+                t[i_ec], t[i_ej] = np.log(ec), np.log(ej)
+                if np.all(t >= lo) and np.all(t <= hi):
+                    v = obj_sweep(t)
+                    if v < best_v:
+                        best_t, best_v = t, v
+            theta0 = best_t
+        except (ValueError, np.linalg.LinAlgError, FloatingPointError):
+            pass
     sw = np.sqrt(obj_l.w * len(obj_l.w))
 
     def resid(theta):

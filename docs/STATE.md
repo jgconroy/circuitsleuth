@@ -330,6 +330,19 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
 - Running: `scratchpad/prior_exp.log` compares prior_weight 0.05 vs 0.25 on six hard maps (seeds 4/7/6, fluxonium cases 2/3/7) to
   decide whether the pipeline should lean on the CNN proposer more (the user's request).  Adopt only if it fixes misses without new ones.
 
+### Sun ~03:40 PDT: proposer escalation (kept), fluxonium valley sweep (kept, neutral), prior experiment (not adopted)
+- Raising `prior_weight` 0.05 → 0.25 changes nothing on the misses (the losing fluxonium fits score far below the transmon reading), so the
+  prior stays 0.05.  Instead `agent.identify` step 4b: when the CNN puts ≥ 0.8 on a family whose fit lost and ≤ 0.2 on the winner's family,
+  the proposed family is refitted with 2× iterations and two starts and re-ranked; if it still loses, confidence → "low" with
+  `cnn_disagrees={family, prob}` and an explicit sentence.  Surprise seeds 4 and 7 (fluxonium read as transmon) now carry that warning
+  (the CNN says fluxonium 0.96 / 1.0); seeds 1 and 6 unaffected.  App log shows the "escalate" event.
+- `fit._fit_once` fluxonium EJ–EC valley sweep (half-flux f01 held, EC scanned, EJ solved by brentq): no regression (`test_fit -k fluxonium`
+  passes), no gain on surprise seed 2 (EJ/EC still 28/45 % off); kept because it is cheap.  Fast-preset fluxonium parameters remain the
+  known weak spot; the normal preset (saved demos) is fine.
+- `artifacts/fig_real_fit_vs_paper.png` (scripts/make_fig_real2.py) replaces fig_real in the README: cropped to the data, paper's curves overlaid,
+  fit-vs-paper table, no caption (Devpost has a caption field).  Repo renamed to github.com/jgconroy/qholmes (old URL redirects).
+- `docs/demo_runbook.md` rewritten click by click (A preparation, B 60-second demo, C judge questions, D fallbacks).
+
 ## 5. Pending / in progress (check before starting new work)
 - (done Sat ~19:30) Circuit blind rerun with the validity-fixed generator: family **7/10**, params <5 % 2/10 (unchanged causes: fixed-transmon
   EJ/EC degeneracy without a 2-photon line; tunable+resonator mistaken for fluxonium in 2 maps; one faint fluxonium -> transmon+res).

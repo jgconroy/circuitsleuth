@@ -498,6 +498,41 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
         if m.sum() >= 5:
             seg_ok[m] = True
 
+    # ---- 4b. escalate on a strong disagreement with the image proposer: when the CNN puts >= 0.8 on a family whose fit lost and
+    #          <= 0.2 on the winner's family, refit the proposed family with double the effort (2x iterations, two starts) and re-rank.
+    #          The decision stays with the score; an unresolved disagreement lowers the confidence and is reported.
+    cnn_disagrees = None
+    if p_family and cfg.use_classifier and best.hyp.platform == "circuit":
+        top_fam, p_top = max(p_family.items(), key=lambda kv: kv[1])
+        p_best = p_family.get(best.hyp.family, 0.0)
+        if top_fam != best.hyp.family and p_top >= 0.8 and p_best <= 0.2 and top_fam in models.FAMILIES:
+            _emit(progress, "escalate", family=top_fam, prob=float(p_top), reason=f"the image proposer puts {p_top:.2f} on {top_fam.replace('_', ' ')} but the fits chose {best.hyp.label}: refitting {top_fam.replace('_', ' ')} with double effort")
+            h_esc = fit.Hypothesis(top_fam, False)
+            try:
+                pts_esc = _fit_points_for(h_esc, points, flat)
+                res_esc = fit.fit_hypothesis(pts_esc, h_esc, band, maxiter=2 * cfg.maxiter, popsize=max(cfg.popsize, 16), seed=cfg.seed + 77, workers=cfg.workers,
+                                             c_local=cfg.c_local, c_global=scales["c_global"], n_starts=2)
+                pick = None
+                for cand in [res_esc] + list(getattr(res_esc, "alternatives", [])):
+                    sc_c, inl_c = _score(cand, points, ids, flat, band, cfg.c_local)
+                    sc_c += prior(h_esc)
+                    if pick is None or sc_c > pick[1]:
+                        pick = (cand, sc_c, inl_c)
+                res_esc, sc_esc, inl_esc = pick
+                res_esc.lines = fit.predict_lines(h_esc, res_esc.params, x_grid)
+                prev = [i for i, (r_, _, _) in enumerate(results) if r_.hyp == h_esc]
+                if not prev or results[prev[0]][1] < sc_esc:
+                    if prev:
+                        results.pop(prev[0])
+                    results.append((res_esc, sc_esc, inl_esc))
+                    _emit(progress, "fit_done", hypothesis=h_esc.label, score=sc_esc, summary=res_esc.summary(), lines={k: v.tolist() for k, v in res_esc.lines.items()}, note="escalated")
+                results.sort(key=lambda r: -r[1])
+                best, best_score, best_inl = results[0]
+            except Exception as e:  # noqa: BLE001
+                _emit(progress, "warning", message=f"escalation failed ({type(e).__name__}: {str(e)[:80]})")
+            if best.hyp.family != top_fam:
+                cnn_disagrees = dict(family=top_fam, prob=round(float(p_top), 3))
+
     # ---- 5. verify on held-out columns (coherent segments only, so noise fragments do not dilute the score)
     if cfg.holdout:
         pts_fit = _fit_points_for(best.hyp, points, flat)
@@ -539,6 +574,10 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
         confidence = dict(confidence, level="low", poorly_explained=True,
                           text=(confidence.get("text", "") + "; " if confidence.get("text") else "")
                           + f"the best model scores only {best_score:.2f}, i.e. it explains little of the coherent data: treat the parameters as unreliable and start from the unexplained features")
+    if cnn_disagrees:
+        confidence = dict(confidence, level="low", cnn_disagrees=cnn_disagrees,
+                          text=(confidence.get("text", "") + "; " if confidence.get("text") else "")
+                          + f"the image classifier puts {cnn_disagrees['prob']:.2f} on {cnn_disagrees['family'].replace('_', ' ')} and the fit could not explain the data better as one even with double effort: the family is uncertain; widen the band or use the thorough preset")
     # user-facing: of the points that belong to coherent line segments (spurs excluded), the weighted
     # fraction lying on a predicted transition
     dyn = (~flat) & seg_ok
