@@ -33,22 +33,22 @@ Each step: what you do, what is on screen, what you say. The lines are written t
 **Step 1 (0:00–0:10) Tab 1, top of page.**
 Do: nothing, just hover over the verdict band.
 Screen: the big title, the Hamiltonian with amber numbers in parentheses, the KPI tiles, the schematic.
-Say: "This is the qĤolmes demo. This is the result for one device: the circuit it identified, the Hamiltonian with the fitted energies written in, how well it predicts the columns it never saw, and a Bayes factor against the next-best family, all from a physics fit checked against the scqubits library."
+Say: "Welcome to the qĤolmes demo. This is the result for one quantum circuit: it shows the circuit it identified, the Hamiltonian with the fitted energies written in, how well it predicts things it can't see, and a Bayes factor against the next-best family, all from a physics fit checked against the scqubits library."
 
 **Step 2 (0:20–0:40) Tab 1, scroll down past "Hypotheses Tested" to "Evidence".**
 Do: scroll until the large annotated map is in view, pause two seconds, then on to the two small panels (held-out columns; avoided crossings).
 Screen: the map with coloured fitted lines over the data and numbered amber boxes; then the crossing zoom with the orange and white branches.
-Say: "The map behind it is the raw data with the fitted transitions drawn on top. Notice that it found the readout resonator on its own: the bare circuit could not explain the bend at seven gigahertz, so it hypothesised a coupled resonator and then measured the splitting there. Just as important is what it refuses to explain. That flat line at five gigahertz is a pump tone, and it says so, because the qubit crosses it without any splitting."
+Say: "The map behind this is the raw data with the fitted transitions drawn on top. Notice that it found the readout resonator on its own. The bare circuit could not explain the bend at seven gigahertz, so it hypothesised a coupled resonator and then measured the energy level splitting there. Just as important is its acknowledgement of what it can't explain. That flat line at five gigahertz is what's called a pump tone, and it says so, because the qubit crosses it without any splitting."
 
 **Step 3 (0:40–1:00) Tab 1, scroll to "Next Measurements", then "Autopilot".**
 Do: pause on the ranked table for a beat, then scroll to the Autopilot result and drag the **Round** slider from 0 to 3.
 Screen: the ranked sweeps in bits; then the autopilot map changing round by round and the σ-versus-round chart.
-Say: "It can also suggest next steps. These sweeps are ranked by expected information gain, in bits, from the Fisher information of the fit. And in autopilot mode it closes the loop on a digital twin: it starts from forty percent of the sweep, picks the most informative block, measures it, refits, and you can watch the error bars collapse round by round. Swap one function for an instrument driver and this is self-driving spectroscopy."
+Say: "It can also suggest next steps. These sweeps are ranked by expected information gain, in bits, from the Fisher information of the fit. Additionally, autopilot mode closes the loop on a digital twin: it starts from forty percent of the sweep, picks the most informative block, measures it, refits, and you can watch the error bars collapse round by round. Swap this out for an instrument driver and this becomes physical self-driving spectroscopy."
 
 **Step 4 (1:00–1:15) Tab 2.**
 Do: switch to Tab 2 and press **Identify Circuit**; let the stepper run while you talk (under ten seconds).
 Screen: the pipeline stepper lighting up, then the NV verdict band with the spin Hamiltonian.
-Say: "None of this is specific to superconducting circuits. This is the same engine on an NV-centre map, and in a few seconds it returns the zero-field splitting, the strain, the field direction and the coil calibration. Quantum dots, trapped-ion sidebands and Rydberg Stark maps work the same way, each with its own Hamiltonian."
+Say: "However, this isn't specific to superconducting circuits. Here we have the same engine on another quantum system called an NV-centre map, and in a few seconds it returns the zero-field splitting, the strain, the field direction and the coil calibration. Other quantum computing platforms like quantum dots, trapped-ion sidebands and Rydberg Stark maps work the same way, each with their own Hamiltonians."
 
 **Step 5 (1:15–1:30) Tab 3.**
 Do: switch to Tab 3, scroll to Diagnostics (the Truth and Design tab is already selected) and switch the **Reveal Hidden Truth (Demo)** toggle ON.
