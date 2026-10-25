@@ -257,8 +257,11 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
         band = band or (float(f[0]), float(f[-1]))
     else:
         points = np.asarray(points, float)
+        x_user = x
         if image is None:
             image, x, f = rasterize(points)
+            if x_user is not None:
+                x = np.asarray(x_user, float)  # keep the caller's full control grid (e.g. columns not measured yet)
         band = band or (float(points[:, 1].min()) - 0.1, float(points[:, 1].max()) + 0.1)
     x_grid = np.asarray(x, float) if x is not None else np.unique(points[:, 0])
     if len(points) < 10:
@@ -516,6 +519,13 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
         from . import design
 
         report["design"] = design.design_next_measurements(report, band=band)
+        disc = design.discriminate(report, x_grid, band)
+        if disc is not None:
+            report["next_measurements"].append(disc)
+            report["design"]["discriminate"] = disc
+            conf = report["best"].get("confidence") or {}
+            if conf.get("level") in ("medium", "low"):
+                conf["text"] = (conf.get("text", "") + f"; one column at control {disc['x']:.3g} would separate the two families by {disc['delta_sigma']:.0f}σ").strip("; ")
     except Exception as e:  # optional: experimental design must never fail a run
         report["design"] = dict(error=f"{type(e).__name__}: {e}", candidates=[])
     try:

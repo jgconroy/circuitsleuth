@@ -42,10 +42,12 @@ def fisher_information(report: dict, sigma_f: float | None = None):
     sigma_f = sigma_f or models.platform_scales(pl)["c_local"]
     pts = np.asarray(report["points"], float)
     inl = np.asarray(report["inlier_mask"], bool)
-    x_cols = np.unique(pts[:, 0])
+    x_cols = np.unique(np.asarray(report.get("x_grid", np.unique(pts[:, 0])), float))  # full control grid: unmeasured columns are candidates too
     line_names = [n for n in report["lines"] if n != "res" or best.get("coupled", False)]
     L0, J, theta = _theta_jacobian(hyp, best["params"], x_cols, line_names)
-    col_idx = np.searchsorted(x_cols, pts[:, 0])
+    col_idx = np.clip(np.searchsorted(x_cols, pts[:, 0]), 0, len(x_cols) - 1)
+    left = np.clip(col_idx - 1, 0, len(x_cols) - 1)
+    col_idx = np.where(np.abs(x_cols[left] - pts[:, 0]) < np.abs(x_cols[col_idx] - pts[:, 0]), left, col_idx)  # nearest grid column
     F0 = np.zeros((len(theta), len(theta)))
     for i in np.flatnonzero(inl):
         c = col_idx[i]
@@ -127,3 +129,53 @@ def design_next_measurements(report: dict, band: tuple[float, float] | None = No
     corr, _ = correlation_matrix(F0, names)
     return dict(candidates=chosen, gain_map={k: v.tolist() for k, v in gain_map.items()}, x_cols=x_cols.tolist(), correlation=(names, corr.tolist()), sigma_f=info["sigma_f"],
                 current_sigma={names[i]: float(np.sqrt(var0[i])) for i in range(len(names))})
+
+
+def discriminate(report: dict, x_grid: np.ndarray, band: tuple[float, float], sigma_f: float | None = None, extend: float = 0.25) -> dict | None:
+    """Model-discrimination design: which single control value best separates the best hypothesis from the
+    runner-up family?  For each column we take, over the lines of the best model inside an extended band, the
+    distance to the nearest line of the rival (so a line the rival cannot mimic counts), in units of the
+    measurement precision sigma_f (Box–Hill-style discrimination criterion)."""
+    hyps = report.get("hypotheses", [])
+    best = report["best"]
+    rivals = [h for h in hyps if h["family"] != best["family"]]
+    if not rivals:
+        return None
+    rival = max(rivals, key=lambda h: h.get("track_score", -9))
+    hA = fit.Hypothesis(best["family"], best.get("coupled", False))
+    hB = fit.Hypothesis(rival["family"], rival.get("coupled", False))
+    sigma_f = sigma_f or models.platform_scales(hA.platform)["c_local"]
+    x_grid = np.asarray(x_grid, float)
+    span = float(x_grid.max() - x_grid.min())
+    xs = np.linspace(x_grid.min() - extend * span, x_grid.max() + extend * span, 161)
+    LA = fit.predict_lines(hA, best["params"], xs)
+    LB = fit.predict_lines(hB, rival["params"], xs)
+    fb = (band[0] - extend * (band[1] - band[0]), band[1] + extend * (band[1] - band[0]))
+    A = np.stack([v for k, v in LA.items() if k != "res"])
+    B = np.stack([v for k, v in LB.items()])
+    A = np.where(np.isfinite(A) & (A > fb[0]) & (A < fb[1]), A, np.nan)
+    B = np.where(np.isfinite(B), B, np.inf)
+    # distance from each A line to the nearest B line, per column; take the most discriminating A line.
+    # Prefer a column inside the measured window with the line inside the measured band (something the lab
+    # can do without changing the setup); only fall back to the extended region when that is weak (< 5 sigma).
+    d = np.abs(A[:, None, :] - B[None, :, :]).min(axis=1)  # (nA, ncols)
+    d = np.where(np.isfinite(d), d, np.nan)
+    in_win = (xs >= x_grid.min()) & (xs <= x_grid.max())
+    in_band = (A > band[0]) & (A < band[1])
+    d_in = np.where(in_band & in_win[None, :], d, np.nan)
+    with np.errstate(all="ignore"):
+        score_in = np.nanmax(np.where(np.isfinite(d_in).any(axis=0)[None, :], d_in, -np.inf), axis=0) if np.isfinite(d_in).any() else np.full(len(xs), np.nan)
+    score_in = np.where(np.isfinite(score_in) & (score_in > -np.inf), score_in, np.nan)
+    if np.isfinite(score_in).any() and np.nanmax(score_in) >= 5 * sigma_f:
+        d, score = d_in, score_in
+    else:
+        score = np.nanmax(d, axis=0)
+    if not np.isfinite(score).any():
+        return None
+    c = int(np.nanargmax(score))
+    la = int(np.nanargmax(d[:, c]))
+    names_A = [k for k in LA if k != "res"]
+    return dict(kind="discriminate", x=float(xs[c]), f=float(A[la, c]), line=names_A[la], delta_sigma=float(score[c] / sigma_f),
+                inside_window=bool(x_grid.min() <= xs[c] <= x_grid.max()), inside_band=bool(band[0] <= A[la, c] <= band[1]),
+                families=[best["hypothesis"], rival["hypothesis"]],
+                why=f"at control {xs[c]:.3g} the {names_A[la]} line of the {best['hypothesis']} sits {score[c]/sigma_f:.0f}σ away from anything the {rival['hypothesis']} predicts: one column settles the family")

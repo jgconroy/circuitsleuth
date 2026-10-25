@@ -700,6 +700,9 @@ if rep and rep.get("status") == "ok":
     for n in rep["next_measurements"]:
         if n["kind"] == "extend_band":
             cards.append(theme.card_html("↕", "extend the band", theme.frange_html(n["f_lo"], n["f_hi"]), f"{plots.pretty(n['line'])} line, outside the measured band", n["why"], muted_badge=True))
+        elif n["kind"] == "discriminate":
+            cards.append(theme.card_html("≠", "one column settles the family", f"{n['delta_sigma']:.0f} <span class='u'>σ apart</span>",
+                                         f"control {n['x']:.3g} · {plots.pretty(n['line'])} line at {n['f']:.3g}" + ("" if n.get("inside_window") else " (outside the measured window)"), n["why"], muted_badge=True))
         elif n["kind"] == "constrain_parameter":
             rel = n["rel_sigma"]
             cards.append(theme.card_html("σ", f"constrain {n['parameter']}", f"{theme.esc(n['parameter'])} <span class='u'>{f'±{100*rel:.0f}%' if rel < 5 else 'unconstrained'}</span>",
