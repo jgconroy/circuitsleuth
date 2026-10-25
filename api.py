@@ -1,4 +1,4 @@
-"""Ĥolmes REST API: the identification engine without the Streamlit UI.
+"""qĤolmes REST API: the identification engine without the Streamlit UI.
 
 Run:   uvicorn api:app --host 0.0.0.0 --port 8000        (interactive docs at /docs; run from the repo root)
 Try:   curl -s localhost:8000/health
@@ -34,7 +34,7 @@ PRESETS = {  # search effort -> agent settings (identical to app.py)
 }
 Platform = Literal["circuit", "nv", "dot", "ion", "atom"]
 
-app = FastAPI(title="Ĥolmes API", version=circuitsleuth.__version__, description=__doc__)
+app = FastAPI(title="qĤolmes API", version=circuitsleuth.__version__, description=__doc__)
 
 
 # ------------------------------------------------------------------ request models

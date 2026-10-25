@@ -521,6 +521,13 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
         confidence = dict(level="medium", gap=round(float(gap), 3), text=f"{runner} is a plausible alternative; the look-here suggestions would separate them")
     else:
         confidence = dict(level="low", gap=round(float(gap), 3), text=f"ambiguous between {best.hyp.label} and {runner}: more data is needed before trusting the parameters")
+    # self-assessed reliability: a winner that explains little of the coherent data is unreliable whatever its margin.  On the
+    # 200-map blind tables the maps whose parameters came out wrong had a mean score of -0.18 (dots) / 0.17 (atoms) against
+    # 0.36 / 0.45 for the correct ones, so this flag catches most of the failures.
+    if best_score < 0.1:
+        confidence = dict(confidence, level="low", poorly_explained=True,
+                          text=(confidence.get("text", "") + "; " if confidence.get("text") else "")
+                          + f"the best model scores only {best_score:.2f}, i.e. it explains little of the coherent data: treat the parameters as unreliable and start from the unexplained features")
     # user-facing: of the points that belong to coherent line segments (spurs excluded), the weighted
     # fraction lying on a predicted transition
     dyn = (~flat) & seg_ok

@@ -1,4 +1,4 @@
-"""Ask Ĥolmes: a chat section in which Claude answers questions about the identified device by calling the
+"""Ask qĤolmes: a chat section in which Claude answers questions about the identified device by calling the
 physics engine as tools (circuitsleuth.ask). History lives in st.session_state["ask_history"], keyed to the best
 hypothesis (reset when it changes). The panel never raises: a failure degrades to a muted caption."""
 from __future__ import annotations
@@ -51,7 +51,7 @@ def render(report: dict, platform_key: str) -> None:
         _render(report, platform_key)
     except Exception as e:  # noqa: BLE001  — never let the assistant break the results page
         try:
-            theme.md(theme.caption(f"Ask Ĥolmes is unavailable right now ({type(e).__name__})."))
+            theme.md(theme.caption(f"Ask {theme.BRAND_NAME} is unavailable right now ({type(e).__name__})."))
         except Exception:  # noqa: BLE001
             pass
 
@@ -60,7 +60,7 @@ def _render(report: dict, platform_key: str) -> None:
     from circuitsleuth import ask
 
     with st.container():  # inside a container st.chat_input renders inline instead of pinned to the page bottom
-        theme.md(theme.section("Ask Ĥolmes", "Claude with the physics engine as tools",
+        theme.md(theme.section(f"Ask {theme.BRAND_NAME}", "Claude with the physics engine as tools",
                                "Every number in an answer comes from a tool call on the fitted model, never from the language model; the tools used are listed under each answer."))
         if not isinstance(report, dict) or report.get("status") != "ok" or "best" not in report:
             theme.md(theme.caption("Identify a device first."))

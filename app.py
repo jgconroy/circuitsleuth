@@ -1,4 +1,4 @@
-"""Ĥolmes (formerly CircuitSleuth) - Streamlit UI.  Run:  streamlit run app.py"""
+"""qĤolmes (formerly CircuitSleuth) - Streamlit UI.  Run:  streamlit run app.py"""
 from __future__ import annotations
 
 import io
@@ -24,7 +24,7 @@ try:  # brand icon in the browser tab (static/brand comes from the brand kit; fa
     _ICON = _PILImage.open(os.path.join(_HERE, "static", "brand", "icon-192.png"))
 except Exception:  # noqa: BLE001
     _ICON = "🎩"
-st.set_page_config(page_title="Ĥolmes: Hamiltonians, Deduced From Spectra", page_icon=_ICON, layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="qĤolmes: Hamiltonians, Deduced From Spectra", page_icon=_ICON, layout="wide", initial_sidebar_state="expanded")
 theme.inject()
 
 from ui.demos import DEMOS, SAVED, make_demo  # noqa: E402

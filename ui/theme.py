@@ -196,11 +196,11 @@ section[data-testid="stSidebar"] .cs-param-tex p { margin:0; line-height:1.2; }
 .cs-inline-steps { margin:0; }
 </style>"""
 
-BRAND_NAME = "\u0124olmes"  # Ĥ (U+0124): the hat on H marks the Hamiltonian operator; the logo swaps it for a detective's fedora
+BRAND_NAME = "q\u0124olmes"  # qĤ: q for quantum, Ĥ (U+0124): the hat on H marks the Hamiltonian operator; the logo swaps it for a detective's fedora
 TAGLINE = "Hamiltonians, deduced from spectra"
 _BRAND_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static", "brand")
 _MARK_FALLBACK = (
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="8 16 184 170" role="img" aria-label="Ĥolmes logo">'
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="8 16 184 170" role="img" aria-label="qĤolmes logo">'
     '<g transform="translate(100 100) scale(1.16) translate(-100 -115)">'
     '<path d="M24 92 C56 80 144 80 176 92 C154 103 46 103 24 92 Z" fill="#D99A1E"/>'
     '<path d="M64 88 C62 60 70 44 86 46 C94 47 98 52 100 55 C102 52 106 47 114 46 C130 44 138 60 136 88 Z" fill="#D99A1E"/>'

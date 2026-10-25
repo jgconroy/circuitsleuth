@@ -1,4 +1,4 @@
-"""Ask Ĥolmes: Claude answers a lab user's questions about the identified device by calling the physics
+"""Ask qĤolmes: Claude answers a lab user's questions about the identified device by calling the physics
 engine as tools. The model never produces a number itself: every quantity comes from a tool that evaluates
 the fitted report (derived quantities, operating points, predicted transitions, uncertainties, experimental
 design). The tool functions below are pure and deterministic over the report dict, return JSON-serialisable
@@ -451,7 +451,7 @@ def tool_base_name(name: str) -> str:
 
 # --------------------------------------------------------------------------- the chat loop
 
-SYSTEM = """You are the lab assistant of Ĥolmes, a tool that identified a quantum device's Hamiltonian from a spectroscopy map. One fitted report is loaded; you can only see it through the tools.
+SYSTEM = """You are the lab assistant of qĤolmes, a tool that identified a quantum device's Hamiltonian from a spectroscopy map. One fitted report is loaded; you can only see it through the tools.
 
 Rules:
 - Every number you state must come from a tool result in this conversation. Never compute, extrapolate, convert or recall a value yourself. Quote values rounded to 3–4 significant figures and always with the unit the tool gave (GHz, MHz, control units, Φ0, bits, µs ...).
