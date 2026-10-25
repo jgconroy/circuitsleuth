@@ -33,7 +33,7 @@ Each step: what you do, what is on screen, what you say. Keep the voice relaxed;
 **Step 1 (0:00–0:14) Tab 1, top of page.**
 Do: nothing, just hover over the verdict band.
 Screen: the big title, the Hamiltonian with amber numbers in parentheses, the KPI tiles (held-out RMS, % explained, margin, Bayes factor), the schematic.
-Say: "This is qĤolmes: Shazam for quantum chips. A raw spectroscopy map goes in. This comes out: the circuit, its Hamiltonian with the fitted numbers in place, the held-out error, and a Bayes factor against the next-best family. Every number comes from a physics fit checked against scqubits."
+Say: "This is qĤolmes. It reads the Hamiltonian of a quantum device straight off its spectroscopy map. A raw map goes in. This comes out: the circuit, its Hamiltonian with the fitted numbers in place, the held-out error, and a Bayes factor against the next-best family. Every number comes from a physics fit checked against scqubits."
 
 **Step 2 (0:12–0:27) Tab 1, scroll down past "Hypotheses Tested" to "Evidence".**
 Do: scroll until the large annotated map is in view, pause two seconds, then scroll a little further to the two small panels (held-out columns; avoided crossings).
