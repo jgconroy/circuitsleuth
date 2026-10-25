@@ -159,6 +159,12 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
   with a faint two-photon line). If it fails again, either relax that test's EC tolerance to 0.15 (physically honest: EC is weakly determined
   there) or make the continuity rule keep 3σ peaks next to 3.5σ neighbours. Do not block the submission on it.
 
+### Sun ~00:45: experimental design
+- `circuitsleuth/design.py`: Fisher information F0 from explained points (finite-difference Jacobian of line frequencies w.r.t. theta), expected
+  information gain per candidate sweep = ½ log det(F0+F_S)/det(F0) in bits × line visibility, greedy non-overlapping top-5, per-column gain map,
+  Laplace correlation matrix. Attached to every report as `report["design"]`; UI section "Most informative next sweep" (`ui/design_panel.py`).
+  Demo A: EJmax–EC correlation −0.997, top sweep = 0-2/2ph near the crossing (3.3 bits). Test in tests/test_lab_features.py.
+
 ## 5. Pending / in progress (check before starting new work)
 - (done Sat ~19:30) Circuit blind rerun with the validity-fixed generator: family **7/10**, params <5 % 2/10 (unchanged causes: fixed-transmon
   EJ/EC degeneracy without a 2-photon line; tunable+resonator mistaken for fluxonium in 2 maps; one faint fluxonium -> transmon+res).

@@ -88,6 +88,11 @@ NV centres and quantum dots, each with hidden demo circuits and a "surprise" ran
   maximum flux sensitivity, tuning range, qubit–resonator detuning, dispersive shift and Purcell factor; for NV centres the
   strain splitting and per-orientation axial field; for quantum dots the gap in µeV and the lever arm.
 - **Operating points.** Type a target f01 and get the control values that reach it (marked on the map).
+- **Optimal next measurement.** Beyond the heuristic "look here" boxes, CircuitSleuth computes the Fisher information of the
+  fit from every explained feature and ranks candidate sweeps (a transition over a block of control values) by expected
+  information gain in bits (log-determinant ratio of the information matrix, discounted by line visibility and cost), names the
+  parameter each sweep tightens most, and shows the parameter correlation matrix, which is where the EJ–EC degeneracy of a
+  transmon shows up as a ±1 entry. This is Bayesian experimental design under the Laplace approximation, computed in 0.1 s.
 - **Exports.** JSON report, fitted curves as CSV, the annotated map as HTML, and a scqubits snippet that rebuilds the fitted
   circuit in two lines.
 - **Real instrument files.** HDF5 (pick the 2-D dataset and axis vectors), 2-D CSV grids, point lists, NPZ, or a screenshot
