@@ -13,7 +13,30 @@
 5. Check `.env` has credits: the summary paragraph under the verdict should be two sentences, not the template.
 6. Press **Identify Circuit** in Tab 1 about 20 seconds before you start talking, so the race is running when you switch to it.
 
-## Script
+## One-minute script
+
+Start on Tab 2 (demo A, precomputed, sidebar collapsed, scrolled to the verdict band). Tab 3 and Tab 4 ready behind it.
+
+**0:00 Verdict (Tab 2).** "A raw spectroscopy map goes in. This comes out: the circuit, its Hamiltonian with the fitted numbers in place, the
+held-out error, and a Bayes factor against the next family. Every number is from a physics fit checked against scqubits."
+
+**0:12 Evidence (scroll to the annotated map and the crossing zoom).** "It found the readout resonator itself, from the bend the bare circuit
+left at 7 GHz; here is the splitting it measured. The one line it cannot explain, it calls a pump tone, because the qubit crosses it
+without splitting."
+
+**0:27 Next Measurements and Autopilot (scroll on; drag the Round slider).** "It ranks the next sweep by information gain in bits, and the
+autopilot runs that loop on a digital twin: 40 % of the sweep, choose, measure, refit; watch the error bars fall."
+
+**0:42 Not just circuits (Tab 3, press Identify Circuit).** "Same engine on an NV-centre map: zero-field splitting, strain, field direction, in
+seconds. Dots, trapped ions and Rydberg atoms work the same way."
+
+**0:52 Real data and close (Tab 4, Diagnostics → Truth and Design → Reveal Hidden Truth).** "A published fluxonium map, no tuning: the
+parameters match the paper. It knows when it is wrong, says what to measure next, and the engine is a CLI and a REST API. github.com/jgconroy/qholmes."
+
+Timing notes: do not run the live circuit demo in the one-minute version (80 s); the NV run is the only live fit, and it takes under ten
+seconds. If asked for more, the three-minute script below has the extra beats.
+
+## Three-minute script (if time allows)
 
 **0:00 Hook (Tab 4, scrolled to the map).** "This is what every superconducting-qubit lab sees on day one with a new chip: a map, a screen
 full of lines, and a person guessing which circuit made them. Get it wrong and every calibration afterwards is wrong. qĤolmes reads the
