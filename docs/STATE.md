@@ -283,6 +283,16 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
   wrong-parameter maps average −0.18 (dots) / 0.17 (atoms) vs 0.36 / 0.45 for correct ones).  All demos stay above 0.46.
 - `artifacts/ui_results.png` regenerated with the new header.
 
+### Sun ~01:20 PDT: results page recomposed (user: "looks listed, make it intentional")
+- Lower half of the results page is now: **Physics and Spec Sheet** (chart + Readout card left; Qubit + Control-axis cards right) →
+  **Next Measurements** (gap/ambiguity cards + correlation matrix left; ranked information-gain table + gain chart right) → **Autopilot** →
+  **Diagnostics** with four tabs (Unexplained Features · Posterior Check · Truth and Design · Run Log) → **Ask qĤolmes** → **Details & Export**.
+  Tabs styled in `theme.CSS` (amber highlight).  `scripts/screenshot.py` still waits for "Details & Export".  Verified: apptest_quick, the
+  autopilot-replay + posterior AppTest (posterior button now inside a tab), full-page screenshots.
+- Also this hour: every parameter/symbol typeset (prose via `theme.mathify`, Ask answers via `theme.texify_prose`, pills, cards, schematic
+  tspans, legends, level labels), parentheses around fitted numbers in the KaTeX Hamiltonian, Bayes factor as a KPI, no sidebar resize
+  handle, main column fills the window when the sidebar is collapsed (`[data-collapsed]` selectors), platform order circuit → atom → ion → nv → dot.
+
 ## 5. Pending / in progress (check before starting new work)
 - (done Sat ~19:30) Circuit blind rerun with the validity-fixed generator: family **7/10**, params <5 % 2/10 (unchanged causes: fixed-transmon
   EJ/EC degeneracy without a 2-photon line; tunable+resonator mistaken for fluxonium in 2 maps; one faint fluxonium -> transmon+res).

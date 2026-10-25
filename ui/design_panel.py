@@ -31,7 +31,7 @@ def gain_figure(design: dict, xlabel: str = "control", height: int = 260):
         g = np.asarray(g, float)
         if not np.any(g > 0):
             continue
-        fig.add_trace(go.Scatter(x=x, y=g, mode="lines", name=name.replace("-", "→"), line=dict(color=LINE_COLORS.get(name, MUTED), width=2),
+        fig.add_trace(go.Scatter(x=x, y=g, mode="lines", name=__import__("ui.plots", fromlist=["pretty"]).pretty(name), line=dict(color=LINE_COLORS.get(name, MUTED), width=2),
                                  hovertemplate=f"{name}<br>%{{x:.3f}}<br>%{{y:.2f}} bits<extra></extra>"))
     for i, c in enumerate(design.get("candidates", [])[:3], start=1):
         fig.add_vrect(x0=c["x_lo"], x1=c["x_hi"], fillcolor=AMBER, opacity=0.12, line_width=0)

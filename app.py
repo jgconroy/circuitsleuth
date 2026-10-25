@@ -660,26 +660,9 @@ if rep and rep.get("status") == "ok":
             if zoom is not None:
                 e2.plotly_chart(zoom, key="ev_zoom", **PLOT)
 
-    # ---- E. physics
-    theme.md(theme.section("Physics", "potential and levels" if is_circ_fam else "energy levels"))
-    physics = None
-    if is_circ_fam:
-        phi_ext = 0.0
-        if flux_dep:
-            phi_ext = st.slider(r"External Flux $\Phi$ ($\Phi_0$)", 0.0, 0.5, 0.0, 0.01, format="%.2f", help="Redraws the potential well and its levels at this flux.")
-        physics = plots.potential_figure(fam, best["params"], coupled, phi_ext=phi_ext)
-    else:
-        try:
-            from ui import platform_panels
-
-            physics = {"nv_ensemble": platform_panels.nv_levels_figure, "charge_qubit": platform_panels.dqd_figure,
-                       "trapped_ion": platform_panels.ion_modes_figure, "rydberg_atom": platform_panels.stark_figure}[fam](best["params"])
-        except Exception:  # noqa: BLE001
-            physics = None
-    if physics is not None:
-        st.plotly_chart(physics, key="physics", **PLOT)
-
-    # ---- F. spec sheet
+    # ---- E. physics + spec sheet, side by side: the model on the left, what it implies for the lab on the right
+    theme.md(theme.section("Physics and Spec Sheet", ("potential, levels and" if is_circ_fam else "energy levels and") + " derived quantities",
+                           "Hover a spec row for the note behind it; the operating-point tool draws amber diamonds on the map."))
     dq = rep.get("derived")
     if dq is None:  # older saved reports: compute on the fly
         try:
@@ -687,39 +670,55 @@ if rep and rep.get("status") == "ok":
         except Exception:  # noqa: BLE001
             dq = []
     groups = spec_groups(rep, dq)
-    theme.md(theme.section("Spec sheet", "derived quantities", "Hover a row for the note behind it."))
     markers: list[tuple[float, float]] = []
-    s1, s2, s3 = st.columns(3)
-    with s1, st.container(border=True):
-        theme.md(theme.eyebrow("Qubit"))
-        theme.md(theme.spec_rows_html(groups["Qubit"]))
-        if is_circ_fam and flux_dep:
-            band_rep = rep.get("band_GHz") or [float(f[0]), float(f[-1])]
-            target = st.number_input(r"Target $f_{01}$ (GHz)", value=float(round(0.5 * (band_rep[0] + band_rep[1]), 2)), step=0.05, format="%.3f",
-                                     help="Where to bias the device: control values at which the fitted 0→1 transition equals this frequency.")
+    ph_col, sp_col = st.columns([1.25, 1], gap="large")
+    with ph_col:
+        physics = None
+        if is_circ_fam:
+            phi_ext = 0.0
+            if flux_dep:
+                phi_ext = st.slider(r"External Flux $\Phi$ ($\Phi_0$)", 0.0, 0.5, 0.0, 0.01, format="%.2f", help="Redraws the potential well and its levels at this flux.")
+            physics = plots.potential_figure(fam, best["params"], coupled, phi_ext=phi_ext)
+        else:
             try:
-                sols = derived.control_for_frequency(best, float(target), (float(xg.min()), float(xg.max())))
+                from ui import platform_panels
+
+                physics = {"nv_ensemble": platform_panels.nv_levels_figure, "charge_qubit": platform_panels.dqd_figure,
+                           "trapped_ion": platform_panels.ion_modes_figure, "rydberg_atom": platform_panels.stark_figure}[fam](best["params"])
             except Exception:  # noqa: BLE001
-                sols = []
-            if sols:
-                theme.md(theme.spec_rows_html([("control for this f01", ", ".join(f"{s:.3f}" for s in sols).replace("-", "−"), "also drawn as amber diamonds on the map")]))
-                markers = [(float(s), float(target)) for s in sols]
-            else:
-                theme.md(theme.caption(f"the fitted 0→1 line does not reach {target:.3f} GHz inside the measured control range"))
-    with s2, st.container(border=True):
-        theme.md(theme.eyebrow("Control axis"))
-        theme.md(theme.spec_rows_html(groups["Control axis"]))
-    with s3, st.container(border=True):
-        theme.md(theme.eyebrow("Readout"))
-        theme.md(theme.spec_rows_html(groups["Readout"]) if groups["Readout"] else '<div class="cs-spec-empty">no readout resonator in the accepted model</div>')
+                physics = None
+        if physics is not None:
+            st.plotly_chart(physics, key="physics", **PLOT)
+        with st.container(border=True):
+            theme.md(theme.eyebrow("Readout"))
+            theme.md(theme.spec_rows_html(groups["Readout"]) if groups["Readout"] else '<div class="cs-spec-empty">no readout resonator in the accepted model</div>')
+    with sp_col:
+        with st.container(border=True):
+            theme.md(theme.eyebrow("Qubit"))
+            theme.md(theme.spec_rows_html(groups["Qubit"]))
+            if is_circ_fam and flux_dep:
+                band_rep = rep.get("band_GHz") or [float(f[0]), float(f[-1])]
+                target = st.number_input(r"Target $f_{01}$ (GHz)", value=float(round(0.5 * (band_rep[0] + band_rep[1]), 2)), step=0.05, format="%.3f",
+                                         help="Where to bias the device: control values at which the fitted 0→1 transition equals this frequency.")
+                try:
+                    sols = derived.control_for_frequency(best, float(target), (float(xg.min()), float(xg.max())))
+                except Exception:  # noqa: BLE001
+                    sols = []
+                if sols:
+                    theme.md(theme.spec_rows_html([("control for this f01", ", ".join(f"{s:.3f}" for s in sols).replace("-", "−"), "also drawn as amber diamonds on the map")]))
+                    markers = [(float(s), float(target)) for s in sols]
+                else:
+                    theme.md(theme.caption(f"the fitted 0→1 line does not reach {target:.3f} GHz inside the measured control range"))
+        with st.container(border=True):
+            theme.md(theme.eyebrow("Control axis"))
+            theme.md(theme.spec_rows_html(groups["Control axis"]))
 
     # the annotated map, now that the operating points are known
     fig_final = plots.map_figure(image, x, f, points=np.array(rep["points"]), inlier=rep["inlier_mask"], lines=rep["lines"], x_grid=xg, xlabel=xlabel, ylabel=ylabel, look_here=boxes,
                                  flat_lines=rep["flat_lines_GHz"], title=f"{best['hypothesis']} · fitted transitions over the measured map", markers=markers or None)
     ev_map_slot.plotly_chart(fig_final, key="map_final", **PLOT)
 
-    # ---- F. where to look next (numbered to match the map badges) and what the model cannot explain
-    theme.md(theme.section("Where to look next", f"{len(rep['next_measurements'])} suggestions"))
+    # ---- F. next measurements: the gaps (numbered to match the map badges) on the left, the information-gain ranking on the right
     cards = []
     for i, b in enumerate(boxes, start=1):
         cards.append(theme.card_html(str(i), f"sweep · {plots.pretty(b['line'])} line", theme.frange_html(b["f_lo"], b["f_hi"]),
@@ -734,12 +733,6 @@ if rep and rep.get("status") == "ok":
             rel = n["rel_sigma"]
             cards.append(theme.card_html("σ", f"constrain {n['parameter']}", f"{theme.param_html(n['parameter'])} <span class='u'>{f'±{100*rel:.0f}%' if rel < 5 else 'unconstrained'}</span>",
                                          "poorly determined by the current data", n["why"], muted_badge=True))
-    if cards:
-        theme.md(theme.grid_html(cards))
-    else:
-        theme.md('<div class="cs-body muted cs-block">No obvious gaps: every predicted line inside the band has data under it.</div>')
-
-    # ---- F2. optimal next measurement by Fisher information (Bayesian experimental design)
     dsg = rep.get("design")
     if not dsg or dsg.get("error") or "correlation" not in dsg:
         try:
@@ -747,29 +740,43 @@ if rep and rep.get("status") == "ok":
             dsg = _design.design_next_measurements(rep, band=tuple(rep["band_GHz"]))
         except Exception:
             dsg = None
-    if dsg and dsg.get("candidates") is not None and "correlation" in dsg:
-        theme.md(theme.section("Most informative next sweep", "expected information gain, Fisher information of the fit"))
-        theme.md('<div class="cs-body muted cs-block">Every detected feature contributes Fisher information about the parameters. For each candidate sweep '
-                 '(a transition over a block of control values) we compute the expected gain in bits from the log-determinant ratio of the information matrix, '
-                 'discounted by the line\'s visibility and the sweep cost. Amber bands mark the three best sweeps; the matrix shows which parameters the current data cannot separate.</div>')
-        dcards = []
-        for i, c in enumerate(dsg["candidates"][:3], start=1):
-            red = c["variance_reduction"].get(c["best_parameter"], 0.0)
+    have_design = bool(dsg and dsg.get("candidates") is not None and "correlation" in dsg)
+    theme.md(theme.section("Next Measurements", f"{len(cards)} gaps in the data · {'ranked by expected information gain' if have_design else 'from the predicted lines'}",
+                           "Left: where a predicted line runs through measured columns with nothing under it (numbers match the badges on the map). "
+                           "Right: the sweeps that would tighten the parameters most, from the Fisher information of the fit."))
+    nx_l, nx_r = st.columns([1, 1.3], gap="large")
+    with nx_l:
+        theme.md(theme.eyebrow("Gaps and ambiguities"))
+        if cards:
+            theme.md(theme.grid_html(cards))
+        else:
+            theme.md('<div class="cs-body muted cs-block">No obvious gaps: every predicted line inside the band has data under it.</div>')
+        if have_design:
+            from ui import design_panel as _dp
+            theme.md(theme.eyebrow("What the data cannot separate"))
+            st.plotly_chart(_dp.correlation_figure(dsg), key="design_corr", **PLOT)
+    with nx_r:
+        if have_design:
+            theme.md(theme.eyebrow("Expected information gain · best sweeps"))
             _unit = models.PLATFORMS[platform].get("freq_unit", "GHz")
-            dcards.append(theme.card_html(str(i), f"sweep · {plots.pretty(c['line'])} line", f"{c['gain_bits']:.2f} <span class='u'>bits</span>",
-                                          f"control {c['x_lo']:.3g} → {c['x_hi']:.3g} · {c['f_lo']:.2f}–{c['f_hi']:.2f} {_unit}".replace("-", "−"),
-                                          f"tightens {theme.esc(c['best_parameter'])} most (−{100*red:.0f}% variance)"))
-        if dcards:
-            theme.md(theme.grid_html(dcards))
-        from ui import design_panel as _dp
-        dc1, dc2 = st.columns([1.3, 1])
-        dc1.plotly_chart(_dp.gain_figure(dsg, xlabel=xlabel), key="design_gain", **PLOT)
-        dc2.plotly_chart(_dp.correlation_figure(dsg), key="design_corr", **PLOT)
+            drows = []
+            for i, c in enumerate(dsg["candidates"][:5], start=1):
+                red = c["variance_reduction"].get(c["best_parameter"], 0.0)
+                drows.append([f'<span class="cs-badge{"" if i <= 3 else " muted"}">{i}</span>', f"{plots.pretty(c['line'])} line",
+                              f"{c['x_lo']:.3g} → {c['x_hi']:.3g}".replace("-", "−"), f"{c['f_lo']:.2f}–{c['f_hi']:.2f} {_unit}".replace("-", "−"),
+                              f"{c['gain_bits']:.2f}", f"{theme.param_html(c['best_parameter'])} <span class='u'>−{100*red:.0f}% var</span>"])
+            if drows:
+                theme.md(theme.table_html(("", "sweep", "control", "frequency", "bits", "tightens"), drows, numeric=(2, 3, 4)))
+            st.plotly_chart(_dp.gain_figure(dsg, xlabel=xlabel), key="design_gain", **PLOT)
+            theme.md(theme.caption("Each candidate is a transition over a block of control values; its gain is ½ log of the determinant ratio of the Fisher "
+                                   "information with and without it, discounted by the line's visibility and the sweep cost. Amber bands mark the three best."))
+        else:
+            theme.md(theme.caption("Information-gain design is unavailable for this result."))
+
     # ---- F3. autopilot: closed-loop spectroscopy on a digital twin (the full map stands in for the instrument)
-    theme.md(theme.section("Autopilot", "closed-loop spectroscopy on a digital twin"))
-    theme.md('<div class="cs-body muted cs-block">Start from the first 40 % of the sweep, identify, let the information-gain design choose the next block of '
-             'control values, "measure" it from the full map (the digital twin standing in for the instrument), refit, repeat. The one function that '
-             'reads the twin is the one a lab replaces with an instrument driver.</div>')
+    theme.md(theme.section("Autopilot", "closed-loop spectroscopy on a digital twin",
+                           "Start from the first 40 % of the sweep, identify, let the information-gain design pick the next block of control values, "
+                           "\"measure\" it from the full map, refit, repeat. The one function that reads the twin is the one a lab replaces with an instrument driver."))
     ap1, ap2 = st.columns([1, 1])
     _fams_ap = tuple(families) if families else tuple(models.PLATFORMS[platform]["families"])
     _loop_key = (name.split(" ")[0] if source == "Demo Circuit" else "")
@@ -820,64 +827,72 @@ if rep and rep.get("status") == "ok":
                 tp = apr["truth"]["params"]
                 hits = [k for k in rr["params"] if k in tp]
                 st.markdown("Hidden truth: " + ", ".join(f"${theme.param_tex(k)} = {tp[k]:.4g}$" for k in hits))
-    theme.md(theme.section("What the model cannot explain", f"{len(rep['unexplained'])} features"))
-    if rep["unexplained"]:
-        theme.md(theme.grid_html([theme.card_html(None, "flux-independent line" if u["flat"] else "flux-dependent feature", theme.frange_html(u["f_lo"], u["f_hi"]),
-                                                  f"{u['n_points']} points · {100*u.get('unexplained_frac', 1):.0f}% off any predicted line", u["interpretation"]) for u in rep["unexplained"]]))
-    else:
-        theme.md('<div class="cs-body muted cs-block">Every detected feature is accounted for.</div>')
 
-    # ---- G. checks: hidden truth (demos) and design values
+    # ---- G. diagnostics: one section, four tabs (unexplained features · posterior · truth and design · run log)
     truth_rep = st.session_state.get("truth")
-    design_rows = [(k, theme.num(best["params"][k], theme.UNITS.get(k, "")), theme.num(dv, theme.UNITS.get(k, "")), f"{100 * (best['params'][k] - dv) / abs(dv):+.1f}%".replace("-", "−") if dv else "–")
+    design_rows = [(theme.param_html(k), theme.num(best["params"][k], theme.UNITS.get(k, "")), theme.num(dv, theme.UNITS.get(k, "")), f"{100 * (best['params'][k] - dv) / abs(dv):+.1f}%".replace("-", "−") if dv else "–")
                    for k, dv in design_values.items() if k in best["params"]]
-    if truth_rep is not None or design_rows:
-        theme.md(theme.section("Checks", "truth and design"))
-    if truth_rep is not None and st.toggle("Reveal Hidden Truth (Demo)"):
-        rows_t = truth_rows(best, truth_rep)
-        theme.md(theme.table_html(("parameter", "fitted ± σ", "truth", "within 2σ"), rows_t, numeric=(1, 2), classes=lambda r, c: ("ok" if rows_t[r][3] == "✓" else "bad") if c == 3 else ""))
-        theme.md(theme.caption(f"truth: {truth_rep['family']}{' + resonator' if truth_rep.get('coupled') else ''}; spurs at {[s['f'] for s in truth_rep.get('spurs', [])]} GHz"
-                               + (f" · {truth_rep['note']}" if truth_rep.get("note") else "")))
-        pull = _ev("pull_figure", rep, dict(truth_rep["params"], period=truth_rep.get("period", 1.0), offset=truth_rep.get("offset", 0.0)))
-        if pull is not None:
-            st.plotly_chart(pull, key="ev_pull", **PLOT)
-    if design_rows:
-        theme.md(theme.eyebrow("Fit vs design"))
-        theme.md(theme.table_html(("parameter", "fit", "design", "deviation"), design_rows, numeric=(1, 2, 3)))
-
-    # ---- G2. posterior sampling: are the error bars honest?
-    theme.md(theme.section("Posterior check", "Metropolis sampling of the robust likelihood"))
-    theme.md('<div class="cs-body muted cs-block">The reported σ come from the Jacobian at the optimum (Laplace), scaled by 1.8 because synthetic coverage runs '
-             'showed the raw value under-covers. Sampling the actual likelihood shows the shape of the uncertainty, including the E<sub>J</sub>–E<sub>C</sub> valley.</div>')
-    if st.button("Sample the Posterior (About 10 s)", width="stretch", key="btn_posterior"):
-        try:
-            from circuitsleuth import fit as _fit
+    theme.md(theme.section("Diagnostics", f"{len(rep['unexplained'])} unexplained features · error bars · checks",
+                           "What the model leaves on the table, whether the stated uncertainties are honest, and how the fit compares with what you know."))
+    tab_unexpl, tab_post, tab_truth, tab_log = st.tabs(["Unexplained Features", "Posterior Check", "Truth and Design", "Run Log"])
+    with tab_unexpl:
+        if rep["unexplained"]:
+            theme.md(theme.grid_html([theme.card_html(None, "flux-independent line" if u["flat"] else "flux-dependent feature", theme.frange_html(u["f_lo"], u["f_hi"]),
+                                                      f"{u['n_points']} points · {100*u.get('unexplained_frac', 1):.0f}% off any predicted line", u["interpretation"]) for u in rep["unexplained"]]))
+        else:
+            theme.md('<div class="cs-body muted cs-block">Every detected feature is accounted for.</div>')
+    with tab_post:
+        theme.md('<div class="cs-body muted cs-block">The reported σ come from the Jacobian at the optimum (Laplace), scaled by 1.8 because synthetic coverage runs '
+                 'showed the raw value under-covers. Sampling the actual likelihood (Metropolis on the robust loss) shows the shape of the uncertainty, including the E<sub>J</sub>–E<sub>C</sub> valley.</div>')
+        if st.button("Sample the Posterior (About 10 s)", width="stretch", key="btn_posterior"):
+            try:
+                from circuitsleuth import fit as _fit
+                from ui import design_panel as _dp3
+                _res = _fit.result_from_report(rep)
+                _cl = models.platform_scales(platform)["c_local"]
+                with st.spinner("sampling…"):
+                    st.session_state["posterior"] = _fit.sample_posterior(np.array(rep["points"]), _res, tuple(rep["band_GHz"]), _cl, n_steps=3000)
+            except Exception as _e:
+                st.session_state["posterior"] = dict(error=f"{type(_e).__name__}: {_e}")
+        _post = st.session_state.get("posterior")
+        if _post and not _post.get("error") and _post.get("family") == best["family"]:
             from ui import design_panel as _dp3
-            _res = _fit.result_from_report(rep)
-            _cl = models.platform_scales(platform)["c_local"]
-            with st.spinner("sampling…"):
-                st.session_state["posterior"] = _fit.sample_posterior(np.array(rep["points"]), _res, tuple(rep["band_GHz"]), _cl, n_steps=3000)
-        except Exception as _e:
-            st.session_state["posterior"] = dict(error=f"{type(_e).__name__}: {_e}")
-    _post = st.session_state.get("posterior")
-    if _post and not _post.get("error") and _post.get("family") == best["family"]:
-        from ui import design_panel as _dp3
-        pair = _dp3.posterior_pair_choice(_post["names"])
-        pc1, pc2 = st.columns([1.2, 1])
-        pc1.plotly_chart(_dp3.posterior_figure(_post, pair=pair), key="posterior_fig", **PLOT)
-        rows_p = []
-        _sd, _lsd = _post["sd"], _post["laplace_sd"]
-        for i, n in enumerate(_post["names"]):
-            psd = _sd[n] if isinstance(_sd, dict) else _sd[i]
-            lap = (_lsd.get(n, float("nan")) if isinstance(_lsd, dict) else _lsd[i]) if _lsd is not None else float("nan")
-            rows_p.append([theme.param_html(n), f"{psd:.3g}", f"{lap:.3g}", f"{psd / lap:.2f}" if lap else "–"])
-        with pc2:
-            theme.md(theme.table_html(("parameter", "posterior σ", "Laplace σ", "ratio"), rows_p, numeric=(1, 2, 3)))
-        pc2.caption(f"acceptance {_post['acceptance_rate']:.2f} · {_post['n_kept']} kept samples · {_post['seconds']:.1f} s")
-    elif _post and _post.get("error"):
-        st.caption("posterior sampling unavailable for this result")
+            pair = _dp3.posterior_pair_choice(_post["names"])
+            pc1, pc2 = st.columns([1.2, 1])
+            pc1.plotly_chart(_dp3.posterior_figure(_post, pair=pair), key="posterior_fig", **PLOT)
+            rows_p = []
+            _sd, _lsd = _post["sd"], _post["laplace_sd"]
+            for i, n in enumerate(_post["names"]):
+                psd = _sd[n] if isinstance(_sd, dict) else _sd[i]
+                lap = (_lsd.get(n, float("nan")) if isinstance(_lsd, dict) else _lsd[i]) if _lsd is not None else float("nan")
+                rows_p.append([theme.param_html(n), f"{psd:.3g}", f"{lap:.3g}", f"{psd / lap:.2f}" if lap else "–"])
+            with pc2:
+                theme.md(theme.table_html(("parameter", "posterior σ", "Laplace σ", "ratio"), rows_p, numeric=(1, 2, 3)))
+            pc2.caption(f"acceptance {_post['acceptance_rate']:.2f} · {_post['n_kept']} kept samples · {_post['seconds']:.1f} s")
+        elif _post and _post.get("error"):
+            st.caption("posterior sampling unavailable for this result")
+    with tab_truth:
+        if truth_rep is None and not design_rows:
+            theme.md('<div class="cs-body muted cs-block">Nothing to compare against: this is not a demo with a hidden truth, and no design values were entered (sidebar → Explain → Compare with Design Values).</div>')
+        if truth_rep is not None and st.toggle("Reveal Hidden Truth (Demo)"):
+            rows_t = truth_rows(best, truth_rep)
+            theme.md(theme.table_html(("parameter", "fitted ± σ", "truth", "within 2σ"), rows_t, numeric=(1, 2), classes=lambda r, c: ("ok" if rows_t[r][3] == "✓" else "bad") if c == 3 else ""))
+            theme.md(theme.caption(f"truth: {truth_rep['family']}{' + resonator' if truth_rep.get('coupled') else ''}; spurs at {[s['f'] for s in truth_rep.get('spurs', [])]} GHz"
+                                   + (f" · {truth_rep['note']}" if truth_rep.get("note") else "")))
+            pull = _ev("pull_figure", rep, dict(truth_rep["params"], period=truth_rep.get("period", 1.0), offset=truth_rep.get("offset", 0.0)))
+            if pull is not None:
+                st.plotly_chart(pull, key="ev_pull", **PLOT)
+        if design_rows:
+            theme.md(theme.eyebrow("Fit vs design"))
+            theme.md(theme.table_html(("parameter", "fit", "design", "deviation"), design_rows, numeric=(1, 2, 3)))
+    with tab_log:
+        run_log = st.session_state.get("run_log") or []
+        if run_log:
+            theme.md(theme.log_html(run_log))
+        else:
+            st.caption("No live log: this result was loaded from a precomputed run.")
 
-    # ---- G3. Ask Ĥolmes: Claude answers questions about this device by calling the physics engine as tools (never guesses numbers)
+    # ---- G3. Ask qĤolmes: Claude answers questions about this device by calling the physics engine as tools (never guesses numbers)
     try:
         from ui import ask_panel as _ask
 
@@ -886,7 +901,7 @@ if rep and rep.get("status") == "ok":
         pass
 
     # ---- H. details & export
-    theme.md(theme.section("Details & export"))
+    theme.md(theme.section("Details & export", "take it with you", "The full report as JSON, the fitted curves as CSV, the annotated map as a standalone HTML file, and the scqubits code to reproduce the model."))
     try:
         csv_text = derived.curves_csv(rep)
     except Exception:  # noqa: BLE001
@@ -904,12 +919,6 @@ if rep and rep.get("status") == "ok":
             except Exception as e:  # noqa: BLE001
                 code = f"# unavailable: {type(e).__name__}: {e}"
         st.code(code, language="python")
-    with st.expander("Run Log"):
-        run_log = st.session_state.get("run_log") or []
-        if run_log:
-            theme.md(theme.log_html(run_log))
-        else:
-            st.caption("No live log: this result was loaded from a precomputed run.")
     show_history()
 elif rep:
     st.error(rep.get("error"))

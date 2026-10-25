@@ -60,6 +60,14 @@ section[data-testid="stSidebar"][data-collapsed="true"] ~ div .block-container {
 .stApp [data-testid="stCode"] pre, .stApp [data-testid="stCode"] code { font-size:14px; line-height:22px; }
 .stApp .stButton button, .stApp .stDownloadButton button { font-family:var(--sans); font-weight:500; border-radius:6px; }
 .stApp [data-testid="stMarkdownContainer"] svg { display:block; }
+/* ---- tabs (diagnostics): quiet labels, amber highlight */
+.stApp [data-baseweb="tab-list"] { gap:24px; border-bottom:1px solid var(--line); }
+.stApp [data-baseweb="tab"] { padding:8px 0; background:transparent; }
+.stApp [data-baseweb="tab"] p { font-family:var(--sans); font-size:13px; font-weight:500; letter-spacing:.02em; color:var(--muted); }
+.stApp [aria-selected="true"][data-baseweb="tab"] p { color:var(--text); }
+.stApp [data-baseweb="tab-highlight"] { background-color:var(--amber); height:2px; }
+.stApp [data-baseweb="tab-border"] { background-color:var(--line); }
+.stApp [data-testid="stTabs"] [data-testid="stVerticalBlock"] { padding-top:16px; }
 /* ---- rhythm */
 .cs-section { margin:64px 0 24px; padding:0; }
 .cs-section .cs-h2 { font-family:var(--sans); font-size:20px; font-weight:600; letter-spacing:-0.01em; color:var(--text); margin:0; line-height:28px; }

@@ -198,12 +198,12 @@ def potential_figure(family: str, params: dict, coupled: bool = False, phi_ext: 
     try:
         from circuitsleuth import models
 
-        tail = f"  ·  readout resonator f<sub>r</sub> = {params['fr']:.3g} GHz" if coupled and "fr" in params else ""
+        tail = f"  ·  f<sub>r</sub> = {params['fr']:.3g} GHz" if coupled and "fr" in params else ""
         if family in ("transmon", "tunable_transmon"):
             EC = float(params["EC"])
             if family == "tunable_transmon":
                 EJ = float(models.tunable_EJ(params["EJmax"], params["d"], np.array([phi_ext]))[0])
-                name = f"E<sub>J</sub>(Φ = {phi_ext:.2f}) = {EJ:.3g} GHz (E<sub>J,max</sub> = {float(params['EJmax']):.3g})"
+                name = f"E<sub>J</sub>(Φ = {phi_ext:.2f}) = {EJ:.3g} GHz"
                 levels = np.asarray(models.qubit_energies(family, params, np.array([phi_ext]), nlev=4))[0]
             else:
                 EJ = float(params["EJ"])
