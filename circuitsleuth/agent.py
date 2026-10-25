@@ -229,7 +229,13 @@ def next_measurements(res: fit.FitResult, pts_all, band, x_grid, c_local, line_w
                     "phi": "the field azimuth separates the orientations that currently overlap: tilt the field slightly",
                     "t_c": "the tunnel coupling is the minimum of the hyperbola at zero detuning: measure finely around it",
                     "lever_arm": "the lever arm is the slope of the line far from zero detuning: extend the detuning range",
-                    "x0": "the zero of the control axis: measure on both sides of the minimum"}.get(n, "")
+                    "x0": "the zero of the control axis: measure on both sides of the minimum",
+                    "f_rad0": "the radial secular frequency: raise the drive power until the radial sidebands appear",
+                    "volt_scale": "the axial frequency per sqrt(volt): extend the endcap-voltage range",
+                    "alpha1": "polarisability of the |mj| = 1/2 component: extend the field range so the parabola curves clearly",
+                    "alpha2": "polarisability of the |mj| = 3/2 component: same, and resolve the two components at low field",
+                    "dfs": "the zero-field splitting of the two components: fine steps around the stray-field null",
+                    "f0": "the zero-field line centre: fine steps around the stray-field null"}.get(n, "")
             out.append(dict(kind="constrain_parameter", parameter=n, rel_sigma=round(float(s / abs(v)), 3), why=hint))
     return out
 

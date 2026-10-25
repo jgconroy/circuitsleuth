@@ -143,10 +143,13 @@ st.sidebar.caption("Shazam for quantum chips. Every number comes from the physic
 st.sidebar.caption("Many devices? `python batch.py <folder>` writes one row per map.")
 
 with data_box:
-    platform_label = st.selectbox("Platform", [models.PLATFORMS[k]["label"] for k in models.PLATFORMS], index=0)
+    _plat_keys = list(models.PLATFORMS)
+    _want_pl = st.query_params.get("platform")  # ?platform=ion picks the platform (pitch links, screenshots)
+    platform_label = st.selectbox("Platform", [models.PLATFORMS[k]["label"] for k in _plat_keys], index=_plat_keys.index(_want_pl) if _want_pl in _plat_keys else 0)
     platform = next(k for k, v in models.PLATFORMS.items() if v["label"] == platform_label)
     platform_families = list(models.PLATFORMS[platform]["families"])
     xlabel = models.PLATFORMS[platform]["control_label"]  # e.g. "flux bias (arbitrary units)"
+    ylabel = models.PLATFORMS[platform].get("freq_label", "drive frequency (GHz)")
 is_circuit = platform == "circuit"
 with search_box:
     weights_available = classify.DEFAULT_PATH.exists() and is_circuit
@@ -407,7 +410,7 @@ if not has_result:
     left, right = st.columns([1.15, 1])
     with left:
         map_slot = st.empty()
-        map_slot.plotly_chart(plots.map_figure(image, x, f, points=pts_preview, title=f"input map · {len(pts_preview)} detected features", xlabel=xlabel), key="map_initial", **PLOT)
+        map_slot.plotly_chart(plots.map_figure(image, x, f, points=pts_preview, title=f"input map · {len(pts_preview)} detected features", xlabel=xlabel, ylabel=ylabel), key="map_initial", **PLOT)
         map_caption = st.empty()
     with right:
         with st.container(border=True):
@@ -480,7 +483,7 @@ if run:
 
     def redraw(p: dict, title: str) -> None:
         state["draw"] += 1  # a fresh key per redraw: the placeholder replaces the element, keys never collide
-        map_slot.plotly_chart(plots.map_figure(image, x, f, points=pts_preview, lines=p["lines"], x_grid=x, title=title, xlabel=xlabel), key=f"map_live_{state['draw']}", **PLOT)
+        map_slot.plotly_chart(plots.map_figure(image, x, f, points=pts_preview, lines=p["lines"], x_grid=x, title=title, xlabel=xlabel, ylabel=ylabel), key=f"map_live_{state['draw']}", **PLOT)
         if p.get("params"):
             map_caption.markdown(theme.pills(f"{k} = {v:.4g}" for k, v in p["params"].items()), unsafe_allow_html=True)
         draw_race()
@@ -641,7 +644,8 @@ if rep and rep.get("status") == "ok":
         try:
             from ui import platform_panels
 
-            physics = {"nv_ensemble": platform_panels.nv_levels_figure, "charge_qubit": platform_panels.dqd_figure}[fam](best["params"])
+            physics = {"nv_ensemble": platform_panels.nv_levels_figure, "charge_qubit": platform_panels.dqd_figure,
+                       "trapped_ion": platform_panels.ion_modes_figure, "rydberg_atom": platform_panels.stark_figure}[fam](best["params"])
         except Exception:  # noqa: BLE001
             physics = None
     if physics is not None:
@@ -682,7 +686,7 @@ if rep and rep.get("status") == "ok":
         theme.md(theme.spec_rows_html(groups["Readout"]) if groups["Readout"] else '<div class="cs-spec-empty">no readout resonator in the accepted model</div>')
 
     # the annotated map, now that the operating points are known
-    fig_final = plots.map_figure(image, x, f, points=np.array(rep["points"]), inlier=rep["inlier_mask"], lines=rep["lines"], x_grid=xg, xlabel=xlabel, look_here=boxes,
+    fig_final = plots.map_figure(image, x, f, points=np.array(rep["points"]), inlier=rep["inlier_mask"], lines=rep["lines"], x_grid=xg, xlabel=xlabel, ylabel=ylabel, look_here=boxes,
                                  flat_lines=rep["flat_lines_GHz"], title=f"{best['hypothesis']} · fitted transitions over the measured map", markers=markers or None)
     ev_map_slot.plotly_chart(fig_final, key="map_final", **PLOT)
 

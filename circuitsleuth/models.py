@@ -52,13 +52,39 @@ FAMILIES: dict[str, dict] = {
         "bounds": {"t_c": (0.5, 6.0)},
         "flux_dependent": True, "control": ("lever_arm", "x0"),  # eps[GHz] = lever_arm * (x - x0)
     },
+    # ---- trapped ion: motional-sideband spectroscopy (detuning from the carrier, MHz) vs endcap voltage
+    #      omega_z = volt_scale * sqrt(V - V0) (harmonic axial confinement), omega_r^2 = f_rad0^2 - omega_z^2 / 2 (linear Paul trap)
+    "trapped_ion": {
+        "platform": "ion", "label": "trapped ion (motional sidebands)",
+        "params": ["f_rad0"],
+        "bounds": {"f_rad0": (1.5, 6.0)},
+        "flux_dependent": True, "control": ("volt_scale", "x0"),
+    },
+    # ---- neutral atom: Rydberg Stark map (detuning, MHz) vs field-plate voltage; two |m_j| components, quadratic shifts
+    "rydberg_atom": {
+        "platform": "atom", "label": "neutral atom (Rydberg Stark map)",
+        "params": ["alpha1", "alpha2", "dfs", "f0"],
+        "bounds": {"alpha1": (0.5, 8.0), "alpha2": (0.5, 8.0), "dfs": (2.0, 30.0), "f0": (-5.0, 5.0)},
+        "flux_dependent": True, "control": ("field_scale", "x0"),  # E[V/cm] = field_scale * (x - x0)
+    },
 }
-CONTROL_BOUNDS = {"field_scale": (20.0, 400.0), "lever_arm": (2.0, 60.0)}
+CONTROL_BOUNDS = {  # per family: bounds of the control-axis calibration parameters
+    "nv_ensemble": {"field_scale": (20.0, 400.0)},
+    "charge_qubit": {"lever_arm": (2.0, 60.0)},
+    "trapped_ion": {"volt_scale": (0.3, 5.0)},
+    "rydberg_atom": {"field_scale": (0.5, 8.0)},
+}
+
+
+def control_bounds(family: str) -> dict:
+    return dict(CONTROL_BOUNDS.get(family, {}))
 PLATFORMS = {
     # scale = typical line precision / separation in GHz; the fitter, linker and flat-line detector scale with it
-    "circuit": dict(label="Superconducting circuits", families=["transmon", "tunable_transmon", "fluxonium"], control_label="flux bias (arbitrary units)", scale=0.012, linewidth=(0.01, 0.08)),
-    "nv": dict(label="NV centres in diamond", families=["nv_ensemble"], control_label="coil current (arbitrary units)", scale=0.0015, linewidth=(0.002, 0.008)),
-    "dot": dict(label="Semiconductor quantum dots", families=["charge_qubit"], control_label="detuning gate voltage (arbitrary units)", scale=0.012, linewidth=(0.02, 0.08)),
+    "circuit": dict(label="Superconducting circuits", families=["transmon", "tunable_transmon", "fluxonium"], control_label="flux bias (arbitrary units)", scale=0.012, linewidth=(0.01, 0.08), freq_unit="GHz", freq_label="drive frequency (GHz)"),
+    "nv": dict(label="NV centres in diamond", families=["nv_ensemble"], control_label="coil current (arbitrary units)", scale=0.0015, linewidth=(0.002, 0.008), freq_unit="GHz", freq_label="microwave frequency (GHz)"),
+    "dot": dict(label="Semiconductor quantum dots", families=["charge_qubit"], control_label="detuning gate voltage (arbitrary units)", scale=0.012, linewidth=(0.02, 0.08), freq_unit="GHz", freq_label="drive frequency (GHz)"),
+    "ion": dict(label="Trapped ions", families=["trapped_ion"], control_label="endcap voltage (arbitrary units)", scale=0.01, linewidth=(0.02, 0.05), freq_unit="MHz", freq_label="detuning from carrier (MHz)"),
+    "atom": dict(label="Neutral atoms (Rydberg)", families=["rydberg_atom"], control_label="field-plate voltage (arbitrary units)", scale=0.15, linewidth=(0.2, 0.8), freq_unit="MHz", freq_label="laser detuning (MHz)"),
 }
 
 
@@ -96,6 +122,8 @@ def control_from_x(family: str, params: dict, x: np.ndarray) -> np.ndarray:
         return params["field_scale"] * (x - params["x0"])
     if c == ("lever_arm", "x0"):
         return params["lever_arm"] * (x - params["x0"])
+    if c == ("volt_scale", "x0"):  # axial secular frequency in MHz; confinement vanishes at x0
+        return params["volt_scale"] * np.sqrt(np.clip(x - params["x0"], 0.0, None))
     raise ValueError(c)
 RESONATOR_PARAMS = ["fr", "g"]
 RESONATOR_BOUNDS = {"fr": (4.5, 9.5), "g": (0.03, 0.35)}
@@ -112,11 +140,14 @@ QUBIT_LINES = [
 
 NV_LINES = [(f"NV{k}{sgn}", (0, j), 1, 1.0) for k in range(1, 5) for sgn, j in (("-", 1), ("+", 2))]
 DQD_LINES = [("0-1", (0, 1), 1, 1.0), ("0-1/2ph", (0, 1), 2, 0.4)]
+ION_LINES = [("carrier", (0, 0), 1, 1.0), ("axial -", (0, 0), 1, 0.7), ("axial +", (0, 0), 1, 0.7), ("radial -", (0, 0), 1, 0.5), ("radial +", (0, 0), 1, 0.5),
+             ("2nd axial -", (0, 0), 1, 0.25), ("2nd axial +", (0, 0), 1, 0.25)]
+RYD_LINES = [("|mj| = 1/2", (0, 0), 1, 1.0), ("|mj| = 3/2", (0, 0), 1, 0.7)]
 
 
 def family_lines(family: str) -> list:
     pl = platform_of(family)
-    return QUBIT_LINES if pl == "circuit" else (NV_LINES if pl == "nv" else DQD_LINES)
+    return {"circuit": QUBIT_LINES, "nv": NV_LINES, "dot": DQD_LINES, "ion": ION_LINES, "atom": RYD_LINES}[pl]
 
 
 def hypothesis_params(family: str, coupled: bool) -> list[str]:
@@ -289,6 +320,23 @@ def dqd_lines(params: dict, eps: np.ndarray) -> dict[str, np.ndarray]:
     return {"0-1": f, "0-1/2ph": f / 2.0}
 
 
+def ion_lines(params: dict, wz: np.ndarray) -> dict[str, np.ndarray]:
+    """Sideband detunings (MHz) given the axial secular frequency wz; radial modes soften as the axial
+    confinement grows (linear Paul trap: omega_r^2 = f_rad0^2 - omega_z^2 / 2)."""
+    wz = np.atleast_1d(np.asarray(wz, float))
+    wr2 = params["f_rad0"] ** 2 - 0.5 * wz**2
+    wr = np.where(wr2 > 0, np.sqrt(np.clip(wr2, 0, None)), np.nan)
+    z = np.zeros_like(wz)
+    return {"carrier": z, "axial -": -wz, "axial +": wz, "radial -": -wr, "radial +": wr, "2nd axial -": -2 * wz, "2nd axial +": 2 * wz}
+
+
+def rydberg_lines(params: dict, E: np.ndarray) -> dict[str, np.ndarray]:
+    """Quadratic Stark shifts of the two |m_j| components of an nD Rydberg line: f = f0 ± dfs/2 - alpha E^2 / 2."""
+    E = np.atleast_1d(np.asarray(E, float))
+    return {"|mj| = 1/2": params["f0"] + 0.5 * params["dfs"] - 0.5 * params["alpha1"] * E**2,
+            "|mj| = 3/2": params["f0"] - 0.5 * params["dfs"] - 0.5 * params["alpha2"] * E**2}
+
+
 # ----------------------------------------------------------------------------- transitions
 def transitions(family: str, params: dict, phi: np.ndarray, coupled: bool = False, **kw) -> dict[str, np.ndarray]:
     """Spectroscopy lines (GHz) vs the control variable (flux / field / detuning) for a hypothesis."""
@@ -298,6 +346,10 @@ def transitions(family: str, params: dict, phi: np.ndarray, coupled: bool = Fals
         return nv_lines(params, phi)
     if pl == "dot":
         return dqd_lines(params, phi)
+    if pl == "ion":
+        return ion_lines(params, phi)
+    if pl == "atom":
+        return rydberg_lines(params, phi)
     lines: dict[str, np.ndarray] = {}
     if not coupled:
         E = qubit_energies(family, params, phi, nlev=5, **kw)

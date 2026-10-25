@@ -72,7 +72,7 @@ def _finite(vals) -> np.ndarray:
 
 
 def map_figure(image, x, f, points=None, inlier=None, lines=None, x_grid=None, look_here=None, flat_lines=None, title=None, xlabel="flux bias (arbitrary units)",
-               markers=None, height: int = 560) -> go.Figure:
+               markers=None, height: int = 560, ylabel="drive frequency (GHz)") -> go.Figure:
     """Spectroscopy map with detected features, fitted transitions, numbered 'look here' boxes and flat spur lines.
 
     Explained features are filled green discs, unexplained ones hollow red rings. Each `look_here` box (x_lo, x_hi, f_lo, f_hi)
@@ -123,7 +123,7 @@ def map_figure(image, x, f, points=None, inlier=None, lines=None, x_grid=None, l
                                  hovertemplate="operating point<br>control %{x:.3f}<br>%{y:.3f} GHz<extra></extra>"))
     _style(fig, height, title=title, margin=dict(l=62, r=14, t=40 if title else 14, b=92))
     fig.update_xaxes(title_text=xlabel, range=[float(x[0]), float(x[-1])], showgrid=False)
-    fig.update_yaxes(title_text="drive frequency (GHz)", range=[float(f[0]), float(f[-1])], showgrid=False)
+    fig.update_yaxes(title_text=ylabel, range=[float(f[0]), float(f[-1])], showgrid=False)
     return fig
 
 

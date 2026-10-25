@@ -165,6 +165,29 @@ def _charge_qubit(values, order) -> str:
     return _svg(body, 300)
 
 
+def _trapped_ion(values, order) -> str:
+    yc = (TOP + BOT) / 2 + 4
+    body = (_wire(70, yc - 34, 230, yc - 34) + _wire(70, yc + 34, 230, yc + 34)  # RF rods
+            + f'<rect x="56" y="{yc - 16}" width="14" height="32" rx="2"/><rect x="230" y="{yc - 16}" width="14" height="32" rx="2"/>'  # endcaps
+            + f'<circle cx="150" cy="{yc}" r="5" fill="{ACCENT}" stroke="none"/>'
+            + f'<line x1="150" y1="{yc}" x2="196" y2="{yc}" stroke="{ACCENT}" marker-end="url(#cs-ah-amber)"/>' + _text(200, yc + 4, "ω_z", "start", ACCENT)
+            + f'<line x1="150" y1="{yc}" x2="150" y2="{yc - 26}" stroke="{MUTED}" marker-end="url(#cs-ah)"/>' + _text(156, yc - 20, "ω_r", "start", MUTED)
+            + _text(63, yc + 50, "V", "middle", STROKE) + _text(237, yc + 50, "V", "middle", STROKE)
+            + _labelled(150, "f_rad0", "f_rad0", values, order) + _labelled(240, "√V scale", "volt_scale", values, order))
+    return _svg(body, 310)
+
+
+def _rydberg_atom(values, order) -> str:
+    yc = (TOP + BOT) / 2 + 4
+    body = (_wire(80, yc - 40, 220, yc - 40) + _wire(80, yc + 40, 220, yc + 40)  # field plates
+            + f'<circle cx="150" cy="{yc}" r="22" stroke-dasharray="4 3" stroke="{MUTED}"/><circle cx="150" cy="{yc}" r="4" fill="{ACCENT}" stroke="none"/>'
+            + f'<circle cx="172" cy="{yc}" r="3" fill="{STROKE}" stroke="none"/>'
+            + f'<line x1="240" y1="{yc - 34}" x2="240" y2="{yc + 30}" stroke="{ACCENT}" marker-end="url(#cs-ah-amber)"/>' + _text(246, yc + 2, "E", "start", ACCENT)
+            + _text(150, yc - 48, "+V", "middle", STROKE) + _text(150, yc + 56, "−V", "middle", STROKE)
+            + _labelled(100, "α", "alpha1", values, order) + _labelled(200, "Δ_fs", "dfs", values, order))
+    return _svg(body, 300)
+
+
 def schematic_svg(family: str, coupled: bool = False, values: dict | None = None) -> str:
     """Inline SVG for a circuit family; coupled=True appends a capacitively coupled L‖C readout resonator.
     `values` maps parameter keys (EJ, EC, EL, EJmax, d, fr, g, D, E, theta, t_c) to display strings written next to the symbols."""
@@ -176,6 +199,10 @@ def schematic_svg(family: str, coupled: bool = False, values: dict | None = None
         svg = _nv_ensemble(values, order)
     elif family == "charge_qubit":
         svg = _charge_qubit(values, order)
+    elif family == "trapped_ion":
+        svg = _trapped_ion(values, order)
+    elif family == "rydberg_atom":
+        svg = _rydberg_atom(values, order)
     else:
         try:
             body, xl, xr = _qubit(family, values, order)

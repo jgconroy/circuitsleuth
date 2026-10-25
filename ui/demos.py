@@ -31,6 +31,14 @@ DEMOS = {
         "H · double quantum dot charge qubit, t_c = 2.5 GHz": dict(family="charge_qubit", params=dict(t_c=2.5, lever_arm=9.0, x0=0.15), f_lo=1.0, f_hi=12.0, spurs=[], seed=2, linewidth=0.03),
         "I · double quantum dot, surprise": None,
     },
+    "ion": {
+        "J · trapped ion, axial and radial sidebands vs endcap voltage": dict(family="trapped_ion", params=dict(f_rad0=3.2, volt_scale=1.8, x0=-1.3), f_lo=-6.5, f_hi=6.5, spurs=[], seed=4, linewidth=0.03),
+        "K · trapped ion, surprise trap": None,
+    },
+    "atom": {
+        "L · Rydberg nD Stark map, stray-field null hidden at V = 0.12": dict(family="rydberg_atom", params=dict(alpha1=2.5, alpha2=4.0, dfs=12.0, f0=0.0, field_scale=2.5, x0=0.12), f_lo=-80.0, f_hi=20.0, spurs=[], seed=5, linewidth=0.5),
+        "M · Rydberg atom, surprise state": None,
+    },
 }
 
 

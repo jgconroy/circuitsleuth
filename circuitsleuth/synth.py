@@ -19,6 +19,8 @@ BANDS = {  # per platform: ranges for the lower and upper edge of the measured b
     "circuit": ((0.05, 1.5), (7.5, 13.0)),
     "nv": ((2.3, 2.6), (3.1, 3.45)),
     "dot": ((0.5, 1.5), (8.0, 14.0)),
+    "ion": ((-7.5, -4.5), (4.5, 7.5)),      # MHz detuning from the carrier
+    "atom": ((-95.0, -55.0), (8.0, 30.0)),  # MHz laser detuning
 }
 
 
@@ -42,7 +44,7 @@ def _loguniform(rng, lo, hi):
     return float(np.exp(rng.uniform(np.log(lo), np.log(hi))))
 
 
-LINEAR_PARAMS = {"d", "D", "theta", "phi", "x0", "offset"}
+LINEAR_PARAMS = {"d", "D", "theta", "phi", "x0", "offset", "f0"}
 
 
 def sample_truth(rng: np.random.Generator, cfg: SynthConfig | None = None, family: str | None = None, coupled: bool | None = None, platform: str = "circuit") -> dict:
@@ -88,12 +90,18 @@ def _sample_truth_once(rng: np.random.Generator, cfg: SynthConfig | None = None,
         lo_, hi_ = max(float(np.nanmin(f01)), f_lo + 0.2), min(float(np.nanmax(f01)), f_hi - 0.2)
         if hi_ > lo_:
             params["fr"] = float(np.clip(rng.uniform(lo_, hi_), *models.RESONATOR_BOUNDS["fr"]))
-    elif ctrl == ("field_scale", "x0"):
+    elif ctrl == ("field_scale", "x0") and platform == "nv":
         params["field_scale"] = _loguniform(rng, 30.0, 200.0)
         params["x0"] = float(rng.uniform(-0.6, 0.6))
+    elif ctrl == ("field_scale", "x0"):  # Rydberg: V/cm per unit; stray-field null inside the window
+        params["field_scale"] = _loguniform(rng, 1.2, 4.0)
+        params["x0"] = float(rng.uniform(-0.4, 0.4))
     elif ctrl == ("lever_arm", "x0"):
         params["lever_arm"] = _loguniform(rng, 4.0, 30.0)
         params["x0"] = float(rng.uniform(-0.5, 0.5))
+    elif ctrl == ("volt_scale", "x0"):  # ion: confinement vanishes below the window
+        params["volt_scale"] = _loguniform(rng, 1.0, 3.0)
+        params["x0"] = float(rng.uniform(-1.8, -1.1))
     truth = dict(
         family=family,
         platform=platform,

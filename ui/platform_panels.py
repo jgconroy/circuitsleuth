@@ -70,3 +70,36 @@ def dqd_figure(params: dict, eps_max: float | None = None):
     fig.add_trace(go.Scatter(x=[0, 0], y=[-t, t], mode="lines", line=dict(color=AMBER, width=1.5, dash="dot"), showlegend=False, hoverinfo="skip"))
     fig.add_annotation(x=0, y=0, text=f"2 t_c = {2 * t:.3f} GHz", showarrow=False, font=dict(color=AMBER, size=12, family=MONO), xshift=70)
     return _layout(fig, "Double quantum dot: hybridised charge states vs detuning", "detuning ε (GHz)", "energy (GHz)")
+
+
+def ion_modes_figure(params: dict, x_range: tuple[float, float] | None = None):
+    """Secular frequencies versus endcap voltage: the axial mode stiffens as sqrt(V - V0) while the radial mode softens."""
+    x0, a, fr0 = params["x0"], params["volt_scale"], params["f_rad0"]
+    lo, hi = x_range if x_range else (x0 + 0.02, x0 + 2.6)
+    V = np.linspace(lo, hi, 300)
+    wz = a * np.sqrt(np.clip(V - x0, 0, None))
+    wr2 = fr0**2 - 0.5 * wz**2
+    wr = np.where(wr2 > 0, np.sqrt(np.clip(wr2, 0, None)), np.nan)
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=V, y=wz, mode="lines", name="axial ω_z", line=dict(color=ORANGE, width=2), hovertemplate="V = %{x:.3f}<br>ω_z = %{y:.3f} MHz<extra></extra>"))
+    fig.add_trace(go.Scatter(x=V, y=wr, mode="lines", name="radial ω_r", line=dict(color=BLUE, width=2), hovertemplate="V = %{x:.3f}<br>ω_r = %{y:.3f} MHz<extra></extra>"))
+    fig.add_trace(go.Scatter(x=V, y=2 * wz, mode="lines", name="2 ω_z", line=dict(color=MUTED, width=1, dash="dot"), hoverinfo="skip"))
+    fig.add_vline(x=x0, line=dict(color=AMBER, width=1, dash="dot"))
+    fig.add_annotation(x=x0, y=0.95 * np.nanmax(wr), text="V₀: confinement vanishes", showarrow=False, font=dict(color=AMBER, size=11), xanchor="left", xshift=6)
+    return _layout(fig, "Trap secular frequencies vs endcap voltage", "endcap voltage (control units)", "secular frequency (MHz)")
+
+
+def stark_figure(params: dict, x_range: tuple[float, float] | None = None):
+    """Quadratic Stark shifts of the two |m_j| components versus plate voltage; the shared vertex is the stray-field null."""
+    x0, s, a1, a2, dfs, f0 = params["x0"], params["field_scale"], params["alpha1"], params["alpha2"], params["dfs"], params["f0"]
+    lo, hi = x_range if x_range else (x0 - 1.2, x0 + 1.2)
+    V = np.linspace(lo, hi, 300)
+    E = s * (V - x0)
+    f1 = f0 + 0.5 * dfs - 0.5 * a1 * E**2
+    f2 = f0 - 0.5 * dfs - 0.5 * a2 * E**2
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=V, y=f1, mode="lines", name="|m_j| = 1/2", line=dict(color=ORANGE, width=2), hovertemplate="V = %{x:.3f}<br>Δf = %{y:.2f} MHz<extra></extra>"))
+    fig.add_trace(go.Scatter(x=V, y=f2, mode="lines", name="|m_j| = 3/2", line=dict(color=BLUE, width=2), hovertemplate="V = %{x:.3f}<br>Δf = %{y:.2f} MHz<extra></extra>"))
+    fig.add_vline(x=x0, line=dict(color=AMBER, width=1, dash="dot"))
+    fig.add_annotation(x=x0, y=f0 + 0.5 * dfs, text=f"stray-field null at V = {x0:.3f}", showarrow=False, font=dict(color=AMBER, size=11), xanchor="left", xshift=6, yshift=12)
+    return _layout(fig, "Rydberg Stark map: the parabola vertex is the stray-field null", "plate voltage (control units)", "detuning (MHz)")

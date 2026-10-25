@@ -19,7 +19,7 @@ from scipy.optimize import differential_evolution, least_squares
 
 from . import models
 
-LOG_PARAMS = {"EJ", "EC", "EL", "EJmax", "fr", "g", "period", "field_scale", "lever_arm", "t_c", "E"}
+LOG_PARAMS = {"EJ", "EC", "EL", "EJmax", "fr", "g", "period", "field_scale", "lever_arm", "t_c", "E", "f_rad0", "volt_scale", "alpha1", "alpha2", "dfs"}
 MODEL_KW = {"ncut": 20, "cutoff": 60, "kq": 5, "kr": 3}
 
 
@@ -60,11 +60,14 @@ def default_bounds(hyp: Hypothesis, x: np.ndarray) -> dict[str, tuple[float, flo
         b["period"] = (span / 3.0, pmax)
         b["offset"] = (float(np.min(x)) - pmax / 2, float(np.max(x)) + pmax / 2)
     elif ctrl == ("field_scale", "x0"):
-        b["field_scale"] = models.CONTROL_BOUNDS["field_scale"]
+        b["field_scale"] = models.control_bounds(hyp.family)["field_scale"]
         b["x0"] = (float(np.min(x)) - span, float(np.max(x)) + span)
     elif ctrl == ("lever_arm", "x0"):
-        b["lever_arm"] = models.CONTROL_BOUNDS["lever_arm"]
+        b["lever_arm"] = models.control_bounds(hyp.family)["lever_arm"]
         b["x0"] = (float(np.min(x)) - span / 2, float(np.max(x)) + span / 2)
+    elif ctrl == ("volt_scale", "x0"):
+        b["volt_scale"] = models.control_bounds(hyp.family)["volt_scale"]
+        b["x0"] = (float(np.min(x)) - 2 * span, float(np.min(x)))  # confinement vanishes below the measured window
     return b
 
 

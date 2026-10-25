@@ -30,7 +30,7 @@ def test_synth_renders_other_platforms():
 
 def _hidden(family, params, f_lo, f_hi, seed=0, noise=0.05):
     truth = dict(family=family, platform=models.platform_of(family), coupled=False, params=dict(params), period=1.0, offset=0.0, x_lo=-1.0, x_hi=1.0,
-                 f_lo=f_lo, f_hi=f_hi, linewidth=0.006 if family == "nv_ensemble" else 0.03, noise=noise, two_photon=True, sign=1, spurs=[])
+                 f_lo=f_lo, f_hi=f_hi, linewidth={"nv_ensemble": 0.006, "trapped_ion": 0.03, "rydberg_atom": 0.5}.get(family, 0.03), noise=noise, two_photon=True, sign=1, spurs=[])
     cfg = synth.SynthConfig(nx=81, nf=500)
     r = synth.render(truth, cfg, np.random.default_rng(seed))
     return truth, r
@@ -54,3 +54,39 @@ def test_agent_recovers_charge_qubit():
     b = rep["best"]["params"]
     print("\nDQD:", b)
     assert abs(b["t_c"] - 2.5) / 2.5 < 0.03 and abs(b["lever_arm"] - 9.0) / 9.0 < 0.03 and abs(b["x0"] - 0.15) < 0.02
+
+
+def test_ion_and_rydberg_limits():
+    L = models.ion_lines(dict(f_rad0=3.0), np.array([0.0, 1.0]))
+    assert L["axial +"][1] == 1.0 and abs(L["radial +"][1] - np.sqrt(9 - 0.5)) < 1e-12 and L["carrier"][1] == 0.0 and L["2nd axial -"][1] == -2.0
+    wz = models.control_from_x("trapped_ion", dict(volt_scale=2.0, x0=-1.5), np.array([-1.5, -1.0, 0.5]))
+    assert np.allclose(wz, [0.0, 2.0 * np.sqrt(0.5), 2.0 * np.sqrt(2.0)])
+    R = models.rydberg_lines(dict(alpha1=2.0, alpha2=4.0, dfs=10.0, f0=1.0), np.array([0.0, 2.0]))
+    assert np.allclose(R["|mj| = 1/2"], [6.0, 2.0]) and np.allclose(R["|mj| = 3/2"], [-4.0, -12.0])
+
+
+def test_synth_renders_ion_and_atom():
+    for platform in ("ion", "atom"):
+        rng = np.random.default_rng(2)
+        t = synth.sample_truth(rng, synth.SynthConfig(nx=61, nf=300), platform=platform)
+        r = synth.render(t, synth.SynthConfig(nx=61, nf=300), rng)
+        assert r["image"].shape == (300, 61) and len(r["points"]) > 30
+
+
+def test_agent_recovers_trapped_ion():
+    t, r = _hidden("trapped_ion", dict(f_rad0=3.2, volt_scale=1.8, x0=-1.3), -6.5, 6.5, seed=4, noise=0.05)
+    rep = agent.identify(r["image"], r["x"], r["f"], config=agent.AgentConfig(maxiter=40, use_classifier=False, families=("trapped_ion",), try_coupled="never"))
+    b = rep["best"]["params"]
+    print("\nION:", b)
+    assert abs(b["f_rad0"] - 3.2) / 3.2 < 0.03 and abs(b["volt_scale"] - 1.8) / 1.8 < 0.03 and abs(b["x0"] + 1.3) < 0.05
+
+
+def test_agent_recovers_rydberg_atom():
+    t, r = _hidden("rydberg_atom", dict(alpha1=2.5, alpha2=4.0, dfs=12.0, f0=0.0, field_scale=2.5, x0=0.12), -80.0, 20.0, seed=5, noise=0.05)
+    rep = agent.identify(r["image"], r["x"], r["f"], config=agent.AgentConfig(maxiter=40, use_classifier=False, families=("rydberg_atom",), try_coupled="never"))
+    b = rep["best"]["params"]
+    print("\nATOM:", b)
+    # alpha and field_scale are degenerate as alpha * field_scale^2: compare the curvature in control units
+    assert abs(b["alpha1"] * b["field_scale"] ** 2 - 2.5 * 2.5**2) / (2.5 * 2.5**2) < 0.03
+    assert abs(b["alpha2"] * b["field_scale"] ** 2 - 4.0 * 2.5**2) / (4.0 * 2.5**2) < 0.03
+    assert abs(b["dfs"] - 12.0) < 0.5 and abs(b["x0"] - 0.12) < 0.02

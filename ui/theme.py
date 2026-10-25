@@ -177,7 +177,8 @@ HEADER = """<div class="cs-wordmark"><span class="cs-name"><span class="cs-mark"
 <span class="cs-tag">Identify the circuit behind a spectroscopy map</span></div><hr class="cs-rule">"""
 
 UNITS = {"EJ": "GHz", "EC": "GHz", "EL": "GHz", "EJmax": "GHz", "fr": "GHz", "g": "GHz", "D": "GHz", "E": "GHz", "t_c": "GHz",
-         "theta": "rad", "phi": "rad", "field_scale": "G / unit", "lever_arm": "GHz / unit", "d": "", "period": "", "offset": "", "x0": ""}
+         "theta": "rad", "phi": "rad", "field_scale": "per unit", "lever_arm": "GHz / unit", "d": "", "period": "", "offset": "", "x0": "",
+         "f_rad0": "MHz", "volt_scale": "MHz / √unit", "alpha1": "MHz/(V/cm)²", "alpha2": "MHz/(V/cm)²", "dfs": "MHz", "f0": "MHz"}
 
 
 def inject() -> None:
@@ -377,11 +378,22 @@ def hamiltonian_html(family: str, params: dict, coupled: bool) -> str:
         h = f"H = {amber(p['D'])} S<sub>z</sub><sup>2</sup> + {amber(p['E'], 3)} (S<sub>x</sub><sup>2</sup> − S<sub>y</sub><sup>2</sup>) + γ<sub>e</sub> B·S"
     elif family == "charge_qubit":
         h = f"f = √(ε<sup>2</sup> + (2·{amber(p['t_c'])})<sup>2</sup>)"
+    elif family == "trapped_ion":
+        h = (f"ω<sub>z</sub> = {amber(p['volt_scale'])} √(V − V<sub>0</sub>),&nbsp; ω<sub>r</sub> = √({amber(p['f_rad0'])}<sup>2</sup> − ω<sub>z</sub><sup>2</sup>/2),"
+             f"&nbsp; sidebands at ±ω<sub>z</sub>, ±ω<sub>r</sub>, ±2ω<sub>z</sub>")
+    elif family == "rydberg_atom":
+        h = (f"Δf = f<sub>0</sub> ± {amber(p['dfs'])}/2 − ½ α E<sup>2</sup>,&nbsp; α = {amber(p['alpha1'])} | {amber(p['alpha2'])},"
+             f"&nbsp; E = {amber(p['field_scale'])} (V − V<sub>0</sub>)")
     else:
         h = esc(family)
     if coupled and "fr" in p and "g" in p:
         h += f" + {amber(p['fr'])} a<sup>†</sup>a + {amber(p['g'], 3)} n(a + a<sup>†</sup>)"
-    return h + '<span class="u">GHz</span>'
+    try:
+        from circuitsleuth import models as _m
+        unit = _m.PLATFORMS[_m.platform_of(family)].get("freq_unit", "GHz")
+    except Exception:
+        unit = "GHz"
+    return h + f'<span class="u">{unit}</span>'
 
 
 # ------------------------------------------------------------------ spec cards (F)

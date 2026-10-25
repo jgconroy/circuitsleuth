@@ -110,6 +110,29 @@ def derived_quantities(best: dict, x_range: tuple[float, float] | None = None) -
         for k, pr in enumerate(proj, start=1):
             out.append(dict(name=f"axial field fraction, NV orientation {k}", value=pr, unit="", note="B·n̂ / |B|; ±1 means aligned"))
         out.append(dict(name="zero-field control value", value=p["x0"], unit="control units", note=""))
+    elif pl == "ion":
+        xs = np.linspace(x_range[0], x_range[1], 3) if x_range else np.array([0.0])
+        wz = p["volt_scale"] * np.sqrt(np.clip(xs - p["x0"], 0, None))
+        wr = np.sqrt(np.clip(p["f_rad0"] ** 2 - 0.5 * wz**2, 0, None))
+        out.append(dict(name="axial secular frequency at window centre", value=float(wz[1]), unit="MHz", note="ω_z = volt_scale √(V − V₀)"))
+        out.append(dict(name="radial secular frequency at window centre", value=float(wr[1]), unit="MHz", note="ω_r² = f_rad0² − ω_z²/2"))
+        out.append(dict(name="axial range over the sweep", value=float(wz[-1] - wz[0]), unit="MHz", note=f"{wz[0]:.3f} to {wz[-1]:.3f} MHz"))
+        out.append(dict(name="trap anisotropy ω_r / ω_z at centre", value=float(wr[1] / wz[1]) if wz[1] > 0 else float("nan"), unit="", note="> √3 keeps the axial mode the lowest"))
+        out.append(dict(name="voltage where axial confinement vanishes (V₀)", value=p["x0"], unit="control units", note="extrapolated; do not go there"))
+        out.append(dict(name="axial frequency per √V", value=p["volt_scale"], unit="MHz / √unit", note="trap geometric efficiency"))
+    elif pl == "atom":
+        out.append(dict(name="stray-field null (plate voltage)", value=p["x0"], unit="control units", note="vertex of the Stark parabolas: bias here to cancel the stray field"))
+        out.append(dict(name="field per control unit", value=p["field_scale"], unit="V/cm per unit", note="plate calibration"))
+        out.append(dict(name="polarisability α (|mj| = 1/2)", value=p["alpha1"], unit="MHz / (V/cm)²", note="Δf = −½ α E²"))
+        out.append(dict(name="polarisability α (|mj| = 3/2)", value=p["alpha2"], unit="MHz / (V/cm)²", note=""))
+        out.append(dict(name="tensor part α(3/2) − α(1/2)", value=p["alpha2"] - p["alpha1"], unit="MHz / (V/cm)²", note="sign tells which component shifts faster"))
+        out.append(dict(name="zero-field splitting of the components", value=p["dfs"], unit="MHz", note="fine-structure / m_j splitting"))
+        out.append(dict(name="Stark curvature (|mj| = 1/2) in control units", value=p["alpha1"] * p["field_scale"] ** 2, unit="MHz / unit²",
+                        note="what the map actually determines: α and the plate calibration only enter as α·(V/cm per unit)²; fix field_scale under Known parameters to get α itself"))
+        out.append(dict(name="Stark curvature (|mj| = 3/2) in control units", value=p["alpha2"] * p["field_scale"] ** 2, unit="MHz / unit²", note="same degeneracy"))
+        if x_range:
+            Emax = p["field_scale"] * max(abs(x_range[0] - p["x0"]), abs(x_range[1] - p["x0"]))
+            out.append(dict(name="largest field in the sweep", value=Emax, unit="V/cm", note=f"shift of the 3/2 component there: {0.5 * p['alpha2'] * Emax**2:.1f} MHz"))
     elif pl == "dot":
         out.append(dict(name="tunnel coupling gap 2 t_c", value=2 * p["t_c"], unit="GHz", note="minimum of the hyperbola"))
         out.append(dict(name="2 t_c in µeV", value=2 * p["t_c"] * 4.1357, unit="µeV", note="h × 1 GHz = 4.1357 µeV"))
@@ -125,7 +148,10 @@ def control_for_frequency(best: dict, target_GHz: float, x_range: tuple[float, f
         return []
     hyp = fit.Hypothesis(fam, best.get("coupled", False))
     xs = np.linspace(x_range[0], x_range[1], 801)
-    f = fit.predict_lines(hyp, p, xs)["0-1"]
+    lines = fit.predict_lines(hyp, p, xs)
+    if "0-1" not in lines:
+        return []
+    f = lines["0-1"]
     f = np.where(np.isfinite(f), f, np.nan)
     d = f - target_GHz
     sols = []
@@ -153,6 +179,12 @@ def scqubits_code(best: dict) -> str:
     elif fam == "charge_qubit":
         return (f"# Double quantum dot: t_c = {p['t_c']:.5g} GHz, eps[GHz] = {p['lever_arm']:.5g} * (control - {p['x0']:.5g})\n"
                 "# f01 = sqrt(eps**2 + (2*t_c)**2)")
+    elif fam == "trapped_ion":
+        return (f"# Trapped ion: omega_z[MHz] = {p['volt_scale']:.5g} * sqrt(V - {p['x0']:.5g}); omega_r = sqrt({p['f_rad0']:.5g}**2 - omega_z**2/2)\n"
+                "# sidebands at carrier +- omega_z, +- omega_r, +- 2 omega_z")
+    elif fam == "rydberg_atom":
+        return (f"# Rydberg Stark map: E[V/cm] = {p['field_scale']:.5g} * (V - {p['x0']:.5g})\n"
+                f"# f(|mj|=1/2) = {p['f0']:.4g} + {p['dfs']/2:.4g} - 0.5*{p['alpha1']:.4g}*E**2 ;  f(|mj|=3/2) = {p['f0']:.4g} - {p['dfs']/2:.4g} - 0.5*{p['alpha2']:.4g}*E**2  [MHz]")
     if coupled:
         lines += ["", f"resonator = scq.Oscillator(E_osc={p['fr']:.5g}, truncated_dim=4)",
                   "hilbertspace = scq.HilbertSpace([qubit, resonator])",
