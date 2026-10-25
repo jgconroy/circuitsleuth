@@ -15,7 +15,7 @@ Every superconducting-qubit lab starts a new chip the same way: a two-tone spect
 Upload a spectroscopy map (image, NPZ, HDF5 or a CSV of features) from one of five platforms and qĤolmes
 
 - extracts the spectral features and separates flux-dependent lines from pumps and spurs,
-- proposes device families (a CNN trained on 190 000 synthetic maps only *proposes*; it never decides),
+- proposes device families (a CNN trained on 600 000 synthetic maps only *proposes*; it never decides),
 - fits every hypothesis with the actual Hamiltonian (transmon, flux-tunable transmon, fluxonium with and without a readout
 resonator, NV ensemble, double-dot charge qubit, trapped-ion sidebands, Rydberg Stark map) using a robust global search,
 - verifies on held-out flux columns, reports Jacobian uncertainties calibrated by coverage runs, and samples the posterior on demand,

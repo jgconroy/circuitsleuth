@@ -219,9 +219,9 @@ on a 50-point fluxonium; with an absolute floor instead (`agent.DYN_MIN_ABS`) a 
 10/10 families identified. Fluxonium *parameters* with the fast preset remain the weak spot (3/10 within 5 % on that table; the
 normal preset, which the saved demos use, recovers 16/20 on the 120-map table).
 
-### Proposer (CNN on 64×64 thumbnails, 190 000 synthetic maps, 30 epochs, trained on a 32-core machine)
+### Proposer (CNN on 64×64 thumbnails, 600 000 synthetic maps, 28 epochs, trained overnight on a 20-core machine)
 
-Family accuracy 94 % (86 % and 89 % for the earlier 20k- and 40k-map laptop runs), visible-avoided-crossing accuracy 87 %
+Family accuracy 94.3 % (93.6 % for the earlier 190k-map run, 86 % and 89 % for the 20k- and 40k-map laptop runs), visible-avoided-crossing accuracy 88.5 %
 (the learnable proxy for "there is a readout resonator"; the raw "resonator present" label sat at chance because a
 far-detuned resonator leaves no trace). The network only ranks families, seeds the search and adds a mild prior; every
 reported number comes from the physics fit.

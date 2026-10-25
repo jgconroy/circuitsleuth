@@ -399,7 +399,7 @@ All within 1σ; explained 80 % of coherent features (42 % before the artefact-co
 
 **Small laptop blind runs (`demo.py`, 8–10 maps, harsh generator):** circuits family 7/10 (all parameters < 5 % in 2/10; clean tunable circuits to ≈ 1 % including the period); NV 7/8, dot 8/8, ion 7/8, atom 6/8 within tolerance, the misses having fewer than about twenty usable features and flagged low confidence.
 
-**Proposer:** 190 000 maps, 30 epochs: family accuracy 93.6 %, visible-crossing accuracy 87.4 % (the raw "resonator present" label sat at chance).
+**Proposer:** 600 000 maps (570 000 train), 28 epochs, trained overnight on a 20-core machine: family accuracy 94.3 %, visible-crossing accuracy 88.5 % (the previous model, 190 000 maps / 30 epochs, had 93.6 % / 87.4 %) (the raw "resonator present" label sat at chance).
 
 **Uncertainty calibration:** raw 1σ coverage 0.34–0.62 instead of 0.68 → σ × 1.8; posterior/Laplace σ ratio 1.0–1.14 on demo A.
 
@@ -524,6 +524,6 @@ Speed of development in 36 hours and interactivity for free (hover for frequency
 - Hold-out: every third column; σ × 1.8; posterior 3 000 Metropolis steps, 10 % burn-in, ~750 kept.
 - Evidence: Gaussian (σ = $c_\ell$) + uniform background (ε = 0.1); log-uniform priors; Laplace.
 - Design: $\tfrac12\log\det$ ratio × 1.4427 × visibility, blocks of 6 columns, top 5.
-- CNN: 4 conv layers, width 2, 64×64, 190k maps, 30 epochs, family 93.6 %, crossing 87.4 %.
+- CNN: 4 conv layers, width 2, 64×64, 600k maps, 28 epochs, family 94.3 %, crossing 88.5 %.
 - Real data: 3.05 ± 0.21 / 0.86 ± 0.07 / 0.95 ± 0.07 GHz vs 3.0 / 0.84 / 1.0.
 - Blind: 200/200 families on ions, NV, dots, atoms; 86 / 72 / 78 / 63 % within 5 %; circuits 72 % family (normal), 35 % within 5 %.

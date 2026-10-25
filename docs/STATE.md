@@ -364,6 +364,13 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
   with the fast preset is luck-dependent (single coupled trial), so the preset stays at 30 and the demo uses the precomputed A.  If a judge
   runs A live and it comes back without the resonator, say "fast preset; the saved result used the normal preset" (runbook section D).
 
+### Sun ~09:15 PDT: morning
+- Lanthanum's overnight training never ran: the worker crashed at the measure step with `No module named 'torch'` (that prompt's python was
+  not the sleuth311 env with torch); `overnight.pid` stayed, so `status` said running.  QEC1's run worked: 570 000 training maps, 28 epochs,
+  width 2, held-out fam_acc **0.9432** / crossing 0.885 (was 0.9363 / 0.874) → adopted into `artifacts/classifier.pt` (+json) with
+  `scripts/adopt_classifier.py`; previous kept as `classifier_prev.*`; apptest clean; 8502 restarted.
+- Both machines also returned a 6-map fluxonium table (identical files): family 6/6, params 3/6.
+
 ## 5. Pending / in progress (check before starting new work)
 - (done Sat ~19:30) Circuit blind rerun with the validity-fixed generator: family **7/10**, params <5 % 2/10 (unchanged causes: fixed-transmon
   EJ/EC degeneracy without a 2-photon line; tunable+resonator mistaken for fluxonium in 2 maps; one faint fluxonium -> transmon+res).
