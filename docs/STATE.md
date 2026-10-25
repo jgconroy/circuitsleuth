@@ -6,6 +6,8 @@ Companion files: `README.md` (public story), `docs/devpost.md` (submission text)
 `PRD.md` (original spec). Memory note for Claude: `~/.claude/projects/-Users-grantconroy/memory/calhacks-2026-hackathon.md`.
 
 ## 0. Hard facts
+- **Clock warning:** the section labels "Sun ~00:45" … "Sun ~04:10" below were written in UTC. In PDT they are Sat ~17:45 … ~21:10.
+  Check `date` before budgeting time; the deadline is **Sun 9:00 AM PDT = 16:00 UTC**.
 - Hackathon: Cal Hacks 13.0, Palace of Fine Arts SF, Oct 23–25 2026. **Devpost hard deadline Sun Oct 25, 9:00 AM PDT**
   (repo + image + video; 3-min pitch + 2-min Q&A; judging: Application, Intentionality, Functionality, Creativity,
   Technical Complexity). Rules: all code written during the event (true: repo started Fri Oct 23 evening); no posted ban on AI agents.

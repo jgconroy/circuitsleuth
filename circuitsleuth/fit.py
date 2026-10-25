@@ -153,7 +153,9 @@ class Objective:
         except (np.linalg.LinAlgError, ValueError):
             return 1e3
         d = np.abs(self.f[None, :] - L[:, self.col_idx]).min(axis=0)
-        rho = d**2 / (d**2 + self.c**2)
+        fin = np.isfinite(d)
+        rho = np.ones_like(d)  # a point with no finite predicted line in its column costs the maximum (avoids inf/inf = nan)
+        rho[fin] = d[fin] ** 2 / (d[fin] ** 2 + self.c**2)
         loss = float(np.sum(self.w * rho))
         # weak coverage term: the 0-1 line, where it lies inside the measured band, should have data
         l01 = L[0]
