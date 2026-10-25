@@ -1,6 +1,6 @@
 # Ĥolmes
 
-![CI](https://github.com/jgconroy/circuitsleuth/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/jgconroy/qholmes/actions/workflows/ci.yml/badge.svg)
 
 *Formerly CircuitSleuth; the Python package, repository and script names keep the old name. Brand kit: `docs/BRAND.md`, assets in `static/brand/`.*
 

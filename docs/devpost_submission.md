@@ -58,7 +58,7 @@ python, numpy, scipy, pytorch, scqubits, streamlit, plotly, katex, fastapi, dock
 
 ## "Try it out" links
 
-https://github.com/jgconroy/circuitsleuth
+https://github.com/jgconroy/qholmes
 
 ## Generative AI question
 
