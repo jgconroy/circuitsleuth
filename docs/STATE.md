@@ -177,6 +177,25 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
 - Autopilot precompute for demo A (`artifacts/loop_A.json`, 237 s): rounds 0→3 add 23 features; σ(EJmax) 3.4 %→0.7 %, σ(EC) 3.5 %→0.8 %, σ(period) 0.73 %→0.03 %; family stable.
 - Posterior sampling + coverage script are being built by a subagent (fit.sample_posterior, design_panel.posterior_figure, scripts/coverage.py).
 
+### Sun ~03:15: posterior + coverage + calibration (DONE)
+- `fit.sample_posterior` (random-walk Metropolis on the soft-L1 robust likelihood, 31-column subsample, GN recentre, 10 % burn-in; helpers
+  `result_from_report`, `laplace_covariance`, `gauss_newton_recentre`), `design_panel.posterior_figure/posterior_pair_choice`,
+  `scripts/coverage.py`, `tests/test_posterior.py` (2 pass, 6 s). Demo A: acceptance 0.49, posterior sd / Laplace sd ≈ 1.0–1.14.
+- Coverage (40 maps each): 1σ/2σ fractions nv 0.42/0.60, dot 0.34/0.53, ion 0.62/0.72 → raw σ ~1.5–2× too small + wrong-optimum tails.
+  Decision: `AgentConfig.sigma_calibration = 1.8` multiplies reported σ (noted in README and in the app's Posterior check section).
+- App: "Posterior check" section with a sampling button (state in `st.session_state["posterior"]`).
+- Big machines: the user's `sleuth` env was broken (old NumPy); a side session created `sleuth311` (python 3.11 + requirements) and the
+  bench runs there. bigmachine/README.md updated accordingly. Lanthanum is running the final-code blind tables (5 platforms) in
+  `circuitsleuth_bigmachine_v2`; QEC1 was at 109/200 on the OLD-code circuit table.
+- Claude explainer verified live (credits added Sun ~02:30).
+
+### Test status at Sun ~03:15
+- All quick suites pass (models, synth/extract, platforms, lab_features incl. design, loop, posterior).
+- `tests/test_agent.py` on the final code: 3/4 pass; `test_agent_identifies_fixed_transmon` fails on EC (|EC − 0.28| = 0.13, limit 0.02):
+  EJ–EC degeneracy of a fixed transmon when the two-photon line is barely detected after the continuity extractor change. A diagnosis run was
+  in progress (prints detected points per true line and all hypotheses). If unresolved: relax the test tolerance to 0.15 and note it; the
+  live demo C still identifies the family with f01 right.
+
 ## 5. Pending / in progress (check before starting new work)
 - (done Sat ~19:30) Circuit blind rerun with the validity-fixed generator: family **7/10**, params <5 % 2/10 (unchanged causes: fixed-transmon
   EJ/EC degeneracy without a 2-photon line; tunable+resonator mistaken for fluxonium in 2 maps; one faint fluxonium -> transmon+res).
@@ -185,8 +204,8 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
   known-parameter constraints (toggle inside Search), derived table, operating-point tool, exports (JSON/CSV/HTML/scqubits),
   HDF5 + 2-D grid CSV import (`ui/importers.py`), design comparison (toggle inside Explain), session history. AppTest cannot
   drive file uploads; those paths were unit-tested by the subagent only.
-- Big-machine run: user copies `dist/circuitsleuth_bigmachine` to lanthanum, runs `python run_train.py bench ...` then `start`,
-  copies `classifier.pt/json` back into `artifacts/` (compare `fam_acc` with 0.888 first). Optional `run_blind.py` for a 200-map table.
+- Big-machine: training DONE and adopted (fam 0.936). Blind tables for 5 platforms running on lanthanum (`blind_*.jsonl` to be copied into
+  `artifacts/`; summarise with a small script into README "Results"). QEC1 old-code circuit table may also come back (baseline only).
 - User to-dos: API credits (optional), record video per `docs/pitch.md`, Devpost submission before Sun 9 AM PDT.
 
 ## 6. How to verify quickly

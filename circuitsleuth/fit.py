@@ -436,3 +436,209 @@ def track_score(points: np.ndarray, track_ids: np.ndarray, flat: np.ndarray, inl
         m = track_ids == t
         expl += w * float(np.mean(inlier_mask[m]))
     return expl / tot
+
+
+# ----------------------------------------------------------------------------- posterior sampling (calibrated uncertainties)
+def result_from_report(report: dict, points: np.ndarray | None = None) -> FitResult:
+    """Rebuild a FitResult from a saved report (``report['best']``) so the posterior sampler and the design code can run
+    on stored results.  Only hyp / params / theta / sigma / inlier_mask / lines / holdout are meaningful; residuals are NaN."""
+    best = report["best"]
+    hyp = Hypothesis(best["family"], bool(best.get("coupled", False)))
+    pts = np.asarray(report["points"] if points is None else points, float)
+    params = {n: float(best["params"][n]) for n in hyp.names}
+    theta = to_theta(params, hyp.names)
+    x_all = np.unique(pts[:, 0])
+    if points is None and "inlier_mask" in report and len(report["inlier_mask"]) == len(pts):
+        inl = np.asarray(report["inlier_mask"], bool)
+    else:
+        inl = np.ones(len(pts), bool)
+    lines = {k: np.array([np.nan if v is None else v for v in arr], float) for k, arr in (report.get("lines") or {}).items()}
+    rms = float(best.get("rms_inliers_MHz", np.nan)) / models.to_MHz(hyp.family)
+    return FitResult(hyp, params, theta, {k: float(v) for k, v in (best.get("sigma") or {}).items()}, float(best.get("loss", np.nan)), np.full(len(pts), np.nan),
+                     inl, float(best.get("inlier_frac", np.nan)), rms, x_all, lines, holdout=dict(best.get("holdout") or {}))
+
+
+def soft_l1(u: np.ndarray) -> np.ndarray:
+    """The soft-L1 loss used by the polish stage (scipy ``loss='soft_l1'``): quadratic for |u| << 1, linear beyond."""
+    return 2.0 * (np.sqrt(1.0 + u * u) - 1.0)
+
+
+def robust_loglik(obj: Objective, theta: np.ndarray, w: np.ndarray, c: float) -> float:
+    """log-likelihood  -sum_i w_i rho(r_i / c)  with rho = soft-L1 and r_i the distance to the nearest predicted line."""
+    try:
+        r = obj.residuals(theta)
+    except (np.linalg.LinAlgError, ValueError, FloatingPointError):
+        return -np.inf
+    r = np.where(np.isfinite(r), r, 1e3)  # a point with no finite line nearby costs a large, finite amount
+    return -float(np.sum(w * soft_l1(r / c)))
+
+
+def signed_residual_jacobian(obj: Objective, theta: np.ndarray, eps: float = 1e-4):
+    """Central-difference Jacobian d r_i / d theta of the SIGNED residual f_i - L_a(i)(theta), where a(i) is the line nearest
+    to point i at `theta` (fixed during differentiation, so the |.| kink of the nearest-line distance does not bite).
+    Returns (r0 (n,), J (n, n_theta))."""
+    L0 = obj.line_matrix(theta)
+    D0 = obj.f[None, :] - L0[:, obj.col_idx]
+    assign = np.argmin(np.abs(D0), axis=0)
+    idx = (assign, obj.col_idx)  # indexes the (n_lines, n_cols) line matrix at each point's assigned line and column
+    r0 = obj.f - L0[idx]
+    J = np.zeros((len(r0), len(theta)))
+    for k in range(len(theta)):
+        h = eps * max(1.0, abs(float(theta[k])))
+        tp, tm = theta.copy(), theta.copy()
+        tp[k] += h
+        tm[k] -= h
+        rp = obj.f - obj.line_matrix(tp)[idx]
+        rm = obj.f - obj.line_matrix(tm)[idx]
+        J[:, k] = (rp - rm) / (2 * h)
+    J = np.where(np.isfinite(J), J, 0.0)
+    r0 = np.where(np.isfinite(r0), r0, 1e3)
+    return r0, J
+
+
+def laplace_covariance(obj: Objective, theta: np.ndarray, w: np.ndarray, c: float) -> np.ndarray | None:
+    """Gauss-Newton inverse Hessian of  sum_i w_i rho(r_i/c)  at `theta` (theta space).  rho''(u) = 2 (1+u^2)^(-3/2) down-weights
+    outliers, so far-away features contribute no curvature, exactly as they contribute no information to the fit."""
+    try:
+        r0, J = signed_residual_jacobian(obj, theta)
+    except (np.linalg.LinAlgError, ValueError, FloatingPointError):
+        return None
+    u = r0 / c
+    curv = w * 2.0 / (1.0 + u * u) ** 1.5 / c**2
+    H = (J * curv[:, None]).T @ J
+    if not np.all(np.isfinite(H)) or np.trace(H) <= 0:
+        return None
+    reg = H + np.eye(len(theta)) * (1e-9 * np.trace(H) / len(theta))
+    cov = np.linalg.pinv(reg)
+    cov = 0.5 * (cov + cov.T)
+    return cov if np.all(np.isfinite(cov)) else None
+
+
+def gauss_newton_recentre(obj: Objective, theta: np.ndarray, w: np.ndarray, c: float, lo: np.ndarray, hi: np.ndarray, n_iter: int = 4) -> np.ndarray:
+    """A few damped Gauss-Newton steps on  sum_i w_i rho(r_i/c)  so the chain starts at the mode of the (subsampled) likelihood
+    it samples rather than at the full-data MAP, which can sit a few stiff-direction sigmas away.  Each step is accepted only
+    if the loss decreases; returns the (possibly unchanged) theta."""
+    th = theta.copy()
+    nll = -robust_loglik(obj, th, w, c)
+    for _ in range(n_iter):
+        try:
+            r0, J = signed_residual_jacobian(obj, th)
+        except (np.linalg.LinAlgError, ValueError, FloatingPointError):
+            break
+        u = r0 / c
+        g = J.T @ (w * 2.0 * u / np.sqrt(1.0 + u * u) / c)  # gradient of the NLL
+        curv = w * 2.0 / (1.0 + u * u) ** 1.5 / c**2
+        H = (J * curv[:, None]).T @ J
+        if not np.all(np.isfinite(H)) or np.trace(H) <= 0:
+            break
+        H = H + np.eye(len(th)) * (1e-9 * np.trace(H) / len(th))
+        step = -np.linalg.pinv(H) @ g
+        improved = False
+        for damp in (1.0, 0.5, 0.25, 0.1):
+            cand = np.clip(th + damp * step, lo + 1e-9, hi - 1e-9)
+            v = -robust_loglik(obj, cand, w, c)
+            if v < nll - 1e-9:
+                th, nll, improved = cand, v, True
+                break
+        if not improved or np.max(np.abs(step) / np.maximum(np.sqrt(np.clip(np.diag(np.linalg.pinv(H)), 1e-300, None)), 1e-12)) < 0.05:
+            break
+    return th
+
+
+def _theta_to_param_matrix(theta: np.ndarray, names: list[str]) -> np.ndarray:
+    """Jacobian of params w.r.t. theta at theta (diagonal: exp(theta) for log parameters, 1 otherwise)."""
+    return np.diag([float(np.exp(t)) if n in LOG_PARAMS else 1.0 for n, t in zip(names, theta)])
+
+
+def sample_posterior(points: np.ndarray, result: FitResult, band: tuple[float, float], c_local: float, n_steps: int = 3000, seed: int = 0, max_cols: int = 31,
+                     proposal_scale: float = 0.3, model_kw: dict | None = None, exclude_flat: bool = True, burn_in: float = 0.1) -> dict:
+    """Random-walk Metropolis in theta space (the fit's parameterisation: log for energies) over the robust likelihood
+    implied by the soft-L1 polish:  log L(theta) = -sum_i w_i rho(r_i(theta) / c_local),  rho(u) = 2 (sqrt(1+u^2) - 1),
+    r_i = distance of feature i to the nearest predicted line, flat prior inside ``default_bounds``.
+
+    * Columns are thinned to `max_cols` for speed (``subsample``); the weights of the kept points are normalised to sum to the
+      number of points in the FULL cloud, so the subsample stands in for all the data instead of widening the posterior.
+    * The chain starts at the mode of the subsampled likelihood (a few Gauss-Newton steps from the MAP; ``mode`` in the output,
+      usually < 1 sigma from ``map``), the first `burn_in` fraction of steps is discarded and the rest thinned to ~750 samples.
+    * Proposal covariance = `proposal_scale` x Laplace covariance (Gauss-Newton inverse Hessian at that mode; falls back to a
+      (0.02 |theta| + 1e-3)^2 diagonal), capped at half the prior width per axis.
+
+    * `exclude_flat` applies the same rule as the agent before fitting: a control-dependent hypothesis is sampled on the
+      control-dependent features only (flat lines are pumps/spurs), provided >= max(10, 20 %) of the points are dynamic.
+      Pass the full report point cloud and the sampler will drop the spurs itself.
+
+    `result` needs ``.hyp`` and ``.theta`` (a FitResult or ``result_from_report(report)``).
+
+    Returns dict(samples (n_kept, n_theta) in PARAMETER units, theta_samples, names, acceptance_rate, sd, laplace_sd, map, mode, mean,
+    quantiles (16/50/84 %), cov (sample covariance, parameter units), laplace_cov (theta space, at the mode), laplace_cov_params,
+    family, n_steps, n_kept, thin, burn_in, n_points, n_points_used, seconds)."""
+    import time as _time
+
+    t0 = _time.perf_counter()
+    hyp = result.hyp
+    names = list(hyp.names)
+    pts_all = np.asarray(points, float)
+    if exclude_flat and hyp.flux_dependent:
+        from .extract import flat_feature_mask
+
+        flat = flat_feature_mask(pts_all, tol=models.platform_scales(hyp.platform)["flat_tol"])
+        if int((~flat).sum()) >= max(10, 0.2 * len(pts_all)):
+            pts_all = pts_all[~flat]
+    x_all = np.unique(pts_all[:, 0])
+    tb = theta_bounds(default_bounds(hyp, x_all), names)
+    lo = np.array([b[0] for b in tb])
+    hi = np.array([b[1] for b in tb])
+    theta0 = np.clip(np.asarray(result.theta, float), lo + 1e-9, hi - 1e-9)
+    sub = subsample(pts_all, max_cols=max_cols)
+    obj = Objective(hyp, sub, band, c_local, model_kw)
+    w = sub[:, 2] / max(float(sub[:, 2].sum()), 1e-12) * len(pts_all)
+    d = len(theta0)
+    theta_m = gauss_newton_recentre(obj, theta0, w, c_local, lo, hi)
+
+    cov = laplace_covariance(obj, theta_m, w, c_local)
+    if cov is None:
+        cov = np.diag((0.02 * np.abs(theta_m) + 1e-3) ** 2)
+    prop = proposal_scale * cov
+    # cap the proposal at half the prior width along each axis (an unidentified parameter would otherwise propose off the box)
+    s = np.sqrt(np.clip(np.diag(prop), 1e-300, None))
+    cap = np.minimum(1.0, 0.5 * (hi - lo) / s)
+    prop = prop * np.outer(cap, cap)
+    vals, vecs = np.linalg.eigh(0.5 * (prop + prop.T))
+    Lch = vecs * np.sqrt(np.clip(vals, 0.0, None))[None, :]
+
+    rng = np.random.default_rng(seed)
+    n_burn = int(round(np.clip(burn_in, 0.0, 0.9) * int(n_steps)))
+    thin = max(1, (int(n_steps) - n_burn) // 750)
+    theta, ll = theta_m.copy(), robust_loglik(obj, theta_m, w, c_local)
+    accepted = 0
+    kept = []
+    for step in range(int(n_steps)):
+        cand = theta + Lch @ rng.standard_normal(d)
+        if np.all(cand >= lo) and np.all(cand <= hi):
+            llc = robust_loglik(obj, cand, w, c_local)
+            if np.log(rng.uniform()) < llc - ll:
+                theta, ll = cand, llc
+                accepted += 1
+        if step >= n_burn and (step + 1 - n_burn) % thin == 0:
+            kept.append(theta.copy())
+    T = np.array(kept) if kept else theta_m[None, :]
+    is_log = np.array([n in LOG_PARAMS for n in names])
+    P = np.where(is_log[None, :], np.exp(T), T)
+    D = _theta_to_param_matrix(theta_m, names)
+    lap_cov_p = D @ cov @ D
+    lap_sd = np.sqrt(np.clip(np.diag(lap_cov_p), 0, None))
+    sd = P.std(axis=0, ddof=1) if len(P) > 1 else np.full(d, np.nan)
+    q = np.percentile(P, [16, 50, 84], axis=0)
+    return dict(
+        samples=P, theta_samples=T, names=names,
+        acceptance_rate=float(accepted / max(int(n_steps), 1)),
+        sd={n: float(v) for n, v in zip(names, sd)},
+        laplace_sd={n: float(v) for n, v in zip(names, lap_sd)},
+        map=from_theta(theta0, names), mode=from_theta(theta_m, names),
+        mean={n: float(v) for n, v in zip(names, P.mean(axis=0))},
+        quantiles={n: [float(q[0, i]), float(q[1, i]), float(q[2, i])] for i, n in enumerate(names)},
+        cov=np.cov(P.T) if len(P) > 1 else np.full((d, d), np.nan),
+        laplace_cov=cov, laplace_cov_params=lap_cov_p, family=hyp.family,
+        n_steps=int(n_steps), n_kept=int(len(P)), thin=int(thin), burn_in=int(n_burn), n_points=int(len(pts_all)), n_points_used=int(len(sub)),
+        seconds=float(_time.perf_counter() - t0),
+    )

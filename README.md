@@ -180,6 +180,15 @@ far-detuned resonator leaves no trace). The network only ranks families, seeds t
 reported number comes from the physics fit.
 
 
+## Are the error bars honest?
+
+`scripts/coverage.py` fits 40 random hidden maps per platform and asks how often the truth falls within the reported σ.
+Raw Jacobian σ under-covered (1σ coverage 0.34–0.62 instead of 0.68), partly because the likelihood scale is set by the
+feature tolerance rather than the actual scatter and partly because some fits land on a wrong optimum (the tails). The
+app therefore reports σ scaled by 1.8, says so, and offers a 3000-step Metropolis sample of the actual robust likelihood
+(`fit.sample_posterior`, ~10 s) whose 2-D posterior shows the EJ–EC valley directly. Coverage JSON and pull histograms are
+in `artifacts/coverage_*.json` and `artifacts/fig_pulls_*.png`.
+
 ## Honest limitations
 
 - Three circuit families. Adding one means writing its Hamiltonian in `models.py` and a scqubits test.

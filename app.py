@@ -817,6 +817,35 @@ if rep and rep.get("status") == "ok":
         theme.md(theme.eyebrow("Fit vs design"))
         theme.md(theme.table_html(("parameter", "fit", "design", "deviation"), design_rows, numeric=(1, 2, 3)))
 
+    # ---- G2. posterior sampling: are the error bars honest?
+    theme.md(theme.section("Posterior check", "Metropolis sampling of the robust likelihood"))
+    theme.md('<div class="cs-body muted cs-block">The reported σ come from the Jacobian at the optimum (Laplace), scaled by 1.8 because synthetic coverage runs '
+             'showed the raw value under-covers. Sampling the actual likelihood shows the shape of the uncertainty, including the EJ–EC valley.</div>')
+    if st.button("Sample the posterior (about 10 s)", width="stretch", key="btn_posterior"):
+        try:
+            from circuitsleuth import fit as _fit
+            from ui import design_panel as _dp3
+            _res = _fit.result_from_report(rep)
+            _cl = models.platform_scales(platform)["c_local"]
+            with st.spinner("sampling…"):
+                st.session_state["posterior"] = _fit.sample_posterior(np.array(rep["points"]), _res, tuple(rep["band_GHz"]), _cl, n_steps=3000)
+        except Exception as _e:
+            st.session_state["posterior"] = dict(error=f"{type(_e).__name__}: {_e}")
+    _post = st.session_state.get("posterior")
+    if _post and not _post.get("error") and _post.get("family") == best["family"]:
+        from ui import design_panel as _dp3
+        pair = _dp3.posterior_pair_choice(_post["names"])
+        pc1, pc2 = st.columns([1.2, 1])
+        pc1.plotly_chart(_dp3.posterior_figure(_post, pair=pair), key="posterior_fig", **PLOT)
+        rows_p = []
+        for i, n in enumerate(_post["names"]):
+            lap = _post["laplace_sd"][i] if i < len(_post["laplace_sd"]) else float("nan")
+            rows_p.append({"parameter": n, "posterior σ": f"{_post['sd'][i]:.3g}", "Laplace σ": f"{lap:.3g}", "ratio": f"{_post['sd'][i] / lap:.2f}" if lap else "–"})
+        pc2.dataframe(rows_p, hide_index=True, width="stretch")
+        pc2.caption(f"acceptance {_post['acceptance_rate']:.2f} · {_post['n_kept']} kept samples · {_post['seconds']:.1f} s")
+    elif _post and _post.get("error"):
+        st.caption("posterior sampling unavailable for this result")
+
     # ---- H. details & export
     theme.md(theme.section("Details & export"))
     try:

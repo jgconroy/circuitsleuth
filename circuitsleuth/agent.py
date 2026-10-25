@@ -39,6 +39,7 @@ class AgentConfig:
     coupled_margin: float = 0.05  # a resonator model must beat the bare circuit by this much to be accepted
     coupled_trials: int = 2  # how many of the best bare families get a resonator trial
     prior_weight: float = 0.05  # weight of the CNN family probability in the score (0 = ignore); the CNN is confidently wrong on some resonator-crossing maps
+    sigma_calibration: float = 1.8  # reported sigma = Laplace sigma x this; synthetic coverage runs (scripts/coverage.py) showed the raw value ~1.5-2x too small
 
 
 def _emit(progress: Progress | None, kind: str, **payload):
@@ -475,6 +476,12 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
     note = ""
     if best.hyp.family == "tunable_transmon" and best.params.get("d", 0) > 0.95:
         note = "junction asymmetry d > 0.95: the spectrum is effectively flux-insensitive, i.e. a fixed-frequency transmon with EJ = EJmax"
+    # calibrate the reported uncertainties: the Jacobian sigma under-covers on synthetic maps by 1.5-2x (scripts/coverage.py)
+    if cfg.sigma_calibration and cfg.sigma_calibration != 1.0:
+        for res_, _, _ in results:
+            if not getattr(res_, "_sigma_calibrated", False):
+                res_.sigma = {k: float(v * cfg.sigma_calibration) for k, v in res_.sigma.items()}
+                res_._sigma_calibrated = True
     # confidence from the score gap to the best *other family* (same-family resonator variants do not count)
     others = [sc for res, sc, _ in results[1:] if res.hyp.family != best.hyp.family]
     gap = best_score - max(others) if others else 1.0

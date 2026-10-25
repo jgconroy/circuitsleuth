@@ -1,0 +1,1206 @@
+{
+ "platform": "ion",
+ "n": 40,
+ "seed": 500,
+ "maxiter": 40,
+ "summary": {
+  "per_parameter": {
+   "f_rad0": {
+    "n": 40,
+    "within_1sigma": 0.55,
+    "within_2sigma": 0.625,
+    "median_abs_pull": 0.8195085840246108,
+    "rms_pull": 242.6073098032215,
+    "frac_beyond_5sigma": 0.3
+   },
+   "volt_scale": {
+    "n": 40,
+    "within_1sigma": 0.575,
+    "within_2sigma": 0.675,
+    "median_abs_pull": 0.8218615342809781,
+    "rms_pull": 657.4915241597654,
+    "frac_beyond_5sigma": 0.275
+   },
+   "x0": {
+    "n": 40,
+    "within_1sigma": 0.725,
+    "within_2sigma": 0.875,
+    "median_abs_pull": 0.6162059226833168,
+    "rms_pull": 1.9419005731129837,
+    "frac_beyond_5sigma": 0.05
+   }
+  },
+  "overall": {
+   "n": 120,
+   "within_1sigma": 0.6166666666666667,
+   "within_2sigma": 0.725,
+   "median_abs_pull": 0.6946743479129388,
+   "rms_pull": 404.62212086905794
+  },
+  "family_ok": 40,
+  "n_maps": 40,
+  "mean_runtime_s": 0.8925000000000001
+ },
+ "rows": [
+  {
+   "case": 0,
+   "seed": 500,
+   "truth": "trapped_ion",
+   "runtime_s": 0.5,
+   "truth_values": {
+    "f_rad0": 3.2908238097417124,
+    "volt_scale": 1.570983611398341,
+    "x0": -1.4723776385171186
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 3.29119,
+    "volt_scale": 1.57001,
+    "x0": -1.47466
+   },
+   "sigma": {
+    "f_rad0": 0.00092,
+    "volt_scale": 0.00182,
+    "x0": 0.00252
+   },
+   "n_points": 264,
+   "pulls": {
+    "f_rad0": 0.39803288944286463,
+    "volt_scale": -0.5349513177698784,
+    "x0": -0.9056990011434615
+   }
+  },
+  {
+   "case": 1,
+   "seed": 501,
+   "truth": "trapped_ion",
+   "runtime_s": 0.5,
+   "truth_values": {
+    "f_rad0": 5.970348794605454,
+    "volt_scale": 1.8487215328432445,
+    "x0": -1.1970767212961124
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 5.96786,
+    "volt_scale": 1.84854,
+    "x0": -1.19724
+   },
+   "sigma": {
+    "f_rad0": 0.00403,
+    "volt_scale": 0.00076,
+    "x0": 0.00067
+   },
+   "n_points": 233,
+   "pulls": {
+    "f_rad0": -0.6175668996163588,
+    "volt_scale": -0.2388590042689513,
+    "x0": -0.24369955804128254
+   }
+  },
+  {
+   "case": 2,
+   "seed": 502,
+   "truth": "trapped_ion",
+   "runtime_s": 0.7,
+   "truth_values": {
+    "f_rad0": 1.8202692188114102,
+    "volt_scale": 1.668540630829724,
+    "x0": -1.451391285546143
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 1.8217,
+    "volt_scale": 1.6701,
+    "x0": -1.45178
+   },
+   "sigma": {
+    "f_rad0": 0.0012,
+    "volt_scale": 0.00197,
+    "x0": 0.00301
+   },
+   "n_points": 229,
+   "pulls": {
+    "f_rad0": 1.192317657158215,
+    "volt_scale": 0.7915579544548186,
+    "x0": -0.12914101457043844
+   }
+  },
+  {
+   "case": 3,
+   "seed": 503,
+   "truth": "trapped_ion",
+   "runtime_s": 1.0,
+   "truth_values": {
+    "f_rad0": 2.6540190512553554,
+    "volt_scale": 1.759832597294493,
+    "x0": -1.1691620602080242
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 2.65607,
+    "volt_scale": 1.76078,
+    "x0": -1.16939
+   },
+   "sigma": {
+    "f_rad0": 0.00153,
+    "volt_scale": 0.00148,
+    "x0": 0.00147
+   },
+   "n_points": 406,
+   "pulls": {
+    "f_rad0": 1.340489375584792,
+    "volt_scale": 0.6401369631803867,
+    "x0": -0.1550610829767164
+   }
+  },
+  {
+   "case": 4,
+   "seed": 504,
+   "truth": "trapped_ion",
+   "runtime_s": 0.8,
+   "truth_values": {
+    "f_rad0": 1.5272111792448761,
+    "volt_scale": 2.195899871248399,
+    "x0": -1.1666930649135907
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 3.49661,
+    "volt_scale": 1.09828,
+    "x0": -1.16632
+   },
+   "sigma": {
+    "f_rad0": 0.00524,
+    "volt_scale": 0.00134,
+    "x0": 0.00205
+   },
+   "n_points": 255,
+   "pulls": {
+    "f_rad0": 375.83946960975646,
+    "volt_scale": -819.1193069017903,
+    "x0": 0.18198288467838125
+   }
+  },
+  {
+   "case": 5,
+   "seed": 505,
+   "truth": "trapped_ion",
+   "runtime_s": 1.2,
+   "truth_values": {
+    "f_rad0": 4.876372835453636,
+    "volt_scale": 2.997433214987179,
+    "x0": -1.2544942842237141
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 4.58657,
+    "volt_scale": 1.4984,
+    "x0": -1.25473
+   },
+   "sigma": {
+    "f_rad0": 0.00266,
+    "volt_scale": 0.00044,
+    "x0": 0.0006
+   },
+   "n_points": 620,
+   "pulls": {
+    "f_rad0": -108.94843438106614,
+    "volt_scale": -3406.8936704254074,
+    "x0": -0.3928596271429719
+   }
+  },
+  {
+   "case": 6,
+   "seed": 506,
+   "truth": "trapped_ion",
+   "runtime_s": 1.2,
+   "truth_values": {
+    "f_rad0": 2.276913067683413,
+    "volt_scale": 1.427956738489172,
+    "x0": -1.4139178497128968
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 2.27206,
+    "volt_scale": 1.42662,
+    "x0": -1.41563
+   },
+   "sigma": {
+    "f_rad0": 0.00195,
+    "volt_scale": 0.00358,
+    "x0": 0.00499
+   },
+   "n_points": 323,
+   "pulls": {
+    "f_rad0": -2.4887526581604464,
+    "volt_scale": -0.3733906394335308,
+    "x0": -0.34311629000062976
+   }
+  },
+  {
+   "case": 7,
+   "seed": 507,
+   "truth": "trapped_ion",
+   "runtime_s": 1.2,
+   "truth_values": {
+    "f_rad0": 2.177813422558807,
+    "volt_scale": 1.727757465540616,
+    "x0": -1.7921630273449938
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 1.89104,
+    "volt_scale": 0.85427,
+    "x0": -1.84086
+   },
+   "sigma": {
+    "f_rad0": 0.00918,
+    "volt_scale": 0.00322,
+    "x0": 0.01653
+   },
+   "n_points": 189,
+   "pulls": {
+    "f_rad0": -31.238934919260018,
+    "volt_scale": -271.26939923621615,
+    "x0": -2.945975357229653
+   }
+  },
+  {
+   "case": 8,
+   "seed": 508,
+   "truth": "trapped_ion",
+   "runtime_s": 1.2,
+   "truth_values": {
+    "f_rad0": 4.84560859823113,
+    "volt_scale": 1.1811767962046122,
+    "x0": -1.5759608996586738
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 4.84637,
+    "volt_scale": 1.18108,
+    "x0": -1.57702
+   },
+   "sigma": {
+    "f_rad0": 0.00132,
+    "volt_scale": 0.00414,
+    "x0": 0.01122
+   },
+   "n_points": 173,
+   "pulls": {
+    "f_rad0": 0.5768195218715202,
+    "volt_scale": -0.023380725751772267,
+    "x0": -0.09439396981517646
+   }
+  },
+  {
+   "case": 9,
+   "seed": 509,
+   "truth": "trapped_ion",
+   "runtime_s": 1.0,
+   "truth_values": {
+    "f_rad0": 2.530992992027977,
+    "volt_scale": 2.0174691733977443,
+    "x0": -1.126958130946648
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 2.53159,
+    "volt_scale": 2.01851,
+    "x0": -1.12645
+   },
+   "sigma": {
+    "f_rad0": 0.00075,
+    "volt_scale": 0.00084,
+    "x0": 0.00045
+   },
+   "n_points": 635,
+   "pulls": {
+    "f_rad0": 0.7960106293640005,
+    "volt_scale": 1.2390792883996242,
+    "x0": 1.1291798814403207
+   }
+  },
+  {
+   "case": 10,
+   "seed": 510,
+   "truth": "trapped_ion",
+   "runtime_s": 0.5,
+   "truth_values": {
+    "f_rad0": 3.315315726875768,
+    "volt_scale": 1.5780109927617036,
+    "x0": -1.7954468255235552
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 3.31511,
+    "volt_scale": 1.5774,
+    "x0": -1.79687
+   },
+   "sigma": {
+    "f_rad0": 0.00059,
+    "volt_scale": 0.00125,
+    "x0": 0.00254
+   },
+   "n_points": 483,
+   "pulls": {
+    "f_rad0": -0.3486896199461913,
+    "volt_scale": -0.488794209362986,
+    "x0": -0.5603049119861415
+   }
+  },
+  {
+   "case": 11,
+   "seed": 511,
+   "truth": "trapped_ion",
+   "runtime_s": 0.9,
+   "truth_values": {
+    "f_rad0": 5.570011922888982,
+    "volt_scale": 2.6643699606206157,
+    "x0": -1.3942514186528028
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 5.06626,
+    "volt_scale": 1.33233,
+    "x0": -1.39402
+   },
+   "sigma": {
+    "f_rad0": 0.00389,
+    "volt_scale": 0.00093,
+    "x0": 0.00184
+   },
+   "n_points": 264,
+   "pulls": {
+    "f_rad0": -129.4992089688901,
+    "volt_scale": -1432.3010329253932,
+    "x0": 0.1257710069580106
+   }
+  },
+  {
+   "case": 12,
+   "seed": 512,
+   "truth": "trapped_ion",
+   "runtime_s": 1.0,
+   "truth_values": {
+    "f_rad0": 1.9178776123622265,
+    "volt_scale": 1.2910917979008647,
+    "x0": -1.6616175830577085
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 2.20959,
+    "volt_scale": 0.64574,
+    "x0": -1.66113
+   },
+   "sigma": {
+    "f_rad0": 0.00398,
+    "volt_scale": 0.00145,
+    "x0": 0.00703
+   },
+   "n_points": 341,
+   "pulls": {
+    "f_rad0": 73.29456975823453,
+    "volt_scale": -445.07020544887223,
+    "x0": 0.06935747620319528
+   }
+  },
+  {
+   "case": 13,
+   "seed": 513,
+   "truth": "trapped_ion",
+   "runtime_s": 0.8,
+   "truth_values": {
+    "f_rad0": 2.5452484971832905,
+    "volt_scale": 1.5602165085316548,
+    "x0": -1.6896171797249153
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 2.54629,
+    "volt_scale": 1.55492,
+    "x0": -1.70014
+   },
+   "sigma": {
+    "f_rad0": 0.0008,
+    "volt_scale": 0.00109,
+    "x0": 0.00206
+   },
+   "n_points": 459,
+   "pulls": {
+    "f_rad0": 1.3018785208868122,
+    "volt_scale": -4.859182139132801,
+    "x0": -5.108165182079934
+   }
+  },
+  {
+   "case": 14,
+   "seed": 514,
+   "truth": "trapped_ion",
+   "runtime_s": 0.4,
+   "truth_values": {
+    "f_rad0": 3.8342115777848154,
+    "volt_scale": 1.5607658755131084,
+    "x0": -1.2524304867413132
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 3.83411,
+    "volt_scale": 1.55768,
+    "x0": -1.25843
+   },
+   "sigma": {
+    "f_rad0": 0.00183,
+    "volt_scale": 0.0018,
+    "x0": 0.0031
+   },
+   "n_points": 217,
+   "pulls": {
+    "f_rad0": -0.05550698623795312,
+    "volt_scale": -1.7143752850602558,
+    "x0": -1.9353268576408873
+   }
+  },
+  {
+   "case": 15,
+   "seed": 515,
+   "truth": "trapped_ion",
+   "runtime_s": 1.2,
+   "truth_values": {
+    "f_rad0": 3.7409125101787244,
+    "volt_scale": 2.810889845335803,
+    "x0": -1.2915062322717377
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 4.01376,
+    "volt_scale": 2.81271,
+    "x0": -1.29038
+   },
+   "sigma": {
+    "f_rad0": 0.00611,
+    "volt_scale": 0.00264,
+    "x0": 0.00195
+   },
+   "n_points": 327,
+   "pulls": {
+    "f_rad0": 44.655890314447795,
+    "volt_scale": 0.689452524317022,
+    "x0": 0.5775550111474778
+   }
+  },
+  {
+   "case": 16,
+   "seed": 516,
+   "truth": "trapped_ion",
+   "runtime_s": 0.9,
+   "truth_values": {
+    "f_rad0": 1.6741020584820971,
+    "volt_scale": 1.6362641946421232,
+    "x0": -1.3072923714668874
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 1.67434,
+    "volt_scale": 1.63599,
+    "x0": -1.30818
+   },
+   "sigma": {
+    "f_rad0": 0.00049,
+    "volt_scale": 0.00075,
+    "x0": 0.00097
+   },
+   "n_points": 452,
+   "pulls": {
+    "f_rad0": 0.485594934495501,
+    "volt_scale": -0.3655928561642578,
+    "x0": -0.9150809619716781
+   }
+  },
+  {
+   "case": 17,
+   "seed": 517,
+   "truth": "trapped_ion",
+   "runtime_s": 1.2,
+   "truth_values": {
+    "f_rad0": 4.431913721189511,
+    "volt_scale": 1.174521728887911,
+    "x0": -1.1002062713073213
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 4.43141,
+    "volt_scale": 1.17494,
+    "x0": -1.1
+   },
+   "sigma": {
+    "f_rad0": 0.00114,
+    "volt_scale": 0.00122,
+    "x0": 0.00173
+   },
+   "n_points": 308,
+   "pulls": {
+    "f_rad0": -0.4418606925542173,
+    "volt_scale": 0.3428451738434675,
+    "x0": 0.11923196954982898
+   }
+  },
+  {
+   "case": 18,
+   "seed": 518,
+   "truth": "trapped_ion",
+   "runtime_s": 1.3,
+   "truth_values": {
+    "f_rad0": 2.022640808443984,
+    "volt_scale": 2.2700470800293386,
+    "x0": -1.5945926565511614
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 4.65118,
+    "volt_scale": 1.11708,
+    "x0": -1.62902
+   },
+   "sigma": {
+    "f_rad0": 0.00708,
+    "volt_scale": 0.00529,
+    "x0": 0.01175
+   },
+   "n_points": 385,
+   "pulls": {
+    "f_rad0": 371.26259767740333,
+    "volt_scale": -217.95218904146284,
+    "x0": -2.9299866764968905
+   }
+  },
+  {
+   "case": 19,
+   "seed": 519,
+   "truth": "trapped_ion",
+   "runtime_s": 0.4,
+   "truth_values": {
+    "f_rad0": 1.8808874305002579,
+    "volt_scale": 1.6266210988445462,
+    "x0": -1.5969253355591442
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 1.88076,
+    "volt_scale": 1.62651,
+    "x0": -1.59778
+   },
+   "sigma": {
+    "f_rad0": 0.00122,
+    "volt_scale": 0.0018,
+    "x0": 0.00359
+   },
+   "n_points": 251,
+   "pulls": {
+    "f_rad0": -0.10445122971956936,
+    "volt_scale": -0.06172158030349885,
+    "x0": -0.23806808937487503
+   }
+  },
+  {
+   "case": 20,
+   "seed": 520,
+   "truth": "trapped_ion",
+   "runtime_s": 0.5,
+   "truth_values": {
+    "f_rad0": 2.19952605035066,
+    "volt_scale": 1.3791834295293757,
+    "x0": -1.279837459272934
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 2.19977,
+    "volt_scale": 1.3813,
+    "x0": -1.27619
+   },
+   "sigma": {
+    "f_rad0": 0.00127,
+    "volt_scale": 0.0018,
+    "x0": 0.00274
+   },
+   "n_points": 133,
+   "pulls": {
+    "f_rad0": 0.1920863380628545,
+    "volt_scale": 1.1758724836801675,
+    "x0": 1.3311895156693738
+   }
+  },
+  {
+   "case": 21,
+   "seed": 521,
+   "truth": "trapped_ion",
+   "runtime_s": 0.5,
+   "truth_values": {
+    "f_rad0": 4.486361489687442,
+    "volt_scale": 1.0682187102864609,
+    "x0": -1.216576657935238
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 4.48639,
+    "volt_scale": 1.06835,
+    "x0": -1.21573
+   },
+   "sigma": {
+    "f_rad0": 0.00063,
+    "volt_scale": 0.00067,
+    "x0": 0.00134
+   },
+   "n_points": 336,
+   "pulls": {
+    "f_rad0": 0.04525446437762792,
+    "volt_scale": 0.19595479632692547,
+    "x0": 0.6318342800283366
+   }
+  },
+  {
+   "case": 22,
+   "seed": 522,
+   "truth": "trapped_ion",
+   "runtime_s": 0.9,
+   "truth_values": {
+    "f_rad0": 1.5247465886395872,
+    "volt_scale": 1.2708278922753105,
+    "x0": -1.1081659937079087
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 4.06461,
+    "volt_scale": 0.41131,
+    "x0": -3.14611
+   },
+   "sigma": {
+    "f_rad0": 0.00305,
+    "volt_scale": 0.01916,
+    "x0": 0.25715
+   },
+   "n_points": 380,
+   "pulls": {
+    "f_rad0": 832.7421020853812,
+    "volt_scale": -44.86001525445253,
+    "x0": -7.925117660089799
+   }
+  },
+  {
+   "case": 23,
+   "seed": 523,
+   "truth": "trapped_ion",
+   "runtime_s": 1.1,
+   "truth_values": {
+    "f_rad0": 1.5166932348191429,
+    "volt_scale": 1.9136352975826785,
+    "x0": -1.3182335441760518
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 3.57679,
+    "volt_scale": 0.95578,
+    "x0": -1.31869
+   },
+   "sigma": {
+    "f_rad0": 0.00706,
+    "volt_scale": 0.00068,
+    "x0": 0.00126
+   },
+   "n_points": 280,
+   "pulls": {
+    "f_rad0": 291.79840866584374,
+    "volt_scale": -1408.610731739233,
+    "x0": -0.3622665269429795
+   }
+  },
+  {
+   "case": 24,
+   "seed": 524,
+   "truth": "trapped_ion",
+   "runtime_s": 1.0,
+   "truth_values": {
+    "f_rad0": 1.7259747436590134,
+    "volt_scale": 1.3153706813571153,
+    "x0": -1.2923335688273156
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 1.7267,
+    "volt_scale": 1.3185,
+    "x0": -1.2889
+   },
+   "sigma": {
+    "f_rad0": 0.00106,
+    "volt_scale": 0.00145,
+    "x0": 0.00185
+   },
+   "n_points": 236,
+   "pulls": {
+    "f_rad0": 0.6842040952703059,
+    "volt_scale": 2.1581507881963327,
+    "x0": 1.8559831499003858
+   }
+  },
+  {
+   "case": 25,
+   "seed": 525,
+   "truth": "trapped_ion",
+   "runtime_s": 0.9,
+   "truth_values": {
+    "f_rad0": 4.201018924912454,
+    "volt_scale": 1.1030952978829858,
+    "x0": -1.4075996798145967
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 4.41901,
+    "volt_scale": 0.55216,
+    "x0": -1.40464
+   },
+   "sigma": {
+    "f_rad0": 0.00199,
+    "volt_scale": 0.00089,
+    "x0": 0.00445
+   },
+   "n_points": 440,
+   "pulls": {
+    "f_rad0": 109.5432538128374,
+    "volt_scale": -619.0284245876245,
+    "x0": 0.6650965875497865
+   }
+  },
+  {
+   "case": 26,
+   "seed": 526,
+   "truth": "trapped_ion",
+   "runtime_s": 1.0,
+   "truth_values": {
+    "f_rad0": 2.400408477290512,
+    "volt_scale": 2.684326221457214,
+    "x0": -1.450825292773102
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 2.40085,
+    "volt_scale": 2.68339,
+    "x0": -1.45171
+   },
+   "sigma": {
+    "f_rad0": 0.00055,
+    "volt_scale": 0.00097,
+    "x0": 0.00082
+   },
+   "n_points": 273,
+   "pulls": {
+    "f_rad0": 0.802768562705548,
+    "volt_scale": -0.9651767600141506,
+    "x0": -1.0789112523146835
+   }
+  },
+  {
+   "case": 27,
+   "seed": 527,
+   "truth": "trapped_ion",
+   "runtime_s": 0.9,
+   "truth_values": {
+    "f_rad0": 3.0540593509401344,
+    "volt_scale": 1.7850656557925257,
+    "x0": -1.5097220578828263
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 2.88403,
+    "volt_scale": 0.8903,
+    "x0": -1.51389
+   },
+   "sigma": {
+    "f_rad0": 0.00684,
+    "volt_scale": 0.00171,
+    "x0": 0.00513
+   },
+   "n_points": 223,
+   "pulls": {
+    "f_rad0": -24.85809224270969,
+    "volt_scale": -523.2547694693134,
+    "x0": -0.8124643503262455
+   }
+  },
+  {
+   "case": 28,
+   "seed": 528,
+   "truth": "trapped_ion",
+   "runtime_s": 0.5,
+   "truth_values": {
+    "f_rad0": 5.090981821442401,
+    "volt_scale": 1.208931131079046,
+    "x0": -1.214727833841079
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 5.09225,
+    "volt_scale": 1.20897,
+    "x0": -1.21524
+   },
+   "sigma": {
+    "f_rad0": 0.00135,
+    "volt_scale": 0.00104,
+    "x0": 0.00173
+   },
+   "n_points": 230,
+   "pulls": {
+    "f_rad0": 0.9393915241470604,
+    "volt_scale": 0.03737396245582738,
+    "x0": -0.2960498028445865
+   }
+  },
+  {
+   "case": 29,
+   "seed": 529,
+   "truth": "trapped_ion",
+   "runtime_s": 1.6,
+   "truth_values": {
+    "f_rad0": 1.7746960325877088,
+    "volt_scale": 1.3278638670658227,
+    "x0": -1.123673504713842
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 1.77015,
+    "volt_scale": 1.32796,
+    "x0": -1.12439
+   },
+   "sigma": {
+    "f_rad0": 0.00141,
+    "volt_scale": 0.00167,
+    "x0": 0.00144
+   },
+   "n_points": 517,
+   "pulls": {
+    "f_rad0": -3.224136587027599,
+    "volt_scale": 0.05756463124390276,
+    "x0": -0.49756617094307315
+   }
+  },
+  {
+   "case": 30,
+   "seed": 530,
+   "truth": "trapped_ion",
+   "runtime_s": 1.3,
+   "truth_values": {
+    "f_rad0": 3.5797796429553697,
+    "volt_scale": 1.8584349519208776,
+    "x0": -1.5408462282026882
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 3.58622,
+    "volt_scale": 1.86177,
+    "x0": -1.54408
+   },
+   "sigma": {
+    "f_rad0": 0.00316,
+    "volt_scale": 0.00292,
+    "x0": 0.00471
+   },
+   "n_points": 334,
+   "pulls": {
+    "f_rad0": 2.038087672351363,
+    "volt_scale": 1.1421397531240847,
+    "x0": -0.6865757531447256
+   }
+  },
+  {
+   "case": 31,
+   "seed": 531,
+   "truth": "trapped_ion",
+   "runtime_s": 1.3,
+   "truth_values": {
+    "f_rad0": 4.774989601349294,
+    "volt_scale": 2.385976953484115,
+    "x0": -1.5580125842869494
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 2.15076,
+    "volt_scale": 2.38818,
+    "x0": -1.55608
+   },
+   "sigma": {
+    "f_rad0": 0.00235,
+    "volt_scale": 0.00327,
+    "x0": 0.00296
+   },
+   "n_points": 366,
+   "pulls": {
+    "f_rad0": -1116.6934473826782,
+    "volt_scale": 0.6737145308517122,
+    "x0": 0.6529000969424104
+   }
+  },
+  {
+   "case": 32,
+   "seed": 532,
+   "truth": "trapped_ion",
+   "runtime_s": 1.3,
+   "truth_values": {
+    "f_rad0": 1.8862664488011232,
+    "volt_scale": 2.668227227223584,
+    "x0": -1.26502982282649
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 1.88603,
+    "volt_scale": 2.66826,
+    "x0": -1.26459
+   },
+   "sigma": {
+    "f_rad0": 0.00044,
+    "volt_scale": 0.00065,
+    "x0": 0.00053
+   },
+   "n_points": 584,
+   "pulls": {
+    "f_rad0": -0.5373836389160386,
+    "volt_scale": 0.05041965602495898,
+    "x0": 0.829854389603605
+   }
+  },
+  {
+   "case": 33,
+   "seed": 533,
+   "truth": "trapped_ion",
+   "runtime_s": 0.5,
+   "truth_values": {
+    "f_rad0": 3.2842325755454196,
+    "volt_scale": 1.4333979920522228,
+    "x0": -1.6736654107338098
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 3.28428,
+    "volt_scale": 1.43331,
+    "x0": -1.67362
+   },
+   "sigma": {
+    "f_rad0": 0.00097,
+    "volt_scale": 0.00075,
+    "x0": 0.00173
+   },
+   "n_points": 471,
+   "pulls": {
+    "f_rad0": 0.04889119028894891,
+    "volt_scale": -0.11732273629701713,
+    "x0": 0.02624897908075328
+   }
+  },
+  {
+   "case": 34,
+   "seed": 534,
+   "truth": "trapped_ion",
+   "runtime_s": 1.0,
+   "truth_values": {
+    "f_rad0": 2.9429310951532113,
+    "volt_scale": 2.866977778939135,
+    "x0": -1.5192103248238427
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 2.94272,
+    "volt_scale": 2.87776,
+    "x0": -1.50912
+   },
+   "sigma": {
+    "f_rad0": 0.0011,
+    "volt_scale": 0.00199,
+    "x0": 0.00204
+   },
+   "n_points": 368,
+   "pulls": {
+    "f_rad0": -0.1919046847375195,
+    "volt_scale": 5.418201538123124,
+    "x0": 4.946237658746394
+   }
+  },
+  {
+   "case": 35,
+   "seed": 535,
+   "truth": "trapped_ion",
+   "runtime_s": 0.4,
+   "truth_values": {
+    "f_rad0": 5.865257646376893,
+    "volt_scale": 2.050584489956311,
+    "x0": -1.5407175263964226
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 5.86508,
+    "volt_scale": 2.05076,
+    "x0": -1.54121
+   },
+   "sigma": {
+    "f_rad0": 0.00056,
+    "volt_scale": 0.00072,
+    "x0": 0.00082
+   },
+   "n_points": 299,
+   "pulls": {
+    "f_rad0": -0.31722567302359755,
+    "volt_scale": 0.24376394956819128,
+    "x0": -0.600577565338297
+   }
+  },
+  {
+   "case": 36,
+   "seed": 536,
+   "truth": "trapped_ion",
+   "runtime_s": 0.8,
+   "truth_values": {
+    "f_rad0": 1.9921139942174684,
+    "volt_scale": 2.5020777289879046,
+    "x0": -1.6421920975987816
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 1.99187,
+    "volt_scale": 2.50148,
+    "x0": -1.64285
+   },
+   "sigma": {
+    "f_rad0": 0.00034,
+    "volt_scale": 0.00094,
+    "x0": 0.00094
+   },
+   "n_points": 219,
+   "pulls": {
+    "f_rad0": -0.7176300513774889,
+    "volt_scale": -0.6358819020262411,
+    "x0": -0.6998961715088556
+   }
+  },
+  {
+   "case": 37,
+   "seed": 537,
+   "truth": "trapped_ion",
+   "runtime_s": 0.4,
+   "truth_values": {
+    "f_rad0": 2.4611012797330893,
+    "volt_scale": 1.767291871334444,
+    "x0": -1.2677157138749846
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 2.46102,
+    "volt_scale": 1.7666,
+    "x0": -1.26812
+   },
+   "sigma": {
+    "f_rad0": 0.00063,
+    "volt_scale": 0.0008,
+    "x0": 0.00069
+   },
+   "n_points": 298,
+   "pulls": {
+    "f_rad0": -0.12901544934818515,
+    "volt_scale": -0.864839168055187,
+    "x0": -0.5859219203120397
+   }
+  },
+  {
+   "case": 38,
+   "seed": 538,
+   "truth": "trapped_ion",
+   "runtime_s": 0.8,
+   "truth_values": {
+    "f_rad0": 3.1079623520640913,
+    "volt_scale": 1.0037457644713714,
+    "x0": -1.6354600157093206
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 3.1092,
+    "volt_scale": 1.0062,
+    "x0": -1.62763
+   },
+   "sigma": {
+    "f_rad0": 0.00148,
+    "volt_scale": 0.00288,
+    "x0": 0.00705
+   },
+   "n_points": 232,
+   "pulls": {
+    "f_rad0": 0.8362486053436735,
+    "volt_scale": 0.8521651141071377,
+    "x0": 1.1106405261447854
+   }
+  },
+  {
+   "case": 39,
+   "seed": 539,
+   "truth": "trapped_ion",
+   "runtime_s": 1.1,
+   "truth_values": {
+    "f_rad0": 1.538604562200823,
+    "volt_scale": 1.355852572705335,
+    "x0": -1.1069410633963512
+   },
+   "found": "trapped_ion",
+   "family_ok": true,
+   "params": {
+    "f_rad0": 1.53901,
+    "volt_scale": 1.3545,
+    "x0": -1.10721
+   },
+   "sigma": {
+    "f_rad0": 0.00143,
+    "volt_scale": 0.00268,
+    "x0": 0.00222
+   },
+   "n_points": 202,
+   "pulls": {
+    "f_rad0": 0.2835229364873425,
+    "volt_scale": -0.5046913079608035,
+    "x0": -0.12114261425621396
+   }
+  }
+ ]
+}

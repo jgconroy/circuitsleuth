@@ -1,0 +1,1206 @@
+{
+ "platform": "dot",
+ "n": 40,
+ "seed": 500,
+ "maxiter": 40,
+ "summary": {
+  "per_parameter": {
+   "lever_arm": {
+    "n": 40,
+    "within_1sigma": 0.275,
+    "within_2sigma": 0.5,
+    "median_abs_pull": 1.9922339435325096,
+    "rms_pull": 69.15463738437384,
+    "frac_beyond_5sigma": 0.4
+   },
+   "t_c": {
+    "n": 40,
+    "within_1sigma": 0.3,
+    "within_2sigma": 0.425,
+    "median_abs_pull": 2.58330024502758,
+    "rms_pull": 148.1841295137716,
+    "frac_beyond_5sigma": 0.375
+   },
+   "x0": {
+    "n": 40,
+    "within_1sigma": 0.45,
+    "within_2sigma": 0.675,
+    "median_abs_pull": 1.0998880308037493,
+    "rms_pull": 20.82819280826283,
+    "frac_beyond_5sigma": 0.2
+   }
+  },
+  "overall": {
+   "n": 120,
+   "within_1sigma": 0.3416666666666667,
+   "within_2sigma": 0.5333333333333333,
+   "median_abs_pull": 1.5343370431816612,
+   "rms_pull": 95.1747755923747
+  },
+  "family_ok": 40,
+  "n_maps": 40,
+  "mean_runtime_s": 0.99
+ },
+ "rows": [
+  {
+   "case": 0,
+   "seed": 500,
+   "truth": "charge_qubit",
+   "runtime_s": 1.2,
+   "truth_values": {
+    "t_c": 2.0445068767286885,
+    "lever_arm": 9.15898592267677,
+    "x0": -0.0319680550244551
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 2.04364,
+    "lever_arm": 9.15806,
+    "x0": -0.03182
+   },
+   "sigma": {
+    "t_c": 0.0015,
+    "lever_arm": 0.00314,
+    "x0": 0.00017
+   },
+   "n_points": 97,
+   "pulls": {
+    "t_c": -0.5779178191257136,
+    "lever_arm": -0.2948798333660112,
+    "x0": 0.8709119085594045
+   }
+  },
+  {
+   "case": 1,
+   "seed": 501,
+   "truth": "charge_qubit",
+   "runtime_s": 1.0,
+   "truth_values": {
+    "t_c": 1.566984618385005,
+    "lever_arm": 8.74245141665565,
+    "x0": -0.2967163839341115
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 2.80905,
+    "lever_arm": 2.0,
+    "x0": -0.25844
+   },
+   "sigma": {
+    "t_c": 0.00772,
+    "lever_arm": 0.18083,
+    "x0": 0.03243
+   },
+   "n_points": 320,
+   "pulls": {
+    "t_c": 160.8892981366574,
+    "lever_arm": -37.286132924048275,
+    "x0": 1.1802770254120099
+   }
+  },
+  {
+   "case": 2,
+   "seed": 502,
+   "truth": "charge_qubit",
+   "runtime_s": 1.0,
+   "truth_values": {
+    "t_c": 0.7073232841450675,
+    "lever_arm": 10.229052065047538,
+    "x0": -0.0019875507802042947
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 0.70993,
+    "lever_arm": 10.22623,
+    "x0": -0.002
+   },
+   "sigma": {
+    "t_c": 0.00126,
+    "lever_arm": 0.00289,
+    "x0": 0.00018
+   },
+   "n_points": 141,
+   "pulls": {
+    "t_c": 2.068822107089238,
+    "lever_arm": -0.9764930960342605,
+    "x0": -0.06916233219836326
+   }
+  },
+  {
+   "case": 3,
+   "seed": 503,
+   "truth": "charge_qubit",
+   "runtime_s": 1.1,
+   "truth_values": {
+    "t_c": 1.390496053682534,
+    "lever_arm": 11.278859980478002,
+    "x0": 0.40119705684567997
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 1.39321,
+    "lever_arm": 11.26848,
+    "x0": 0.4011
+   },
+   "sigma": {
+    "t_c": 0.00104,
+    "lever_arm": 0.00464,
+    "x0": 0.00017
+   },
+   "n_points": 314,
+   "pulls": {
+    "t_c": 2.6095637667943574,
+    "lever_arm": -2.2370647581899505,
+    "x0": -0.5709226216467926
+   }
+  },
+  {
+   "case": 4,
+   "seed": 504,
+   "truth": "charge_qubit",
+   "runtime_s": 1.5,
+   "truth_values": {
+    "t_c": 0.5163752317367772,
+    "lever_arm": 16.927480754775647,
+    "x0": 0.4047241929805848
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 4.51218,
+    "lever_arm": 2.0,
+    "x0": -0.16778
+   },
+   "sigma": {
+    "t_c": 0.02569,
+    "lever_arm": 0.34033,
+    "x0": 0.09761
+   },
+   "n_points": 208,
+   "pulls": {
+    "t_c": 155.53930588801956,
+    "lever_arm": -43.86178343012854,
+    "x0": -5.86522070464691
+   }
+  },
+  {
+   "case": 5,
+   "seed": 505,
+   "truth": "charge_qubit",
+   "runtime_s": 1.2,
+   "truth_values": {
+    "t_c": 1.4578588920047946,
+    "lever_arm": 15.479224566652517,
+    "x0": 0.49878020306508664
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 5.95024,
+    "lever_arm": 2.0,
+    "x0": 1.36891
+   },
+   "sigma": {
+    "t_c": 1.75687,
+    "lever_arm": 9.29948,
+    "x0": 15.38792
+   },
+   "n_points": 180,
+   "pulls": {
+    "t_c": 2.5570367232608024,
+    "lever_arm": -1.4494600307385483,
+    "x0": 0.056546290657536136
+   }
+  },
+  {
+   "case": 6,
+   "seed": 506,
+   "truth": "charge_qubit",
+   "runtime_s": 1.2,
+   "truth_values": {
+    "t_c": 1.0564927835949305,
+    "lever_arm": 7.688013988258128,
+    "x0": 0.05154592898157595
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 3.68315,
+    "lever_arm": 2.0,
+    "x0": 0.02777
+   },
+   "sigma": {
+    "t_c": 0.00893,
+    "lever_arm": 0.23186,
+    "x0": 0.02869
+   },
+   "n_points": 264,
+   "pulls": {
+    "t_c": 294.1385460699966,
+    "lever_arm": -24.53210553031195,
+    "x0": -0.8287183332720791
+   }
+  },
+  {
+   "case": 7,
+   "seed": 507,
+   "truth": "charge_qubit",
+   "runtime_s": 0.8,
+   "truth_values": {
+    "t_c": 0.9754958758531883,
+    "lever_arm": 10.904701966800715,
+    "x0": -0.4888043247785625
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 0.97591,
+    "lever_arm": 10.90442,
+    "x0": -0.48875
+   },
+   "sigma": {
+    "t_c": 0.00055,
+    "lever_arm": 0.00152,
+    "x0": 8e-05
+   },
+   "n_points": 77,
+   "pulls": {
+    "t_c": 0.752952994203173,
+    "lever_arm": -0.18550447415476232,
+    "x0": 0.6790597320310842
+   }
+  },
+  {
+   "case": 8,
+   "seed": 508,
+   "truth": "charge_qubit",
+   "runtime_s": 0.9,
+   "truth_values": {
+    "t_c": 4.090757713102846,
+    "lever_arm": 5.428610663486741,
+    "x0": -0.17994414236953404
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 4.0895,
+    "lever_arm": 5.43076,
+    "x0": -0.17889
+   },
+   "sigma": {
+    "t_c": 0.0009,
+    "lever_arm": 0.0151,
+    "x0": 0.00142
+   },
+   "n_points": 60,
+   "pulls": {
+    "t_c": -1.397459003162164,
+    "lever_arm": 0.14234016644100758,
+    "x0": 0.7423537813620071
+   }
+  },
+  {
+   "case": 9,
+   "seed": 509,
+   "truth": "charge_qubit",
+   "runtime_s": 1.0,
+   "truth_values": {
+    "t_c": 1.2770890385037157,
+    "lever_arm": 14.490694488894487,
+    "x0": 0.4614883843619315
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 1.31689,
+    "lever_arm": 14.42811,
+    "x0": 0.46381
+   },
+   "sigma": {
+    "t_c": 0.01326,
+    "lever_arm": 0.02152,
+    "x0": 0.00088
+   },
+   "n_points": 580,
+   "pulls": {
+    "t_c": 3.001580806657934,
+    "lever_arm": -2.9082011568070105,
+    "x0": 2.6381995887141887
+   }
+  },
+  {
+   "case": 10,
+   "seed": 510,
+   "truth": "charge_qubit",
+   "runtime_s": 0.9,
+   "truth_values": {
+    "t_c": 2.0718620549438116,
+    "lever_arm": 9.234267402866209,
+    "x0": -0.49349546503365005
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 0.63071,
+    "lever_arm": 2.0,
+    "x0": 0.61795
+   },
+   "sigma": {
+    "t_c": 0.00577,
+    "lever_arm": 0.04019,
+    "x0": 0.01431
+   },
+   "n_points": 283,
+   "pulls": {
+    "t_c": -249.76638733861552,
+    "lever_arm": -180.00167710540455,
+    "x0": 77.66914500584556
+   }
+  },
+  {
+   "case": 11,
+   "seed": 511,
+   "truth": "charge_qubit",
+   "runtime_s": 0.6,
+   "truth_values": {
+    "t_c": 2.3083306582337944,
+    "lever_arm": 11.905999248818627,
+    "x0": -0.011854194659721151
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 2.30813,
+    "lever_arm": 11.90913,
+    "x0": -0.012
+   },
+   "sigma": {
+    "t_c": 0.00059,
+    "lever_arm": 0.00279,
+    "x0": 0.00013
+   },
+   "n_points": 117,
+   "pulls": {
+    "t_c": -0.340098701346711,
+    "lever_arm": 1.1221330399182254,
+    "x0": -1.1215795406065316
+   }
+  },
+  {
+   "case": 12,
+   "seed": 512,
+   "truth": "charge_qubit",
+   "runtime_s": 0.9,
+   "truth_values": {
+    "t_c": 0.7767492917935122,
+    "lever_arm": 6.390873328102016,
+    "x0": -0.3023108329395834
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 1.88416,
+    "lever_arm": 2.0,
+    "x0": 0.06882
+   },
+   "sigma": {
+    "t_c": 0.00411,
+    "lever_arm": 0.11318,
+    "x0": 0.05047
+   },
+   "n_points": 297,
+   "pulls": {
+    "t_c": 269.4429946974423,
+    "lever_arm": -38.795487966973106,
+    "x0": 7.353493816912688
+   }
+  },
+  {
+   "case": 13,
+   "seed": 513,
+   "truth": "charge_qubit",
+   "runtime_s": 0.8,
+   "truth_values": {
+    "t_c": 1.2900112028367936,
+    "lever_arm": 9.044186220153168,
+    "x0": -0.3423102567498789
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 1.2952,
+    "lever_arm": 9.05,
+    "x0": -0.34139
+   },
+   "sigma": {
+    "t_c": 0.00187,
+    "lever_arm": 0.00593,
+    "x0": 0.00051
+   },
+   "n_points": 334,
+   "pulls": {
+    "t_c": 2.774757841286794,
+    "lever_arm": 0.9804013232432192,
+    "x0": 1.8044249997625281
+   }
+  },
+  {
+   "case": 14,
+   "seed": 514,
+   "truth": "charge_qubit",
+   "runtime_s": 1.3,
+   "truth_values": {
+    "t_c": 2.688797796211644,
+    "lever_arm": 9.05002766984346,
+    "x0": 0.2822421617981242
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 2.68161,
+    "lever_arm": 9.06675,
+    "x0": 0.28187
+   },
+   "sigma": {
+    "t_c": 0.00355,
+    "lever_arm": 0.01559,
+    "x0": 0.00084
+   },
+   "n_points": 160,
+   "pulls": {
+    "t_c": -2.0247313272236003,
+    "lever_arm": 1.0726318253072489,
+    "x0": -0.4430497596716849
+   }
+  },
+  {
+   "case": 15,
+   "seed": 515,
+   "truth": "charge_qubit",
+   "runtime_s": 0.9,
+   "truth_values": {
+    "t_c": 2.572653173936888,
+    "lever_arm": 26.623136195504078,
+    "x0": 0.22641966818323211
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 4.44005,
+    "lever_arm": 2.0,
+    "x0": 0.12901
+   },
+   "sigma": {
+    "t_c": 0.00699,
+    "lever_arm": 0.25023,
+    "x0": 0.06572
+   },
+   "n_points": 290,
+   "pulls": {
+    "t_c": 267.1526217543795,
+    "lever_arm": -98.40201492828228,
+    "x0": -1.4821921512968974
+   }
+  },
+  {
+   "case": 16,
+   "seed": 516,
+   "truth": "charge_qubit",
+   "runtime_s": 1.1,
+   "truth_values": {
+    "t_c": 0.6087719570714869,
+    "lever_arm": 9.86907697624772,
+    "x0": 0.2038680407615895
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 4.42909,
+    "lever_arm": 2.0,
+    "x0": 0.09715
+   },
+   "sigma": {
+    "t_c": 0.00762,
+    "lever_arm": 0.27806,
+    "x0": 0.04834
+   },
+   "n_points": 278,
+   "pulls": {
+    "t_c": 501.354073875133,
+    "lever_arm": -28.299924391310224,
+    "x0": -2.207654959900486
+   }
+  },
+  {
+   "case": 17,
+   "seed": 517,
+   "truth": "charge_qubit",
+   "runtime_s": 1.3,
+   "truth_values": {
+    "t_c": 3.4860410821981636,
+    "lever_arm": 5.372645987636229,
+    "x0": 0.49970532670382684
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 3.48474,
+    "lever_arm": 5.37883,
+    "x0": 0.49971
+   },
+   "sigma": {
+    "t_c": 0.00096,
+    "lever_arm": 0.00933,
+    "x0": 0.00148
+   },
+   "n_points": 91,
+   "pulls": {
+    "t_c": -1.3552939564204225,
+    "lever_arm": 0.6628094709293292,
+    "x0": 0.00315763254942713
+   }
+  },
+  {
+   "case": 18,
+   "seed": 518,
+   "truth": "charge_qubit",
+   "runtime_s": 1.1,
+   "truth_values": {
+    "t_c": 0.8544435484643363,
+    "lever_arm": 17.99051166803905,
+    "x0": -0.20656093793023067
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 3.27685,
+    "lever_arm": 2.0,
+    "x0": -0.08121
+   },
+   "sigma": {
+    "t_c": 0.03231,
+    "lever_arm": 0.76435,
+    "x0": 0.0573
+   },
+   "n_points": 319,
+   "pulls": {
+    "t_c": 74.97389203143497,
+    "lever_arm": -20.92040513905809,
+    "x0": 2.1876254438085634
+   }
+  },
+  {
+   "case": 19,
+   "seed": 519,
+   "truth": "charge_qubit",
+   "runtime_s": 1.0,
+   "truth_values": {
+    "t_c": 0.7501012797389109,
+    "lever_arm": 9.762667507678882,
+    "x0": -0.20989333651306297
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 0.75406,
+    "lever_arm": 9.76174,
+    "x0": -0.20984
+   },
+   "sigma": {
+    "t_c": 0.00281,
+    "lever_arm": 0.00371,
+    "x0": 0.00022
+   },
+   "n_points": 132,
+   "pulls": {
+    "t_c": 1.4087972459391496,
+    "lever_arm": -0.2500020697797393,
+    "x0": 0.24243869574076435
+   }
+  },
+  {
+   "case": 20,
+   "seed": 520,
+   "truth": "charge_qubit",
+   "runtime_s": 0.5,
+   "truth_values": {
+    "t_c": 0.992997683104441,
+    "lever_arm": 7.213281920765867,
+    "x0": 0.2430893438958086
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 0.99113,
+    "lever_arm": 7.21398,
+    "x0": 0.24342
+   },
+   "sigma": {
+    "t_c": 0.00269,
+    "lever_arm": 0.00824,
+    "x0": 0.00083
+   },
+   "n_points": 34,
+   "pulls": {
+    "t_c": -0.694305986781069,
+    "lever_arm": 0.08471835365690507,
+    "x0": 0.39838084842336174
+   }
+  },
+  {
+   "case": 21,
+   "seed": 521,
+   "truth": "charge_qubit",
+   "runtime_s": 1.0,
+   "truth_values": {
+    "t_c": 3.5631817034397133,
+    "lever_arm": 4.514649269368953,
+    "x0": 0.33346191723537455
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 3.56244,
+    "lever_arm": 4.5087,
+    "x0": 0.33544
+   },
+   "sigma": {
+    "t_c": 0.00067,
+    "lever_arm": 0.00566,
+    "x0": 0.00137
+   },
+   "n_points": 95,
+   "pulls": {
+    "t_c": -1.1070200592735049,
+    "lever_arm": -1.0511076623592093,
+    "x0": 1.4438560325733332
+   }
+  },
+  {
+   "case": 22,
+   "seed": 522,
+   "truth": "charge_qubit",
+   "runtime_s": 1.0,
+   "truth_values": {
+    "t_c": 0.514882478950691,
+    "lever_arm": 6.208113163378883,
+    "x0": 0.48833429470298784
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 0.5261,
+    "lever_arm": 6.21377,
+    "x0": 0.48743
+   },
+   "sigma": {
+    "t_c": 0.00324,
+    "lever_arm": 0.00411,
+    "x0": 0.00057
+   },
+   "n_points": 272,
+   "pulls": {
+    "t_c": 3.4621978547250203,
+    "lever_arm": 1.376359275211041,
+    "x0": -1.5864819350664252
+   }
+  },
+  {
+   "case": 23,
+   "seed": 523,
+   "truth": "charge_qubit",
+   "runtime_s": 0.5,
+   "truth_values": {
+    "t_c": 0.5100180524514141,
+    "lever_arm": 13.152310432482833,
+    "x0": 0.18823779403421181
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 0.5103,
+    "lever_arm": 13.15059,
+    "x0": 0.18821
+   },
+   "sigma": {
+    "t_c": 0.00105,
+    "lever_arm": 0.00165,
+    "x0": 5e-05
+   },
+   "n_points": 120,
+   "pulls": {
+    "t_c": 0.2685214748437177,
+    "lever_arm": -1.0426863532328214,
+    "x0": -0.5558806842365094
+   }
+  },
+  {
+   "case": 24,
+   "seed": 524,
+   "truth": "charge_qubit",
+   "runtime_s": 0.8,
+   "truth_values": {
+    "t_c": 0.6429978295887036,
+    "lever_arm": 6.613015225902718,
+    "x0": 0.2252377588181207
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 1.00794,
+    "lever_arm": 7.82084,
+    "x0": 0.35627
+   },
+   "sigma": {
+    "t_c": 0.02045,
+    "lever_arm": 0.05206,
+    "x0": 0.00359
+   },
+   "n_points": 141,
+   "pulls": {
+    "t_c": 17.845582905197872,
+    "lever_arm": 23.200629544703837,
+    "x0": 36.499231526985874
+   }
+  },
+  {
+   "case": 25,
+   "seed": 525,
+   "truth": "charge_qubit",
+   "runtime_s": 0.8,
+   "truth_values": {
+    "t_c": 3.1672418334221017,
+    "lever_arm": 4.7886617285807045,
+    "x0": 0.060571885979147644
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 3.81325,
+    "lever_arm": 2.0,
+    "x0": -0.02522
+   },
+   "sigma": {
+    "t_c": 0.00921,
+    "lever_arm": 0.2656,
+    "x0": 0.0424
+   },
+   "n_points": 287,
+   "pulls": {
+    "t_c": 70.14203763060785,
+    "lever_arm": -10.49947939977675,
+    "x0": -2.023393537244048
+   }
+  },
+  {
+   "case": 26,
+   "seed": 526,
+   "truth": "charge_qubit",
+   "runtime_s": 1.1,
+   "truth_values": {
+    "t_c": 1.1614050995267176,
+    "lever_arm": 24.46598408908025,
+    "x0": -0.0011789896758598317
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 1.3835,
+    "lever_arm": 4.95504,
+    "x0": 0.62776
+   },
+   "sigma": {
+    "t_c": 0.01245,
+    "lever_arm": 0.05709,
+    "x0": 0.00837
+   },
+   "n_points": 113,
+   "pulls": {
+    "t_c": 17.83894782917931,
+    "lever_arm": -341.7576473827334,
+    "x0": 75.14205372471443
+   }
+  },
+  {
+   "case": 27,
+   "seed": 527,
+   "truth": "charge_qubit",
+   "runtime_s": 1.2,
+   "truth_values": {
+    "t_c": 1.788395228842143,
+    "lever_arm": 11.577233642417598,
+    "x0": -0.0853172255468948
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 1.78652,
+    "lever_arm": 11.5564,
+    "x0": -0.0862
+   },
+   "sigma": {
+    "t_c": 0.00248,
+    "lever_arm": 0.01654,
+    "x0": 0.00082
+   },
+   "n_points": 136,
+   "pulls": {
+    "t_c": -0.7561406621543798,
+    "lever_arm": -1.2595914399998722,
+    "x0": -1.0765542111038964
+   }
+  },
+  {
+   "case": 28,
+   "seed": 528,
+   "truth": "charge_qubit",
+   "runtime_s": 0.3,
+   "truth_values": {
+    "t_c": 4.4694928162041565,
+    "lever_arm": 5.6648453880263,
+    "x0": 0.33610309451274434
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 4.4699,
+    "lever_arm": 5.65497,
+    "x0": 0.33604
+   },
+   "sigma": {
+    "t_c": 0.00066,
+    "lever_arm": 0.00718,
+    "x0": 0.0007
+   },
+   "n_points": 93,
+   "pulls": {
+    "t_c": 0.6169451452173937,
+    "lever_arm": -1.375402232075217,
+    "x0": -0.09013501820618965
+   }
+  },
+  {
+   "case": 29,
+   "seed": 529,
+   "truth": "charge_qubit",
+   "runtime_s": 1.2,
+   "truth_values": {
+    "t_c": 0.6758958571196071,
+    "lever_arm": 6.728666419204037,
+    "x0": 0.4661807075516544
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 4.095,
+    "lever_arm": 2.0,
+    "x0": 0.13604
+   },
+   "sigma": {
+    "t_c": 0.02166,
+    "lever_arm": 0.42119,
+    "x0": 0.02468
+   },
+   "n_points": 448,
+   "pulls": {
+    "t_c": 157.85337686428406,
+    "lever_arm": -11.22691996297167,
+    "x0": -13.376852007765576
+   }
+  },
+  {
+   "case": 30,
+   "seed": 530,
+   "truth": "charge_qubit",
+   "runtime_s": 1.4,
+   "truth_values": {
+    "t_c": 2.377424569174119,
+    "lever_arm": 12.46487816761446,
+    "x0": -0.12978032600384026
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 1.78337,
+    "lever_arm": 11.32872,
+    "x0": -0.24875
+   },
+   "sigma": {
+    "t_c": 0.01146,
+    "lever_arm": 0.02655,
+    "x0": 0.00189
+   },
+   "n_points": 234,
+   "pulls": {
+    "t_c": -51.837222441022604,
+    "lever_arm": -42.7931513225785,
+    "x0": -62.946917458285576
+   }
+  },
+  {
+   "case": 31,
+   "seed": 531,
+   "truth": "charge_qubit",
+   "runtime_s": 0.9,
+   "truth_values": {
+    "t_c": 3.9845114087773035,
+    "lever_arm": 19.71135197627156,
+    "x0": -0.15430369183849924
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 2.66257,
+    "lever_arm": 2.0,
+    "x0": 0.01282
+   },
+   "sigma": {
+    "t_c": 0.00783,
+    "lever_arm": 0.12852,
+    "x0": 0.02375
+   },
+   "n_points": 347,
+   "pulls": {
+    "t_c": -168.83032040578587,
+    "lever_arm": -137.81008384898504,
+    "x0": 7.036787024778915
+   }
+  },
+  {
+   "case": 32,
+   "seed": 532,
+   "truth": "charge_qubit",
+   "runtime_s": 0.7,
+   "truth_values": {
+    "t_c": 0.7539507990629589,
+    "lever_arm": 24.19754366212815,
+    "x0": 0.2642431102478714
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 0.76282,
+    "lever_arm": 24.07989,
+    "x0": 0.26419
+   },
+   "sigma": {
+    "t_c": 0.00449,
+    "lever_arm": 0.03594,
+    "x0": 0.0002
+   },
+   "n_points": 484,
+   "pulls": {
+    "t_c": 1.9753231485614995,
+    "lever_arm": -3.273613303510075,
+    "x0": -0.2655512393570647
+   }
+  },
+  {
+   "case": 33,
+   "seed": 533,
+   "truth": "charge_qubit",
+   "runtime_s": 0.5,
+   "truth_values": {
+    "t_c": 2.0371725466180948,
+    "lever_arm": 7.741828227558682,
+    "x0": -0.3195220153340138
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 2.03704,
+    "lever_arm": 7.74476,
+    "x0": -0.31969
+   },
+   "sigma": {
+    "t_c": 0.00064,
+    "lever_arm": 0.00303,
+    "x0": 0.00024
+   },
+   "n_points": 336,
+   "pulls": {
+    "t_c": -0.20710409077279165,
+    "lever_arm": 0.9675816638014055,
+    "x0": -0.6999361082756875
+   }
+  },
+  {
+   "case": 34,
+   "seed": 534,
+   "truth": "charge_qubit",
+   "runtime_s": 0.7,
+   "truth_values": {
+    "t_c": 0.7355139054172988,
+    "lever_arm": 19.198714523680536,
+    "x0": 0.2949786732967916
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 6.0,
+    "lever_arm": 2.0,
+    "x0": -0.85933
+   },
+   "sigma": {
+    "t_c": 0.01131,
+    "lever_arm": 0.29189,
+    "x0": 0.25329
+   },
+   "n_points": 246,
+   "pulls": {
+    "t_c": 465.4718032345448,
+    "lever_arm": -58.92190388050477,
+    "x0": -4.557261136629126
+   }
+  },
+  {
+   "case": 35,
+   "seed": 535,
+   "truth": "charge_qubit",
+   "runtime_s": 1.4,
+   "truth_values": {
+    "t_c": 3.5662016051129175,
+    "lever_arm": 10.29508433014081,
+    "x0": 0.4016279070022104
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 3.57529,
+    "lever_arm": 10.27094,
+    "x0": 0.40168
+   },
+   "sigma": {
+    "t_c": 0.00193,
+    "lever_arm": 0.00832,
+    "x0": 0.00046
+   },
+   "n_points": 442,
+   "pulls": {
+    "t_c": 4.709012894861322,
+    "lever_arm": -2.9019627573089437,
+    "x0": 0.11324564736864515
+   }
+  },
+  {
+   "case": 36,
+   "seed": 536,
+   "truth": "charge_qubit",
+   "runtime_s": 1.4,
+   "truth_values": {
+    "t_c": 0.8314665670032423,
+    "lever_arm": 21.506071532322995,
+    "x0": -0.2745601394268308
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 0.92583,
+    "lever_arm": 10.42966,
+    "x0": -0.27447
+   },
+   "sigma": {
+    "t_c": 0.49139,
+    "lever_arm": 0.44069,
+    "x0": 0.00184
+   },
+   "n_points": 50,
+   "pulls": {
+    "t_c": 0.19203368606759957,
+    "lever_arm": -25.13424750351266,
+    "x0": 0.04898881892977284
+   }
+  },
+  {
+   "case": 37,
+   "seed": 537,
+   "truth": "charge_qubit",
+   "runtime_s": 1.2,
+   "truth_values": {
+    "t_c": 1.2145684475242076,
+    "lever_arm": 11.366694839230181,
+    "x0": 0.2604061230357363
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 1.21498,
+    "lever_arm": 11.36154,
+    "x0": 0.26034
+   },
+   "sigma": {
+    "t_c": 0.00085,
+    "lever_arm": 0.00295,
+    "x0": 0.00012
+   },
+   "n_points": 96,
+   "pulls": {
+    "t_c": 0.4841793832851614,
+    "lever_arm": -1.7474031288750684,
+    "x0": -0.5510252978023026
+   }
+  },
+  {
+   "case": 38,
+   "seed": 538,
+   "truth": "charge_qubit",
+   "runtime_s": 1.3,
+   "truth_values": {
+    "t_c": 1.8453692143710692,
+    "lever_arm": 4.027522499959873,
+    "x0": -0.26494287958474383
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 1.84459,
+    "lever_arm": 4.02334,
+    "x0": -0.26664
+   },
+   "sigma": {
+    "t_c": 0.00128,
+    "lever_arm": 0.00765,
+    "x0": 0.00145
+   },
+   "n_points": 73,
+   "pulls": {
+    "t_c": -0.6087612273978151,
+    "lever_arm": -0.5467320208983978,
+    "x0": -1.1704278725904547
+   }
+  },
+  {
+   "case": 39,
+   "seed": 539,
+   "truth": "charge_qubit",
+   "runtime_s": 0.9,
+   "truth_values": {
+    "t_c": 0.5233007913358635,
+    "lever_arm": 6.991066721552488,
+    "x0": 0.49008419514806967
+   },
+   "found": "charge_qubit",
+   "family_ok": true,
+   "params": {
+    "t_c": 0.52282,
+    "lever_arm": 6.98834,
+    "x0": 0.49044
+   },
+   "sigma": {
+    "t_c": 0.00191,
+    "lever_arm": 0.00337,
+    "x0": 0.00033
+   },
+   "n_points": 91,
+   "pulls": {
+    "t_c": -0.2517232124939998,
+    "lever_arm": -0.8091161876818953,
+    "x0": 1.0781965210009672
+   }
+  }
+ ]
+}

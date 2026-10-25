@@ -3,21 +3,19 @@
 Self-contained: this folder has everything (the `circuitsleuth/` package is a copy; nothing else is imported).
 No API keys, no scqubits, no Streamlit needed. CPU only.
 
-## Set up once (Windows)
+## Set up once (Windows, Anaconda Prompt)
 
-lanthanum (Python 3.14):
+Make a FRESH conda env (an existing env named `sleuth` on lanthanum turned out to carry a NumPy < 1.17 and failed;
+use `sleuth311`):
 ```
 cd <this folder>
-py -3.14 -m venv venv
-venv\Scripts\pip install --upgrade pip
-venv\Scripts\pip install numpy scipy
-venv\Scripts\pip install torch --index-url https://download.pytorch.org/whl/cpu
+conda create -n sleuth311 python=3.11 -y
+conda activate sleuth311
+python -m pip install -r requirements.txt
+python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
 ```
-If `torch` has no wheel for 3.14 yet, make the venv with `py -3.12` (or 3.11) instead; everything else is identical.
-
-QEC1 (the `(dtc)` env, Python 3.11): activate it, then `pip install torch --index-url https://download.pytorch.org/whl/cpu` (numpy/scipy are already there).
-
-Use `venv\Scripts\python` (or the activated env's `python`) for every command below.
+Check: `python -c "import numpy, sys; print(sys.executable, numpy.__version__)"` must show the `envs\sleuth311` python and NumPy >= 1.26.
+Use `conda activate sleuth311` before every command below (on both machines).
 
 ## Always benchmark first (about 2–3 minutes)
 

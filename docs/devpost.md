@@ -30,6 +30,9 @@ The method is "spectrum versus a control knob, explained by a small Hamiltonian"
 ## It drives the experiment
 Autopilot closes the loop on a digital twin: start from a partial sweep, identify, let the information-gain design pick the next block of control values, measure it, refit, repeat, and watch the parameter uncertainties fall round by round. The function that reads the twin is the one a lab replaces with an instrument driver. When two circuit families both fit, a discrimination design names the single control value where their predictions differ by hundreds of sigma.
 
+## Error bars you can check
+A coverage study on random hidden maps showed the raw Jacobian uncertainties were 1.5–2× too small, so the app scales them and says so, and a Metropolis sampler of the actual robust likelihood draws the posterior (the EJ–EC valley appears as a banana) in ten seconds.
+
 ## Built for the lab bench
 Known-parameter constraints (fix EC from design, fr from a single-tone scan), derived quantities a physicist actually uses (anharmonicity, charge dispersion, sweet-spot bias values in your own control units, flux sensitivity, dispersive shift, Purcell factor), an operating-point solver ("which bias gives me 5 GHz?"), exports (CSV curves, HTML map, a scqubits snippet that rebuilds the fit), HDF5/CSV instrument-file import with cropping and unit handling, and a batch mode for fab lots. This is the part a Jupyter notebook never gets around to.
 
