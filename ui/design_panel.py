@@ -41,3 +41,21 @@ def correlation_figure(design: dict, height: int = 300):
     fig = _layout(fig, "Parameter correlations (Laplace covariance of the fit)", "", "", height)
     fig.update_yaxes(autorange="reversed")
     return fig
+
+
+def sigma_vs_round_figure(loop_result: dict, height: int = 280):
+    """Relative 1-sigma uncertainty of every parameter after each autopilot round (log scale)."""
+    rows = [r for r in loop_result["rounds"] if "params" in r]
+    if not rows:
+        return None
+    names = [k for k in rows[0]["params"] if k not in ("offset", "x0")]
+    palette = ["#d95926", "#3987e5", "#199e70", "#c98500", "#d55181", "#9085e9", "#f0efec", "#4cae4c"]
+    fig = go.Figure()
+    for i, n in enumerate(names):
+        y = [abs(r["sigma"].get(n, np.nan) / r["params"][n]) if r["params"][n] else np.nan for r in rows]
+        fig.add_trace(go.Scatter(x=[r["round"] for r in rows], y=y, mode="lines+markers", name=n, line=dict(color=palette[i % len(palette)], width=2), marker=dict(size=7),
+                                 hovertemplate=f"{n}<br>round %{{x}}<br>σ/|value| = %{{y:.2%}}<extra></extra>"))
+    fig = _layout(fig, "Relative uncertainty per autopilot round", "round (0 = initial partial sweep)", "σ / |value|", height)
+    fig.update_yaxes(type="log", tickformat=".0%")
+    fig.update_xaxes(dtick=1)
+    return fig

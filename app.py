@@ -738,6 +738,60 @@ if rep and rep.get("status") == "ok":
         dc1, dc2 = st.columns([1.3, 1])
         dc1.plotly_chart(_dp.gain_figure(dsg, xlabel=xlabel), key="design_gain", **PLOT)
         dc2.plotly_chart(_dp.correlation_figure(dsg), key="design_corr", **PLOT)
+    # ---- F3. autopilot: closed-loop spectroscopy on a digital twin (the full map stands in for the instrument)
+    theme.md(theme.section("Autopilot", "closed-loop spectroscopy on a digital twin"))
+    theme.md('<div class="cs-body muted cs-block">Start from the first 40 % of the sweep, identify, let the information-gain design choose the next block of '
+             'control values, "measure" it from the full map (the digital twin standing in for the instrument), refit, repeat. The one function that '
+             'reads the twin is the one a lab replaces with an instrument driver.</div>')
+    ap1, ap2 = st.columns([1, 1])
+    _fams_ap = tuple(families) if families else tuple(models.PLATFORMS[platform]["families"])
+    _loop_key = (name.split(" ")[0] if source == "Demo circuit" else "")
+    _saved_loop = f"artifacts/loop_{_loop_key}.json" if _loop_key else ""
+    run_ap = ap1.button("Run autopilot (3 rounds, live)", width="stretch", help="Seconds on NV / dots / ions / atoms; a few minutes for superconducting circuits")
+    load_ap = ap2.button("Replay saved autopilot", width="stretch", disabled=not (_saved_loop and os.path.exists(_saved_loop)))
+    if run_ap:
+        from circuitsleuth import loop as _loop
+        ap_status = st.empty()
+
+        def _ap_progress(kind, p):
+            if kind == "round_start":
+                ap_status.markdown(theme.status_html("autopilot", f"round {p['round']}: fitting {p['n_points']} features from {p['n_columns']} columns", "amber"), unsafe_allow_html=True)
+            elif kind == "round_done":
+                blk = p.get("block")
+                ap_status.markdown(theme.status_html("autopilot", f"round {p['round']} done · {p['hypothesis']}" + (f" · next: {plots.pretty(blk['line'])} line at control {blk['x_lo']:.3g} → {blk['x_hi']:.3g} ({blk['gain_bits']:.2f} bits)" if blk else " · nothing left worth measuring"), "blue"), unsafe_allow_html=True)
+
+        _cfg_ap = dict(maxiter=preset["maxiter"], n_starts=1, popsize=preset["popsize"], top_k=preset["top_k"], coupled_trials=preset["coupled_trials"], workers=workers)
+        st.session_state["autopilot"] = _loop.run_loop(image, x, f, _fams_ap, rounds=3, cfg_kwargs=_cfg_ap, progress=_ap_progress)
+        st.session_state["autopilot"]["demo"] = _loop_key
+        ap_status.markdown(theme.status_html("autopilot", "done", "green"), unsafe_allow_html=True)
+    if load_ap and _saved_loop:
+        st.session_state["autopilot"] = json.load(open(_saved_loop))
+    apr = st.session_state.get("autopilot")
+    if apr and apr.get("rounds") and ("demo" not in apr or apr.get("demo") == _loop_key):
+        from ui import design_panel as _dp2
+        rows_ap = [rr for rr in apr["rounds"] if "params" in rr]
+        if rows_ap:
+            r_idx = st.slider("Round", 0, len(rows_ap) - 1, len(rows_ap) - 1, key="ap_round") if len(rows_ap) > 1 else 0
+            rr = rows_ap[r_idx]
+            vis_pts = np.array(rr["points"])
+            blk = rr.get("block")
+            look = [dict(line=blk["line"], x_lo=blk["x_lo"], x_hi=blk["x_hi"], f_lo=blk["f_lo"], f_hi=blk["f_hi"])] if blk else None
+            c_ap1, c_ap2 = st.columns([1.3, 1])
+            c_ap1.plotly_chart(plots.map_figure(image, x, f, points=vis_pts, inlier=rr["inlier_mask"], lines=rr["lines"], x_grid=np.array(rr["x_grid"]), look_here=look,
+                                                title=f"round {rr['round']} · {rr['n_points']} features from {rr['columns_measured']} columns · {rr['hypothesis']}" + (f" · next sweep: {plots.pretty(blk['line'])} ({blk['gain_bits']:.2f} bits)" if blk else ""),
+                                                xlabel=xlabel, ylabel=ylabel), key=f"ap_map_{r_idx}", **PLOT)
+            fig_s = _dp2.sigma_vs_round_figure(apr)
+            if fig_s is not None:
+                c_ap2.plotly_chart(fig_s, key="ap_sigma", **PLOT)
+            tbl = []
+            for k, v in rr["params"].items():
+                sg = rr["sigma"].get(k, float("nan"))
+                tbl.append({"parameter": k, "value": f"{v:.4g}", "± σ": f"{sg:.2g}", "σ / value": f"{abs(sg / v):.1%}" if v else "–"})
+            c_ap2.dataframe(tbl, hide_index=True, width="stretch")
+            if apr.get("truth"):
+                tp = apr["truth"]["params"]
+                hits = [k for k in rr["params"] if k in tp]
+                st.caption("hidden truth: " + ", ".join(f"{k} = {tp[k]:.4g}" for k in hits))
     theme.md(theme.section("What the model cannot explain", f"{len(rep['unexplained'])} features"))
     if rep["unexplained"]:
         theme.md(theme.grid_html([theme.card_html(None, "flux-independent line" if u["flat"] else "flux-dependent feature", theme.frange_html(u["f_lo"], u["f_hi"]),
