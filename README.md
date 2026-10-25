@@ -207,10 +207,14 @@ a map takes about 2 min with the 'fast' preset and 5–6 min with 'normal' (whic
 | quantum dot | 200 / 200 | 78 % (was 58 % before the geometric prior) | 1 s | steep V with fewer than ~20 visible points among spurs |
 | Rydberg atom | 200 / 200 | 63 % (was 57 %) | 1 s | second Stark component lost among spurs; curvatures 5–8 % off |
 
+| superconducting circuits, normal preset (120 maps, 32-core machine) | 87 / 120 (72 %) | 35 % | 27 min | fluxonium or tunable transmon read as a fixed transmon when the band hides the flux-dependent part; EJ and EC of a fixed transmon when the two-photon line is absent (then only f01 is observable) |
+| superconducting circuits, fast preset (100 maps, the preset of the live demo) | 64 / 100 (64 %) | 26 % | 8 min | same failure modes, more often |
+
 Parameters are judged with the symmetry-aware metrics of `run_blind.py` (NV field vector up to the tetrahedral symmetry, Rydberg
-Stark curvatures α·κ², offsets modulo the period). Tables: `artifacts/qec_blind_*.jsonl`; `python scripts/summarize_blind.py <files>`
-regenerates this table. The 200-map superconducting-circuit table (normal preset, 32 min per map per core) is in progress on a
-32-core machine; the previous-code baseline on 200 maps was 70 % family identification with fluxonium the weak spot.
+Stark curvatures α·κ², offsets modulo the period). Tables: `artifacts/qec_blind_*.jsonl`, `artifacts/lanthanum_blind_circuit.jsonl`,
+`artifacts/qec_fast_blind_circuit.jsonl`; `python scripts/summarize_blind.py <files>` regenerates this table. For circuits the
+confusion is almost entirely one-directional (a flux-tunable device read as a fixed transmon plus a resonator); the previous-code
+baseline on 200 maps was 70 % family, and a rerun with the fixed skip rule (`agent.DYN_MIN_ABS`) is in progress.
 
 ### Proposer (CNN on 64×64 thumbnails, 190 000 synthetic maps, 30 epochs, trained on a 32-core machine)
 

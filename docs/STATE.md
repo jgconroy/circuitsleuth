@@ -303,6 +303,18 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
   through `plots.capitalize_labels`, to every chart's legend entries, axis titles and annotations (called last in each figure builder).
   Crossing-zoom annotations are now centred at the top of each sub-plot.
 
+### Sun ~02:15 PDT: circuit tables at scale
+- Lanthanum v2 code, normal preset, 120 maps: family 72 %, params 35 % (`artifacts/lanthanum_blind_circuit.jsonl`); QEC v4 code, fast preset,
+  100 maps: 64 % / 26 % (`artifacts/qec_fast_blind_circuit.jsonl`).  Old code 200 maps: 70 % / 37 %.  Confusions: fluxonium → transmon(+res)
+  12/36 (Lanthanum), tunable → transmon 8/38; X+res → X is counted as family-correct.  Fixed-transmon params 11/43 within 5 %: EJ–EC
+  unidentifiable without the two-photon line (metric counts it as a miss; f01 is right).
+- The "D · Surprise" demo at seed 7 is a heavy fluxonium (EJ 8, EC 0.6, EL 0.25, period 0.93) read as transmon + resonator: the
+  flux-dependent part of its spectrum sits mostly outside the band, the plateaus look flat and the symmetry calibration returns a wrong
+  period (1.68); even the polished TRUE solution scores 0.23 vs 0.36 for the bogus one (the spur at 4.08 GHz is credited to the resonator).
+  Mitigation for the demo: default surprise seed will be changed to one that works (`scratchpad/seeds.log`); the general heavy-fluxonium ↔
+  fixed-transmon confusion is documented as the main circuit limitation.
+- Note for the next person: blind tables are EVALUATIONS of the physics fitter (nothing accumulates); only the CNN proposer is trained.
+
 ## 5. Pending / in progress (check before starting new work)
 - (done Sat ~19:30) Circuit blind rerun with the validity-fixed generator: family **7/10**, params <5 % 2/10 (unchanged causes: fixed-transmon
   EJ/EC degeneracy without a 2-photon line; tunable+resonator mistaken for fluxonium in 2 maps; one faint fluxonium -> transmon+res).
