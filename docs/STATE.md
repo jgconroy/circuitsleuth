@@ -190,12 +190,24 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
   `circuitsleuth_bigmachine_v2`; QEC1 was at 109/200 on the OLD-code circuit table.
 - Claude explainer verified live (credits added Sun ~02:30).
 
-### Test status at Sun ~03:15
+### Test status at Sun ~04:10
 - All quick suites pass (models, synth/extract, platforms, lab_features incl. design, loop, posterior).
-- `tests/test_agent.py` on the final code: 3/4 pass; `test_agent_identifies_fixed_transmon` fails on EC (|EC − 0.28| = 0.13, limit 0.02):
-  EJ–EC degeneracy of a fixed transmon when the two-photon line is barely detected after the continuity extractor change. A diagnosis run was
-  in progress (prints detected points per true line and all hypotheses). If unresolved: relax the test tolerance to 0.15 and note it; the
-  live demo C still identifies the family with f01 right.
+- `tests/test_agent.py`: **4/4 pass** on the final code. `test_agent_identifies_fixed_transmon` re-passed Sun ~04:10 after the relabel fix
+  (5.5 min; transmon EJ 15.023 / EC 0.280, truth 15 / 0.28; transmon+resonator second at 0.810). The other three passed Sun ~03:00 on
+  code that differs only by the relabel step, which runs for control-independent circuit hypotheses only.
+
+### Sun ~04:00: fixed-transmon label ambiguity fixed (relabel alternatives)
+- Diagnosis of `test_agent_identifies_fixed_transmon`: NOT the EJ–EC valley. The map has two flat lines (0-1 at 5.50, two-photon 0-2/2
+  at 5.34). Reading the second as the thermal 1-2 line (f01 − EC) instead of 0-2/2 (f01 − EC/2) fits the same points with EC/2
+  (EC pinned at its 0.15 bound, EJ 26.7); the robust loss cannot tell the two readings apart, so the search landed on either by seed.
+- Fix: `fit.relabel_alternatives` (called from `fit_hypothesis` for control-independent circuit hypotheses only): for each
+  (used weaker line, unused brighter line) pair, solve for the parameters that put the brighter line on that track with the 0-1 line
+  held, polish locally, attach as `FitResult.alternatives`. `agent.run()` scores alternatives with `_score` (its visibility-weighted
+  missing-line penalty prefers the reading without a bright empty line) and emits a `relabel` progress event. Unused = ≤ max(2, 10 %)
+  points under an in-band line (two stray noise points must not block it).
+- Unit test `tests/test_fit.py::test_fixed_transmon_relabel_alternative_breaks_two_photon_vs_12_ambiguity` (4 s): seed 0 now offers
+  EC 0.2796 as the alternative; seed 1 finds it directly. Physics prior encoded: at usual two-tone powers the 2-photon line is more
+  common than the thermal 1-2 line, so an isolated second flat line is read as 0-2/2.
 
 ## 5. Pending / in progress (check before starting new work)
 - (done Sat ~19:30) Circuit blind rerun with the validity-fixed generator: family **7/10**, params <5 % 2/10 (unchanged causes: fixed-transmon

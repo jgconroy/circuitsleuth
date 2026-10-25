@@ -95,3 +95,20 @@ def test_degenerate_case_reports_large_uncertainty():
     print("\ndegenerate:", res.params, res.sigma)
     assert res.inlier_frac > 0.8
     assert res.sigma["EC"] / res.params["EC"] > 0.1 or abs(res.params["EC"] - 0.3) / 0.3 < 0.05
+
+
+def test_fixed_transmon_relabel_alternative_breaks_two_photon_vs_12_ambiguity():
+    """A fixed transmon shows two flat lines (0-1 and the two-photon 0-2/2).  Reading the second one as the thermal 1-2
+    line fits the same points with EC/2, so the search lands on either labelling; the fitter must offer the other one
+    as an alternative so the visibility-aware scorer can pick the plausible reading."""
+    truth = dict(family="transmon", coupled=False, params=dict(EJ=15.0, EC=0.28), period=1.0, offset=0.0, x_lo=-1.0, x_hi=1.0,
+                 f_lo=3.0, f_hi=8.0, linewidth=0.025, noise=0.06, two_photon=True, sign=1, spurs=[])
+    r = synth.render(truth, synth.SynthConfig(nx=81, nf=400), np.random.default_rng(2))
+    pts = extract.extract_points(r["image"], r["x"], r["f"])
+    found = []
+    for seed in (0, 1):  # seed 0 lands on the 1-2 reading (EC at its lower bound), seed 1 on the two-photon one
+        res = fit.fit_hypothesis(pts, fit.Hypothesis("transmon", False), (3.0, 8.0), maxiter=40, seed=seed, n_starts=1)
+        cands = [res] + res.alternatives
+        found.append(min(abs(c.params["EC"] - 0.28) for c in cands))
+        assert len({round(c.params["EC"], 2) for c in cands}) >= 1
+    assert max(found) < 0.02, found

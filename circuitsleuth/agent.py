@@ -355,10 +355,13 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
             except Exception as e:  # a narrowed candidate must never take the whole run down
                 _emit(progress, "warning", message=f"{h.label}: candidate search failed ({type(e).__name__}: {str(e)[:80]})")
                 continue
-            score, inl = _score(res, points, ids, flat, band, cfg.c_local)
-            score += prior(h)
-            if score > best_sc:
-                best_res, best_sc, best_inl = res, score, inl
+            for cand in [res] + list(getattr(res, "alternatives", [])):
+                score, inl = _score(cand, points, ids, flat, band, cfg.c_local)
+                score += prior(h)
+                if cand is not res:  # a different labelling of the same features (fixed-spectrum 2-photon vs 1-2 ambiguity)
+                    _emit(progress, "relabel", hypothesis=h.label, note=(cand.history or [{}])[0].get("relabel"), params=cand.params, score=score)
+                if score > best_sc:
+                    best_res, best_sc, best_inl = cand, score, inl
         if best_res is None:
             return None, -np.inf
         best_res.lines = fit.predict_lines(h, best_res.params, x_grid)

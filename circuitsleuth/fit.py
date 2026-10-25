@@ -186,6 +186,7 @@ class FitResult:
     holdout: dict = field(default_factory=dict)
     history: list = field(default_factory=list)
     n_evals: int = 0
+    alternatives: list = field(default_factory=list)  # other labellings of the same features (see relabel_alternatives)
 
     @property
     def score(self) -> float:
@@ -345,6 +346,64 @@ def brightest_points(points: np.ndarray) -> np.ndarray:
     return np.array(out)
 
 
+def relabel_alternatives(points: np.ndarray, res: FitResult, band: tuple[float, float], bounds: dict, c_local: float = 0.012, c_global: float = 0.08,
+                         model_kw: dict | None = None, workers: int = 1) -> list[FitResult]:
+    """Label ambiguity of a control-independent spectrum (fixed transmon): every line is flat, so a second track can be
+    read two ways, e.g. the two-photon 0-2 line at f01 - EC/2 or the thermal 1-2 line at f01 - EC.  Both pass through the
+    same points, so the robust loss cannot tell them apart and the search lands on either (EC differs by 2x).  For each
+    (used weaker line, unused brighter line) pair, solve for the parameters that put the brighter line on the track while
+    keeping the 0-1 line fixed, polish locally, and return the refits: the caller ranks them with the visibility-aware
+    score, where the labelling that leaves a bright predicted line with nothing under it loses."""
+    hyp = res.hyp
+    if hyp.platform != "circuit" or hyp.flux_dependent:
+        return []
+    obj = Objective(hyp, points, band, c_local, model_kw)
+    keys = list(predict_lines(hyp, res.params, obj.x_cols[:1], model_kw).keys())
+    if "0-1" not in keys:
+        return []
+    L = obj.line_matrix(res.theta)
+    D = np.abs(obj.f[None, :] - L[:, obj.col_idx])
+    assign = np.argmin(D, axis=0)
+    inl = D[assign, np.arange(len(assign))] < 3 * c_local
+    counts = {k: int(np.sum(inl & (assign == i))) for i, k in enumerate(keys)}
+    n_in = {k: int(np.sum(np.isfinite(L[i]) & (L[i] > band[0]) & (L[i] < band[1]))) for i, k in enumerate(keys)}
+    if counts["0-1"] == 0:
+        return []
+    vis = models.line_weights(hyp.family)
+    # "unused": a predicted in-band line with (almost) nothing under it; a couple of stray noise points do not count
+    missing = [k for k in keys if k != "res" and n_in[k] >= 3 and counts[k] <= max(2, 0.1 * n_in[k])]
+    used = [k for k in keys if k not in ("0-1", "res") and counts[k] >= 3]
+    f01 = float(np.median(obj.f[inl & (assign == keys.index("0-1"))]))
+    names = hyp.names
+    tb = theta_bounds(bounds, names)
+    lo = np.array([b[0] for b in tb])
+    hi = np.array([b[1] for b in tb])
+    x0 = obj.x_cols[:1]
+    out: list[FitResult] = []
+    for u in used:
+        f_u = float(np.median(obj.f[inl & (assign == keys.index(u))]))
+        for m in missing:
+            if vis.get(m, 0.0) <= vis.get(u, 0.0):
+                continue
+
+            def resid(theta, _m=m):
+                lines = predict_lines(hyp, from_theta(theta, names), x0, model_kw)
+                return np.nan_to_num(np.array([lines["0-1"][0] - f01, lines[_m][0] - f_u]), nan=1e3, posinf=1e3, neginf=-1e3)
+
+            try:
+                sol = least_squares(resid, np.clip(res.theta, lo + 1e-9, hi - 1e-9), bounds=(lo, hi), xtol=1e-10, ftol=1e-10, max_nfev=200)
+                if np.max(np.abs(sol.fun)) > 3 * c_local:
+                    continue
+                alt = _fit_once(points, hyp, band, bounds=bounds, init=from_theta(sol.x, names), c_global=c_global, c_local=c_local, model_kw=model_kw,
+                                do_global=False, workers=workers)
+            except (np.linalg.LinAlgError, ValueError, FloatingPointError):
+                continue
+            if all(np.max(np.abs(alt.theta - o.theta)) > 1e-3 for o in out) and np.max(np.abs(alt.theta - res.theta)) > 1e-3:
+                alt.history = [dict(relabel=f"{u} -> {m}")]
+                out.append(alt)
+    return out
+
+
 def fit_hypothesis(points, hyp, band, bounds=None, init=None, c_global=0.08, c_local=0.012, maxiter=60, popsize=15, seed=0, workers=1,
                    callback=None, model_kw=None, do_global=True, n_starts=1, staged=True) -> FitResult:
     """Robust driver.  (1) staged: fit the 0-1 line alone to the brightest feature per column (one line,
@@ -384,6 +443,8 @@ def fit_hypothesis(points, hyp, band, bounds=None, init=None, c_global=0.08, c_l
             best = res
         if best.inlier_frac > 0.97:
             break
+    if do_global:
+        best.alternatives = relabel_alternatives(points, best, band, base_bounds, c_local=c_local, c_global=c_global, model_kw=model_kw, workers=workers)
     return _normalise_offset(best, x_all)
 
 
