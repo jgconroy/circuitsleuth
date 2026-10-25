@@ -174,6 +174,7 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
   precomputes `artifacts/loop_A.json` for the circuit demo (replay in the app); NV/dot/ion/atom run live in seconds. tests/test_loop.py (NV) passes.
 - `design.discriminate()`: single control value separating the best and runner-up families (σ units), preferring in-window/in-band; appended
   to next_measurements as kind "discriminate" and folded into the confidence text.
+- Autopilot precompute for demo A (`artifacts/loop_A.json`, 237 s): rounds 0→3 add 23 features; σ(EJmax) 3.4 %→0.7 %, σ(EC) 3.5 %→0.8 %, σ(period) 0.73 %→0.03 %; family stable.
 - Posterior sampling + coverage script are being built by a subagent (fit.sample_posterior, design_panel.posterior_figure, scripts/coverage.py).
 
 ## 5. Pending / in progress (check before starting new work)

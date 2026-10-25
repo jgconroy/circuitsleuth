@@ -98,7 +98,8 @@ NV centres and quantum dots, each with hidden demo circuits and a "surprise" ran
 - **Autopilot.** Closed-loop spectroscopy on a digital twin: start from the first 40 % of the sweep, identify, let the
   information-gain design choose the next block of control values, measure it from the full map, refit, repeat. One
   function reads the twin; a lab replaces it with an instrument driver. Live in seconds on NV / dot / ion / atom maps;
-  precomputed and replayable for the superconducting demo.
+  precomputed and replayable for the superconducting demo, where three chosen sweeps (23 extra features) take the
+  relative uncertainty of EJmax from 3.4 % to 0.7 % and of the flux period from 0.73 % to 0.03 %.
 - **Exports.** JSON report, fitted curves as CSV, the annotated map as HTML, and a scqubits snippet that rebuilds the fitted
   circuit in two lines.
 - **Real instrument files.** HDF5 (pick the 2-D dataset and axis vectors), 2-D CSV grids, point lists, NPZ, or a screenshot
