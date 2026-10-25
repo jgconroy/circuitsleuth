@@ -35,3 +35,16 @@ def test_user_bounds_fix_a_parameter():
     cfg = agent.AgentConfig(param_bounds={"fr": 7.0, "EC": (0.25, 0.35)})
     b = agent._apply_user_bounds(fit.default_bounds(fit.Hypothesis("tunable_transmon", True), np.array([-1.0, 1.0])), cfg)
     assert abs(b["fr"][0] - 7.0) < 1e-3 and abs(b["fr"][1] - 7.0) < 1e-3 and b["EC"] == (0.25, 0.35)
+
+
+def test_experimental_design_points_at_the_degeneracy_breaker():
+    rep = json.load(open("artifacts/demo_A_report.json"))
+    from circuitsleuth import design
+    d = design.design_next_measurements(rep, band=tuple(rep["band_GHz"]))
+    names, corr = d["correlation"]
+    corr = np.array(corr)
+    i, j = names.index("EJmax"), names.index("EC")
+    assert abs(corr[i, j]) > 0.95  # the EJ-EC valley shows up as a near-perfect (anti)correlation in log space
+    assert d["candidates"], "no candidate sweeps"
+    assert d["candidates"][0]["gain_bits"] > 0.5
+    assert all(c["x_hi"] >= c["x_lo"] and c["f_hi"] >= c["f_lo"] for c in d["candidates"])

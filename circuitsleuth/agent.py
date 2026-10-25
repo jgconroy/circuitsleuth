@@ -513,6 +513,12 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
         holdout_columns=holdout_columns,
     )
     try:
+        from . import design
+
+        report["design"] = design.design_next_measurements(report, band=band)
+    except Exception as e:  # optional: experimental design must never fail a run
+        report["design"] = dict(error=f"{type(e).__name__}: {e}", candidates=[])
+    try:
         from . import derived
 
         xr = (float(np.min(x_grid)), float(np.max(x_grid)))

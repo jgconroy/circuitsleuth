@@ -708,6 +708,33 @@ if rep and rep.get("status") == "ok":
         theme.md(theme.grid_html(cards))
     else:
         theme.md('<div class="cs-body muted cs-block">No obvious gaps: every predicted line inside the band has data under it.</div>')
+
+    # ---- F2. optimal next measurement by Fisher information (Bayesian experimental design)
+    dsg = rep.get("design")
+    if not dsg or dsg.get("error") or "correlation" not in dsg:
+        try:
+            from circuitsleuth import design as _design
+            dsg = _design.design_next_measurements(rep, band=tuple(rep["band_GHz"]))
+        except Exception:
+            dsg = None
+    if dsg and dsg.get("candidates") is not None and "correlation" in dsg:
+        theme.md(theme.section("Most informative next sweep", "expected information gain, Fisher information of the fit"))
+        theme.md('<div class="cs-body muted cs-block">Every detected feature contributes Fisher information about the parameters. For each candidate sweep '
+                 '(a transition over a block of control values) we compute the expected gain in bits from the log-determinant ratio of the information matrix, '
+                 'discounted by the line\'s visibility and the sweep cost. Amber bands mark the three best sweeps; the matrix shows which parameters the current data cannot separate.</div>')
+        dcards = []
+        for i, c in enumerate(dsg["candidates"][:3], start=1):
+            red = c["variance_reduction"].get(c["best_parameter"], 0.0)
+            _unit = models.PLATFORMS[platform].get("freq_unit", "GHz")
+            dcards.append(theme.card_html(str(i), f"sweep · {plots.pretty(c['line'])} line", f"{c['gain_bits']:.2f} <span class='u'>bits</span>",
+                                          f"control {c['x_lo']:.3g} → {c['x_hi']:.3g} · {c['f_lo']:.2f}–{c['f_hi']:.2f} {_unit}".replace("-", "−"),
+                                          f"tightens {theme.esc(c['best_parameter'])} most (−{100*red:.0f}% variance)"))
+        if dcards:
+            theme.md(theme.grid_html(dcards))
+        from ui import design_panel as _dp
+        dc1, dc2 = st.columns([1.3, 1])
+        dc1.plotly_chart(_dp.gain_figure(dsg, xlabel=xlabel), key="design_gain", **PLOT)
+        dc2.plotly_chart(_dp.correlation_figure(dsg), key="design_corr", **PLOT)
     theme.md(theme.section("What the model cannot explain", f"{len(rep['unexplained'])} features"))
     if rep["unexplained"]:
         theme.md(theme.grid_html([theme.card_html(None, "flux-independent line" if u["flat"] else "flux-dependent feature", theme.frange_html(u["f_lo"], u["f_hi"]),
