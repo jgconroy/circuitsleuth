@@ -166,7 +166,9 @@ near Φ = ½ below 1.2 GHz, which is exactly where the paper's inset lives).
 
 Family identified in 7 of 10 (latest run, generator with the in-band validity rule). Clean flux-tunable circuits without a
 resonator are recovered to about 1 % in every parameter including the flux period. Fixed transmons were always recognised, but when the generator
-dropped the two-photon line only f01 is observable and EJ/EC come back with large stated uncertainties.
+dropped the two-photon line only f01 is observable and EJ/EC come back with large stated uncertainties. When a second flat line is
+present it can be read as the two-photon 0-2/2 line (f01 − EC/2) or the thermal 1-2 line (f01 − EC) with equal residuals; the fitter
+now offers both readings and the scorer picks the one that does not leave a bright predicted line with nothing under it.
 The failures are tunable-transmon-plus-resonator maps mistaken for fluxonium (two cases) and one very
 faint fluxonium: these are the cases we would want more data for, and the report says so. Mean runtime in
 that run was 9 min per map because the test shared the laptop with the test suite; alone, with four workers,
