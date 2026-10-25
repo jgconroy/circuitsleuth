@@ -42,7 +42,7 @@ Spurs. A pump tone is a perfectly straight line that any flexible model loves to
 
 ## Accomplishments that we're proud of
 
-A published fluxonium map (Nguyen et al., PRX 2019), digitised from the paper's figure with no tuning, comes back as $E_J = 3.03 \pm 0.06$, $E_C = 0.86 \pm 0.02$, $E_L = 0.96 \pm 0.02$ GHz against the paper's 3.0 / 0.84 / 1.0, with the flux period recovered as one flux quantum. Family identification is 200/200 on ions, NV centres, dots and Rydberg atoms in blind tests, and the fitter knows when it is unreliable: the maps it gets wrong carry a low score and a warning. The Bayes factor and the Fisher design are computed, not narrated.
+A published fluxonium map (Nguyen et al., PRX 2019), digitised from the paper's figure with no tuning, comes back as $E_J = 3.05 \pm 0.21$, $E_C = 0.86 \pm 0.07$, $E_L = 0.95 \pm 0.07$ GHz against the paper's 3.0 / 0.84 / 1.0 (the error bars reflect the figure's 12.5 MHz pixels), with the flux period recovered as one flux quantum. Family identification is 200/200 on ions, NV centres, dots and Rydberg atoms in blind tests, and the fitter knows when it is unreliable: the maps it gets wrong carry a low score and a warning. The Bayes factor and the Fisher design are computed, not narrated.
 
 ## What we learned
 

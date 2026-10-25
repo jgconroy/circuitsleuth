@@ -343,6 +343,16 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
   fit-vs-paper table, no caption (Devpost has a caption field).  Repo renamed to github.com/jgconroy/qholmes (old URL redirects).
 - `docs/demo_runbook.md` rewritten click by click (A preparation, B 60-second demo, C judge questions, D fallbacks).
 
+### Sun ~04:30 PDT: real-data demo (E) fixed for the demo
+- User: "58 % unexplained on the real map looks bad".  Causes: 72 of 169 extracted features sit in 9 vertical-streak columns of the digitised
+  figure (Φ 0.16–0.20), and the ±36 MHz inlier band is narrower than the figure's ~100 MHz line width (12.5 MHz pixels).
+- `extract.artefact_columns_mask` (column with > max(6, 3×median) peaks) → `report["artefact_columns"]`; the points STAY in the fit (dropping
+  them shifted EJ to 3.8) but are excluded from the explained fraction and the unexplained list; the live status line reports them.
+- The real-data demo now runs with `c_local = 0.03` (app sets it for the real demo; `scripts/run_real.py --c-local 0.03`): explained 80 %
+  (was 42 %), EJ 3.05 ± 0.21 / EC 0.86 ± 0.07 / EL 0.95 ± 0.07 GHz (paper 3.0 / 0.84 / 1.0; all within 1σ), hold-out 73 %.  The old
+  tight-σ numbers (3.03 ± 0.06 …) came from c_local 0.012 with 27 % inliers.  README / Devpost text / figure updated to the new numbers.
+  NOTE for the user: the Devpost "Accomplishments" sentence quotes these numbers; update it if it was pasted before ~04:30.
+
 ## 5. Pending / in progress (check before starting new work)
 - (done Sat ~19:30) Circuit blind rerun with the validity-fixed generator: family **7/10**, params <5 % 2/10 (unchanged causes: fixed-transmon
   EJ/EC degeneracy without a 2-photon line; tunable+resonator mistaken for fluxonium in 2 maps; one faint fluxonium -> transmon+res).

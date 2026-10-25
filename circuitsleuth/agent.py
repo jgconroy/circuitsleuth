@@ -268,12 +268,16 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
                 x = np.asarray(x_user, float)  # keep the caller's full control grid (e.g. columns not measured yet)
         band = band or (float(points[:, 1].min()) - 0.1, float(points[:, 1].max()) + 0.1)
     x_grid = np.asarray(x, float) if x is not None else np.unique(points[:, 0])
+    # columns bursting with peaks are artefacts (glitches, streaks in a digitised figure).  They stay in the fit (the robust loss
+    # ignores them and the real lines in those columns still count) but are excluded from the explained fraction and the unexplained list.
+    art = extract.artefact_columns_mask(points)
+    artefact = dict(n_points=int(art.sum()), columns=[round(float(c), 4) for c in np.unique(points[art, 0])]) if art.any() else None
     if len(points) < 10:
         return dict(error="fewer than 10 spectral features found; lower the detection threshold or check the map", n_points=int(len(points)))
     ids = extract.link_tracks(points, df_tol=scales["df_tol"])
     flat = extract.flat_feature_mask(points, tol=scales["flat_tol"])
     flat_lines = extract.flat_lines(points, tol=scales["flat_tol"])
-    _emit(progress, "features", n_points=int(len(points)), n_tracks=int(len(np.unique(ids))), flat_lines=flat_lines)
+    _emit(progress, "features", n_points=int(len(points)), n_tracks=int(len(np.unique(ids))), flat_lines=flat_lines, artefact=artefact)
 
     # ---- 2. propose
     proposals = []
@@ -580,7 +584,7 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
                           + f"the image classifier puts {cnn_disagrees['prob']:.2f} on {cnn_disagrees['family'].replace('_', ' ')} and the fit could not explain the data better as one even with double effort: the family is uncertain; widen the band or use the thorough preset")
     # user-facing: of the points that belong to coherent line segments (spurs excluded), the weighted
     # fraction lying on a predicted transition
-    dyn = (~flat) & seg_ok
+    dyn = (~flat) & seg_ok & (~art)
     if dyn.sum() < 5:
         dyn = seg_ok if seg_ok.sum() >= 5 else np.ones(len(points), bool)
     w = points[dyn, 2]
@@ -598,7 +602,7 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
     except Exception:  # noqa: BLE001  (optional: must never fail a run)
         evidence = {}
     model_post = fit.model_posterior(evidence) if evidence else {}
-    unexpl = unexplained_features(points, ids, best_inl, flat, qubit_line=best.lines.get("0-1"))
+    unexpl = unexplained_features(points, ids, best_inl | art, flat, qubit_line=best.lines.get("0-1"))  # artefact columns are not unexplained physics
     nxt = next_measurements(best, points, band, x_grid, cfg.c_local)
     report = dict(
         status="ok",
@@ -622,6 +626,7 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
         points=points.tolist(),
         track_ids=ids.tolist(),
         holdout_columns=holdout_columns,
+        artefact_columns=artefact,
     )
     try:
         from . import design

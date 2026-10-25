@@ -11,7 +11,9 @@ def main():
     pts = extract.extract_points(img, x, f)
     print("points", len(pts), "flat", extract.flat_lines(pts))
     calibrated = "--calibrated" in sys.argv
-    cfg = agent.AgentConfig(maxiter=60, workers=4, use_classifier=False, families=("fluxonium",), try_coupled="never", flux_calibrated=calibrated)
+    c_local = float(sys.argv[sys.argv.index("--c-local") + 1]) if "--c-local" in sys.argv else None  # digitised figures: ~0.03 (100 MHz lines)
+    cfg = agent.AgentConfig(maxiter=60, workers=4, use_classifier=False, families=("fluxonium",), try_coupled="never", flux_calibrated=calibrated, c_local=c_local)
+    print("c_local:", cfg.c_local)
     t0 = time.time()
     rep = agent.identify(img, x, f, band=(0.05, 5.0), config=cfg, progress=lambda k, p: print(k, {kk: vv for kk, vv in p.items() if kk not in ("lines", "params", "report")}) if k not in ("fit_progress",) else None)
     print(f"{time.time()-t0:.0f}s")

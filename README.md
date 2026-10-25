@@ -166,9 +166,9 @@ about 0.3 and fragments of 0-2 are available. With the paper's flux axis (period
 
 | parameter | Ĥolmes | paper's fit |
 |---|---|---|
-| EJ | 3.03 ± 0.06 GHz | 3.0 GHz |
-| EC | 0.86 ± 0.02 GHz | 0.84 GHz |
-| EL | 0.96 ± 0.02 GHz | 1.0 GHz |
+| EJ | 3.05 ± 0.21 GHz | 3.0 GHz |
+| EC | 0.86 ± 0.07 GHz | 0.84 GHz |
+| EL | 0.95 ± 0.07 GHz | 1.0 GHz |
 
 (Earlier extractor settings gave 3.23 / 0.80 / 0.98 and 2.83 / 0.93 / 0.93; the digitised half-map is marginal data, so the
 result moves at the 5–10 % level with extraction choices and the stated σ are optimistic. Every run landed within 10 % of the paper.)

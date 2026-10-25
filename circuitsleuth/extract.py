@@ -407,3 +407,17 @@ def estimate_stark_init(points: np.ndarray, df_tol: float = 1.2, alpha_mid: floa
     kappa = float(np.clip(np.sqrt(np.sqrt(curv_up * curv_lo) / alpha_mid), 0.5, 8.0))
     return dict(alpha1=float(np.clip(curv_up / kappa**2, 0.5, 8.0)), alpha2=float(np.clip(curv_lo / kappa**2, 0.5, 8.0)), dfs=float(np.clip(dfs, 2.0, 30.0)),
                 f0=float(np.clip(f0, -5.0, 5.0)), field_scale=kappa, x0=x0, n_tracks=len(comps))
+
+
+def artefact_columns_mask(points: np.ndarray, floor: int = 6, factor: float = 3.0, min_cols: int = 12) -> np.ndarray:
+    """Per-point mask of features in 'burst' columns: a column with far more peaks than the typical column (more than
+    max(floor, factor x median)) is an instrument or digitisation artefact (a glitch, a saturated sweep, a vertical streak in a
+    scanned figure), not spectroscopy.  Those features are dropped before fitting and reported as such."""
+    pts = np.asarray(points, float)
+    if len(pts) == 0:
+        return np.zeros(0, bool)
+    cols, inv, counts = np.unique(pts[:, 0], return_inverse=True, return_counts=True)
+    if len(cols) < min_cols:
+        return np.zeros(len(pts), bool)
+    thr = max(floor, factor * float(np.median(counts)))
+    return counts[inv] > thr

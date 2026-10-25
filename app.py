@@ -463,7 +463,8 @@ if load_saved and saved_path:
     st.rerun()
 
 if run:
-    cfg = agent.AgentConfig(use_classifier=use_clf, try_coupled=try_coupled if is_circuit else "never", workers=workers, families=tuple(families),
+    _real = source == "Demo Circuit" and DEMOS[platform][name] == "real"  # a digitised figure: 12.5 MHz pixels and ~100 MHz line width
+    cfg = agent.AgentConfig(use_classifier=use_clf, try_coupled=try_coupled if is_circuit else "never", workers=workers, families=tuple(families), c_local=(0.03 if _real else None),
                             flux_calibrated=flux_calibrated and is_circuit, param_bounds=dict(param_bounds), **preset)
     rows: list[dict] = []  # hypothesis race, in the order tried
     log: list[str] = []
@@ -499,7 +500,9 @@ if run:
     def progress(kind, p):
         if kind == "features":
             step(1)
-            say("features", f"{p['n_points']} features in {p['n_tracks']} tracks · flux-independent lines at {', '.join(f'{v:.2f}' for v in p['flat_lines']) or 'none'} GHz")
+            _art = p.get("artefact")
+            say("features", f"{p['n_points']} features in {p['n_tracks']} tracks · flux-independent lines at {', '.join(f'{v:.2f}' for v in p['flat_lines']) or 'none'} GHz"
+                + (f" · dropped {_art['n_points']} features in {len(_art['columns'])} artefact columns" if _art else ""))
         elif kind == "proposals":
             step(2)
             for h in p["hypotheses"]:
