@@ -31,7 +31,7 @@ in as families. Four are included beyond superconducting circuits:
 
 On hand-picked hidden maps both come back to better than 1 % (`tests/test_platforms.py`); on random
 hidden maps (`python demo.py --platform nv|dot`) the family is always identified and every parameter is
-within tolerance in 6 of 8 (NV) and 5 of 8 (quantum dot) cases, the misses being maps with fewer than
+within tolerance in 6 of 8 (NV), 5 of 8 (quantum dot), 5 of 8 (trapped ion) and 5 of 8 (Rydberg, judged on the observable Stark curvatures) cases, the misses being maps with fewer than
 about twenty usable features, which the report flags as low confidence. Adding a
 platform means writing its transition frequencies in `models.py` and declaring its control axis; the
 extraction, robust fitting, hold-out verification, unexplained-feature and next-measurement logic are shared.

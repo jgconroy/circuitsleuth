@@ -88,6 +88,12 @@ PLATFORMS = {
 }
 
 
+def to_MHz(family_or_platform: str) -> float:
+    """Multiply a frequency difference in the platform's native unit by this to get MHz."""
+    pl = family_or_platform if family_or_platform in PLATFORMS else platform_of(family_or_platform)
+    return 1.0 if PLATFORMS[pl].get("freq_unit", "GHz") == "MHz" else 1e3
+
+
 def platform_scales(platform: str) -> dict:
     c = PLATFORMS[platform]["scale"]
     return dict(c_local=c, c_global=c * 20 / 3, df_tol=c * 20 / 3, flat_tol=c * 5 / 3)

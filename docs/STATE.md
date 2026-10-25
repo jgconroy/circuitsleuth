@@ -148,6 +148,8 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
   Known parameters to get α. Recovery: curvatures within 1 %, dfs 11.95 (12), x0 0.1207 (0.12).
 - Frequency units are per platform (`PLATFORMS[...]["freq_unit"/"freq_label"]`, MHz for ion/atom); all numeric code is unit-agnostic.
 - URL params now: `?platform=ion&demo=J`, `?demo=A&load=1`.
+- Blind (8 maps each): ion family 8/8, params 5/8; atom family 8/8, curvatures/dfs/x0 within tolerance 5/8. ~4 s/map.
+- Unit bug fixed: RMS-to-MHz conversion now uses `models.to_MHz(family)` (1 for MHz platforms); the ion/atom hero had shown 1000× values.
 
 ## 5. Pending / in progress (check before starting new work)
 - (done Sat ~19:30) Circuit blind rerun with the validity-fixed generator: family **7/10**, params <5 % 2/10 (unchanged causes: fixed-transmon

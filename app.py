@@ -615,7 +615,8 @@ if rep and rep.get("status") == "ok":
     # ---- D. evidence
     theme.md(theme.section("Evidence", "annotated map", "Explained features are filled green, unexplained ones hollow red; numbered amber boxes are where to look next."))
     show_ev = st.toggle("Show held-out and residual evidence", value=True)
-    _look = agent.prune_look_here([n for n in rep["next_measurements"] if n["kind"] == "look_here"], (float(min(rep["x_grid"])), float(max(rep["x_grid"]))), tuple(rep["band_GHz"]))
+    _look = agent.prune_look_here([n for n in rep["next_measurements"] if n["kind"] == "look_here"], (float(min(rep["x_grid"])), float(max(rep["x_grid"]))), tuple(rep["band_GHz"]),
+                                  vis=models.line_weights(rep["best"]["family"]))
     rep["next_measurements"] = [n for n in rep["next_measurements"] if n["kind"] != "look_here"] + _look  # older saved reports predate the pruning
     boxes = _look[:5]
     ev_map_slot = st.empty()  # drawn after the operating-point tool below has chosen its markers

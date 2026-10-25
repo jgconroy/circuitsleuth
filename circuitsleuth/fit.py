@@ -201,7 +201,7 @@ class FitResult:
             params={k: round(v, 5) for k, v in self.params.items()},
             sigma={k: round(v, 5) for k, v in self.sigma.items()},
             inlier_frac=round(self.inlier_frac, 4),
-            rms_inliers_MHz=round(1e3 * self.rms_inliers, 2),
+            rms_inliers_MHz=round(models.to_MHz(self.hyp.family) * self.rms_inliers, 2),
             holdout=self.holdout,
             score=round(self.score, 4),
             loss=round(self.loss, 5),
@@ -416,7 +416,7 @@ def holdout_check(points: np.ndarray, result: FitResult, band: tuple[float, floa
     out = dict(
         n_test_points=int(len(test)),
         inlier_frac=float(np.sum(obj_t.w[inl])),
-        rms_MHz=float(1e3 * np.sqrt(np.mean(r[inl] ** 2))) if inl.any() else float("nan"),
+        rms_MHz=float(models.to_MHz(result.hyp.family) * np.sqrt(np.mean(r[inl] ** 2))) if inl.any() else float("nan"),
         param_shift_rel={n: float(abs(r_train.params[n] - result.params[n]) / (abs(result.params[n]) + 1e-12)) for n in result.params},
     )
     result.holdout = out

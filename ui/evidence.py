@@ -226,6 +226,14 @@ def _label_order(labels) -> list[str]:
 
 
 # ----------------------------------------------------------------------------- 1. residual strip
+def _to_MHz(report) -> float:
+    try:
+        from circuitsleuth import models as _m
+        return _m.to_MHz(report["best"]["family"])
+    except Exception:
+        return 1e3
+
+
 def residual_figure(report: dict, c_local: float = 0.012, height: int = 220) -> go.Figure | None:
     """data - model (MHz) for every detected feature against the nearest predicted line, on the map's x range.
 
@@ -237,7 +245,7 @@ def residual_figure(report: dict, c_local: float = 0.012, height: int = 220) -> 
     if len(P) == 0 or not lines:
         return None
     resid, label, pred = _nearest_line(report, P)
-    r = 1e3 * resid
+    r = _to_MHz(report) * resid
     ok = np.isfinite(r)
     inl = _inlier_mask(report, len(P))
     if inl is None:
@@ -451,7 +459,7 @@ def crossing_zoom_figure(report: dict, image, x, f, height: int = 360) -> go.Fig
             ya, yb = float(_interp(xw, d01, np.array([xc]))[0]), float(_interp(xw, dres, np.array([xc]))[0])
         if np.isfinite(ya) and np.isfinite(yb):
             ylo, yhi = min(ya, yb), max(ya, yb)
-            gap = 1e3 * (yhi - ylo)
+            gap = _to_MHz(report) * (yhi - ylo)
             gaps.append(round(gap, 1))
             cap = 0.012
             for (xa, xb, y0, y1) in ((xc, xc, ylo, yhi), (xc - cap, xc + cap, ylo, ylo), (xc - cap, xc + cap, yhi, yhi)):

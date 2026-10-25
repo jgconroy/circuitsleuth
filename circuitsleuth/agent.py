@@ -119,7 +119,7 @@ def _score(res: fit.FitResult, pts_all, ids, flat, band, c_local, model_kw=None)
     ts -= 0.3 * missing_line_penalty(res, pts_all, band, c_local)
     # complexity penalty + precision tie-break: a model that explains the same features with a 4 MHz residual
     # beats a look-alike that needs 15 MHz
-    rms_pen = min(float(np.nan_to_num(res.rms_inliers, nan=0.03)) * 1e3, 30.0) / 300.0
+    rms_pen = min(float(np.nan_to_num(res.rms_inliers, nan=0.03)) * models.to_MHz(res.hyp.family), 30.0) / 300.0  # precision penalty in MHz
     return float(ts - 0.02 * len(res.params) - rms_pen), inl
 
 
@@ -144,16 +144,18 @@ def unexplained_features(pts_all, ids, inlier_all, flat, qubit_line=None) -> lis
     return out
 
 
-def prune_look_here(look: list[dict], x_range: tuple[float, float], band: tuple[float, float], max_area_frac: float = 0.2) -> list[dict]:
+def prune_look_here(look: list[dict], x_range: tuple[float, float], band: tuple[float, float], max_area_frac: float = 0.2, vis: dict | None = None) -> list[dict]:
     """A suggestion is only useful if it points somewhere specific: drop boxes covering more than
-    `max_area_frac` of the map and the weak thermal 1-2 line unless its box is small."""
+    `max_area_frac` of the map; weak lines (nominal visibility < 0.3, e.g. the thermal 1-2 line or second-order
+    sidebands) only earn a box when it is small."""
     area = max((x_range[1] - x_range[0]) * (band[1] - band[0]), 1e-12)
     keep = []
     for o in look:
         a = (o["x_hi"] - o["x_lo"]) * (o["f_hi"] - o["f_lo"]) / area
         if a > max_area_frac:
             continue
-        if o["line"] == "1-2" and a > 0.05:
+        weak = (vis or {}).get(o["line"], 1.0) < 0.3 or o["line"] == "1-2"
+        if weak and a > 0.05:
             continue
         keep.append(o)
     return keep
@@ -208,7 +210,7 @@ def next_measurements(res: fit.FitResult, pts_all, band, x_grid, c_local, line_w
     # keep the most useful suggestions: 0-1 first, then by run length; drop boxes that would cover the map
     prio = {"0-1": 0, "0-2": 1, "0-2/2ph": 2, "1-2": 3, "0-3": 4}
     look = [o for o in out if o["kind"] == "look_here"]
-    look = prune_look_here(look, (float(np.min(x_grid)), float(np.max(x_grid))), band)
+    look = prune_look_here(look, (float(np.min(x_grid)), float(np.max(x_grid))), band, vis=models.line_weights(res.hyp.family))
     look.sort(key=lambda o: (prio.get(o["line"], 9), -(o["x_hi"] - o["x_lo"])))
     out = [o for o in out if o["kind"] != "look_here"] + look[:4]
     # poorly determined parameters
