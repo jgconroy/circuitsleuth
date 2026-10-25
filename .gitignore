@@ -8,3 +8,4 @@ data/synth/
 .streamlit/secrets.toml
 artifacts/classifier_v*.pt
 artifacts/train_log*.txt
+artifacts/evidence_preview_*.html
