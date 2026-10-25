@@ -12,6 +12,8 @@ The detached worker is aware of its deadline:
   5. kills the training 10 minutes before the deadline if it is still running; the best checkpoint stays.
 In the morning copy classifier_best.pt and classifier_best.json back into the repo's artifacts/ as classifier.pt / classifier.json
 if their held-out accuracy beats the current ones (artifacts/classifier.json).  overnight_log.txt tells the whole story."""
+from __future__ import annotations
+
 import os
 
 for _v in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS"):
