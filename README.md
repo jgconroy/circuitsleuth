@@ -147,8 +147,8 @@ near Φ = ½ below 1.2 GHz, which is exactly where the paper's inset lives).
 
 ### Blind test (`demo.py`, 10 random hidden circuits from the synthetic generator, harsh settings: up to 3 spurs, dropouts, noise up to 10 %)
 
-Family identified in 6 of 10. Both flux-tunable circuits without a resonator were recovered to ≤ 1.2 % in
-every parameter including the flux period. Fixed transmons were always recognised, but when the generator
+Family identified in 7 of 10 (latest run, generator with the in-band validity rule). Clean flux-tunable circuits without a
+resonator are recovered to about 1 % in every parameter including the flux period. Fixed transmons were always recognised, but when the generator
 dropped the two-photon line only f01 is observable and EJ/EC come back with large stated uncertainties.
 The failures are tunable-transmon-plus-resonator maps mistaken for fluxonium (two cases) and one very
 faint fluxonium: these are the cases we would want more data for, and the report says so. Mean runtime in

@@ -70,7 +70,7 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
 - NV demo F: D 2.86996 (2.870), E 0.0041 (0.004), theta/phi symmetry-equivalent, field_scale 119.9 (120), x0 0.1007 (0.1), seconds.
 - DQD demo H: t_c 2.50006, lever 8.99996, x0 0.15001, seconds.
 ### Blind tests (random hidden maps, harsh generator: spurs, dropouts, noise <=10 %)
-- Circuits (10 maps, before the generator validity fix): family 6/10, all params <5 % in 2/10; clean tunable circuits <=1.2 %;
+- Circuits (10 maps): family 6/10 before and **7/10 after** the generator validity fix (same seeds), all params <5 % in 2/10; clean tunable circuits <=1.2 %;
   fixed transmons family-right but EJ/EC degenerate when the 2-photon line is absent; misses = tunable+resonator <-> fluxonium
   confusion (2), one faint fluxonium. Runtime 5-9 min/map when the laptop is shared. A rerun with the validity fix was
   started Sat ~12:30 (log in the session scratchpad; writes `artifacts/blind_results.json`) - first 3 rows identical to before.
@@ -109,7 +109,9 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
 - Shell heredocs: never nest an `EOF` heredoc inside another `EOF` heredoc (this file was first written that way and the shell choked).
 
 ## 5. Pending / in progress (check before starting new work)
-- Circuit blind rerun (background, started Sat ~12:30): results -> `artifacts/blind_results.json`; update README Results if different.
+- (done Sat ~19:30) Circuit blind rerun with the validity-fixed generator: family **7/10**, params <5 % 2/10 (unchanged causes: fixed-transmon
+  EJ/EC degeneracy without a 2-photon line; tunable+resonator mistaken for fluxonium in 2 maps; one faint fluxonium -> transmon+res).
+  Mean 2120 s/map only because the laptop was shared with training; `artifacts/blind_results.json`. README updated.
 - (done Sat ~18:00) UI lab features landed and verified headlessly on circuit/NV/DQD (`scripts/apptest_quick.py` + platform runs):
   known-parameter constraints (toggle inside Search), derived table, operating-point tool, exports (JSON/CSV/HTML/scqubits),
   HDF5 + 2-D grid CSV import (`ui/importers.py`), design comparison (toggle inside Explain), session history. AppTest cannot

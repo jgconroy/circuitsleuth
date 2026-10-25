@@ -3,32 +3,32 @@
   "case": 0,
   "truth": "fluxonium",
   "n_points": 266,
-  "runtime_s": 300.8,
+  "runtime_s": 442.0,
   "found": "transmon+res",
   "family_ok": false,
-  "max_rel_err": 2.008,
-  "max_rel_err_all": 2.008,
+  "max_rel_err": 2.0,
+  "max_rel_err_all": 2.0,
   "errs": {
-   "EJ": 2.008,
+   "EJ": 2.0,
    "EC": 0.386
   },
-  "track_score": -0.1222,
+  "track_score": -0.1155,
   "holdout": 0.45597410957027956
  },
  {
   "case": 1,
   "truth": "transmon+res",
   "n_points": 261,
-  "runtime_s": 759.2,
+  "runtime_s": 1207.0,
   "found": "transmon+res",
   "family_ok": true,
   "max_rel_err": 0.632,
-  "max_rel_err_all": 0.706,
+  "max_rel_err_all": 0.815,
   "errs": {
    "EJ": 0.632,
-   "EC": 0.616,
+   "EC": 0.615,
    "fr": 0.354,
-   "g": 0.706
+   "g": 0.815
   },
   "track_score": 0.5683,
   "holdout": 0.8589081268530934
@@ -37,7 +37,7 @@
   "case": 2,
   "truth": "tunable_transmon",
   "n_points": 139,
-  "runtime_s": 313.3,
+  "runtime_s": 215.9,
   "found": "tunable_transmon",
   "family_ok": true,
   "max_rel_err": 0.012,
@@ -55,23 +55,23 @@
   "case": 3,
   "truth": "tunable_transmon+res",
   "n_points": 149,
-  "runtime_s": 1021.8,
+  "runtime_s": 6681.1,
   "found": "fluxonium",
   "family_ok": false,
-  "max_rel_err": 2.584,
-  "max_rel_err_all": 2.584,
+  "max_rel_err": 2.031,
+  "max_rel_err_all": 2.031,
   "errs": {
-   "EC": 0.036,
-   "period": 2.584
+   "EC": 0.2,
+   "period": 2.031
   },
-  "track_score": 0.2727,
-  "holdout": 0.6650041923592791
+  "track_score": 0.2052,
+  "holdout": 0.5959498789804399
  },
  {
   "case": 4,
   "truth": "fluxonium",
   "n_points": 255,
-  "runtime_s": 665.2,
+  "runtime_s": 9202.9,
   "found": "fluxonium",
   "family_ok": true,
   "max_rel_err": 0.006,
@@ -82,64 +82,64 @@
    "EL": 0.001,
    "period": 0.0
   },
-  "track_score": 0.2206,
+  "track_score": 0.2468,
   "holdout": 0.943006646886397
  },
  {
   "case": 5,
   "truth": "transmon",
   "n_points": 200,
-  "runtime_s": 180.4,
+  "runtime_s": 282.8,
   "found": "transmon+res",
   "family_ok": true,
   "max_rel_err": 0.345,
   "max_rel_err_all": 0.345,
   "errs": {
    "EJ": 0.345,
-   "EC": 0.025
+   "EC": 0.026
   },
-  "track_score": 0.7966,
+  "track_score": 0.7969,
   "holdout": 0.9804557285869981
  },
  {
   "case": 6,
   "truth": "tunable_transmon+res",
   "n_points": 117,
-  "runtime_s": 714.5,
+  "runtime_s": 1320.2,
   "found": "fluxonium",
   "family_ok": false,
-  "max_rel_err": 0.498,
-  "max_rel_err_all": 0.498,
+  "max_rel_err": 1.644,
+  "max_rel_err_all": 1.644,
   "errs": {
-   "EC": 0.498,
-   "period": 0.352
+   "EC": 1.644,
+   "period": 0.718
   },
-  "track_score": 0.1826,
+  "track_score": 0.0606,
   "holdout": 0.7119480336204158
  },
  {
   "case": 7,
   "truth": "transmon+res",
   "n_points": 118,
-  "runtime_s": 496.2,
+  "runtime_s": 958.3,
   "found": "transmon+res",
   "family_ok": true,
-  "max_rel_err": 0.433,
-  "max_rel_err_all": 0.717,
+  "max_rel_err": 0.439,
+  "max_rel_err_all": 1.295,
   "errs": {
-   "EJ": 0.317,
-   "EC": 0.433,
-   "fr": 0.138,
-   "g": 0.717
+   "EJ": 0.318,
+   "EC": 0.439,
+   "fr": 0.139,
+   "g": 1.295
   },
-  "track_score": 0.7431,
+  "track_score": 0.7518,
   "holdout": 0.9136117159975462
  },
  {
   "case": 8,
   "truth": "transmon",
   "n_points": 212,
-  "runtime_s": 328.2,
+  "runtime_s": 497.7,
   "found": "transmon+res",
   "family_ok": true,
   "max_rel_err": 2.617,
@@ -148,22 +148,25 @@
    "EJ": 2.617,
    "EC": 0.23
   },
-  "track_score": 0.5437,
+  "track_score": 0.559,
   "holdout": 0.8311198253892808
  },
  {
   "case": 9,
   "truth": "tunable_transmon",
   "n_points": 241,
-  "runtime_s": 723.1,
-  "found": "transmon",
-  "family_ok": false,
-  "max_rel_err": 0.239,
-  "max_rel_err_all": 0.239,
+  "runtime_s": 395.1,
+  "found": "tunable_transmon",
+  "family_ok": true,
+  "max_rel_err": 0.822,
+  "max_rel_err_all": 0.822,
   "errs": {
-   "EC": 0.239
+   "EJmax": 0.822,
+   "EC": 0.201,
+   "d": 0.013,
+   "period": 0.003
   },
-  "track_score": -0.0749,
-  "holdout": 0.45228456365601977
+  "track_score": -0.0565,
+  "holdout": 0.4654211813792538
  }
 ]
