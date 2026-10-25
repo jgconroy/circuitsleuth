@@ -18,7 +18,7 @@ DEMOS = {
             spurs=[dict(f=5.1, amp=0.9, sideband=0.0)], seed=1),
         "B · fluxonium": dict(family="fluxonium", params=dict(EJ=6.0, EC=1.0, EL=0.6), period=1.1, offset=-0.3, f_lo=0.3, f_hi=9.0, spurs=[], seed=3),
         "C · fixed-frequency transmon with LO leakage": dict(family="transmon", params=dict(EJ=15.0, EC=0.28), period=1.0, offset=0.0, f_lo=3.0, f_hi=8.0,
-                                                              spurs=[dict(f=6.2, amp=0.6, sideband=0.1)], seed=2),
+                                                              spurs=[dict(f=7.1, amp=0.35, sideband=0.0)], seed=2),
         "D · surprise: random hidden circuit": None,
         "E · REAL DATA: fluxonium device A, Nguyen et al. PRX 2019 (arXiv:1810.11006)": "real",
     },
@@ -37,7 +37,7 @@ DEMOS = {
 def make_demo(platform: str, name: str, seed: int | None = None):
     """Return (truth, dict(image, x, f)) for a demo entry."""
     spec = DEMOS[platform][name]
-    cfg = synth.SynthConfig(nx=81, nf=400 if platform != "nv" else 500)
+    cfg = synth.SynthConfig(nx=81, nf=400 if platform != "nv" else 500, dropout_max_segments=1)  # one readout blind spot at most
     if spec == "real":
         d = np.load("data/demo/nguyen2019_devA.npz")
         truth = dict(family="fluxonium", platform="circuit", coupled=False, params=dict(EJ=float(d["truth_EJ"]), EC=float(d["truth_EC"]), EL=float(d["truth_EL"])), period=1.0, offset=0.0, spurs=[],

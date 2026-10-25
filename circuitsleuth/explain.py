@@ -36,9 +36,10 @@ def template(report: dict) -> dict:
     if "period" in pp:
         cal = f" The flux axis calibrates to one flux quantum per {pp['period']} of the control unit (offset {pp['offset']})."
     ho = b.get("holdout") or {}
+    expl = b.get("explained_dynamic", b.get("track_score", 0.0))
     s = (f"Best explanation: a {b['hypothesis']} with {circuit}.{cal} "
-         f"It accounts for {100*b['track_score']:.0f}% of the detected features"
-         + (f" and {100*ho['inlier_frac']:.0f}% of features in flux columns held out of the fit (RMS {ho['rms_MHz']:.1f} MHz)." if ho else "."))
+         f"It accounts for {100*expl:.0f}% of the coherent spectral features"
+         + (f" and {100*ho['inlier_frac']:.0f}% of the features in flux columns held out of the fit (held-out RMS {ho['rms_MHz']:.1f} MHz)." if ho else "."))
     caveats = []
     conf = b.get("confidence") or {}
     if conf and conf.get("level") != "high":

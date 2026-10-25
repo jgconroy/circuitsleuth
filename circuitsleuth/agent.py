@@ -42,8 +42,12 @@ class AgentConfig:
 
 
 def _emit(progress: Progress | None, kind: str, **payload):
+    """UI callbacks must never be able to abort a fit: swallow their exceptions (they are cosmetic)."""
     if progress:
-        progress(kind, payload)
+        try:
+            progress(kind, payload)
+        except Exception:
+            pass
 
 
 def rasterize(points: np.ndarray, nf: int = 400, nx: int | None = None, lw: float = 0.02):
@@ -119,7 +123,7 @@ def _score(res: fit.FitResult, pts_all, ids, flat, band, c_local, model_kw=None)
     return float(ts - 0.02 * len(res.params) - rms_pen), inl
 
 
-def unexplained_features(pts_all, ids, inlier_all, flat) -> list[dict]:
+def unexplained_features(pts_all, ids, inlier_all, flat, qubit_line=None) -> list[dict]:
     out = []
     for s in extract.summarize_tracks(pts_all, ids):
         m = ids == s["track"]
@@ -129,6 +133,11 @@ def unexplained_features(pts_all, ids, inlier_all, flat) -> list[dict]:
         s = dict(s, unexplained_frac=round(frac_out, 2))
         if s["flat"] or flat[m].mean() > 0.5:
             s["interpretation"] = "flux-independent line: likely pump/LO leakage, a mixer spur, or a fixed-frequency neighbour (resonator, TLS, other qubit)"
+            if qubit_line is not None:
+                d = np.asarray(qubit_line, float) - s["f_mean"]
+                ok = np.isfinite(d)
+                if ok.sum() > 1 and np.any(d[ok][:-1] * d[ok][1:] <= 0):
+                    s["interpretation"] = "flux-independent line that the qubit crosses with no visible avoided crossing: a pump/LO/mixer tone or an uncoupled mode (g below the linewidth), not a coupled resonator"
         else:
             s["interpretation"] = "flux-dependent feature not in the model: candidate neighbouring tunable mode, higher transition, or sideband of a qubit line"
         out.append(s)
@@ -418,7 +427,12 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
     if cfg.holdout:
         pts_fit = _fit_points_for(best.hyp, points, flat)
         coh = pts_fit[np.isin(pts_fit[:, 0] * 1e6 + pts_fit[:, 1], (points[seg_ok, 0] * 1e6 + points[seg_ok, 1]))] if seg_ok.sum() >= 20 else pts_fit
-        fit.holdout_check(coh if len(coh) >= 20 else pts_fit, best, band, c_local=cfg.c_local)
+        used = coh if len(coh) >= 20 else pts_fit
+        fit.holdout_check(used, best, band, c_local=cfg.c_local)
+        _cols = np.unique(used[:, 0])
+        holdout_columns = [float(v) for v in _cols[::3]]  # same rule as fit.holdout_check
+    else:
+        holdout_columns = []
         _emit(progress, "verify", holdout=best.holdout)
 
     # ---- 6. report
@@ -444,7 +458,7 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
         dyn = seg_ok if seg_ok.sum() >= 5 else np.ones(len(points), bool)
     w = points[dyn, 2]
     explained_dynamic = float(np.sum(w * best_inl[dyn]) / max(np.sum(w), 1e-12))
-    unexpl = unexplained_features(points, ids, best_inl, flat)
+    unexpl = unexplained_features(points, ids, best_inl, flat, qubit_line=best.lines.get("0-1"))
     nxt = next_measurements(best, points, band, x_grid, cfg.c_local)
     report = dict(
         status="ok",
@@ -463,6 +477,7 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
         inlier_mask=best_inl.tolist(),
         points=points.tolist(),
         track_ids=ids.tolist(),
+        holdout_columns=holdout_columns,
     )
     try:
         from . import derived

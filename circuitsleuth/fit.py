@@ -381,7 +381,21 @@ def fit_hypothesis(points, hyp, band, bounds=None, init=None, c_global=0.08, c_l
             best = res
         if best.inlier_frac > 0.97:
             break
-    return best
+    return _normalise_offset(best, x_all)
+
+
+def _normalise_offset(res: "FitResult", x_all: np.ndarray) -> "FitResult":
+    """The flux offset is defined modulo the period: report the equivalent value nearest the data centre."""
+    if "period" in res.params and "offset" in res.params:
+        P = res.params["period"]
+        mid = 0.5 * (float(np.min(x_all)) + float(np.max(x_all)))
+        off = res.params["offset"]
+        off2 = off - P * np.round((off - mid) / P)
+        if off2 != off:
+            res.params["offset"] = float(off2)
+            names = res.hyp.names
+            res.theta = to_theta(res.params, names)
+    return res
 
 
 def holdout_check(points: np.ndarray, result: FitResult, band: tuple[float, float], frac: float = 0.3, c_local: float = 0.012, model_kw: dict | None = None) -> dict:

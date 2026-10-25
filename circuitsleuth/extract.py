@@ -32,6 +32,7 @@ def extract_points(image: np.ndarray, x: np.ndarray, f: np.ndarray, snr: float =
     sqrt(k) in signal-to-noise while column-wise noise does not, at the price of blurring steep lines.
     """
     img = normalise(image)
+    snr_lo = 0.75 * snr  # faint peaks are kept only when a neighbouring column has a peak nearby (continuity)
     if smooth_cols > 1:
         k = int(smooth_cols)
         kern = np.ones(k) / k
@@ -43,13 +44,24 @@ def extract_points(image: np.ndarray, x: np.ndarray, f: np.ndarray, snr: float =
         col = img[:, c]
         # height is measured from the per-column baseline in robust-sigma units, so Gaussian
         # noise almost never clears it; prominence alone lets ~4-sigma noise wiggles through.
-        peaks, props = find_peaks(col, height=snr, prominence=0.5 * snr, distance=min_sep_px)
+        peaks, props = find_peaks(col, height=snr_lo, prominence=0.5 * snr_lo, distance=min_sep_px)
         if peaks.size == 0:
             continue
         prom = props["peak_heights"]
         order = np.argsort(prom)[::-1][:max_per_column]
         for k in order:
             p = peaks[k]
+            if prom[k] < snr:  # faint: require a confident-or-faint peak within ~60 MHz in an adjacent column
+                ok = False
+                for cc in (c - 1, c + 1):
+                    if 0 <= cc < img.shape[1]:
+                        lo_i, hi_i = max(p - 4, 0), min(p + 5, len(col))
+                        seg = img[lo_i:hi_i, cc]
+                        if seg.size and seg.max() >= snr_lo and seg.argmax() not in (0, seg.size - 1):
+                            ok = True
+                            break
+                if not ok:
+                    continue
             if 0 < p < len(col) - 1:
                 y0, y1, y2 = col[p - 1], col[p], col[p + 1]
                 denom = y0 - 2 * y1 + y2

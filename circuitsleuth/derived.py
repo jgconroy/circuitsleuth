@@ -75,16 +75,32 @@ def derived_quantities(best: dict, x_range: tuple[float, float] | None = None) -
                     xs.sort()
                     for xv, lab in xs[:6]:
                         out.append(dict(name=f"sweet spot {lab}", value=xv, unit="control units", note="first-order flux-insensitive bias point"))
+        if fam != "transmon":
+            # first-order 1/f flux-noise dephasing at the steepest point (Ithier et al. 2005 form, f_ir = 1 Hz, t = 10 µs)
+            slope_rad = 2 * np.pi * abs(df[k]) * 1e9  # rad/s per Phi0
+            fac = np.sqrt(2 * abs(np.log(2 * np.pi * 1.0 * 10e-6)))
+            for A in (1e-6, 5e-6):
+                tphi = 1.0 / (fac * A * slope_rad)
+                out.append(dict(name=f"Tφ at the steepest flux point for 1/f flux noise of {A*1e6:.0f} µΦ₀", value=1e6 * tphi, unit="µs",
+                                note="first-order estimate; at a sweet spot the first-order term vanishes"))
         if coupled:
             fr, g = p["fr"], p["g"]
-            delta = f01[0] - fr
-            alpha = f12[0] - f01[0]
-            out.append(dict(name="qubit–resonator detuning Δ at Φ = 0", value=delta, unit="GHz", note="f01 − fr"))
-            out.append(dict(name="g / Δ", value=abs(g / delta) if delta else float("nan"), unit="", note="dispersive regime needs ≪ 1"))
-            if delta and abs(delta + alpha) > 1e-9:
-                chi = g**2 / delta * alpha / (delta + alpha)
-                out.append(dict(name="dispersive shift χ (transmon formula)", value=1e3 * chi, unit="MHz", note="g²/Δ · α/(Δ+α)"))
-            out.append(dict(name="Purcell factor (Δ/g)²", value=(delta / g) ** 2 if g else float("nan"), unit="", note="T1,Purcell = (Δ/g)² / κ; multiply by 1/κ of your resonator"))
+            qp = {k: v for k, v in circuit.items() if k not in ("fr", "g")}
+            spots = [(0.0, "Φ = 0")] if fam == "transmon" else [(0.0, "Φ = 0"), (0.5, "Φ = ½")]
+            for phi0, lab in spots:
+                E, labels = models.dressed_energies(fam, {**qp, "fr": fr, "g": g}, np.array([phi0]), kq=6, kr=4, **{kk: vv for kk, vv in kw.items() if kk in ("ncut", "cutoff")})
+                e00 = models.dressed_level(E, labels, 0, 0)[0]; e01 = models.dressed_level(E, labels, 0, 1)[0]
+                e10 = models.dressed_level(E, labels, 1, 0)[0]; e11 = models.dressed_level(E, labels, 1, 1)[0]
+                chi_exact = (e11 - e10) - (e01 - e00)
+                f01_here = f01[0] if phi0 == 0.0 else f01[-1]
+                delta = f01_here - fr
+                ratio = abs(g / delta) if delta else float("inf")
+                out.append(dict(name=f"qubit–resonator detuning Δ at {lab}", value=delta, unit="GHz", note="f01 − fr"))
+                out.append(dict(name=f"g / Δ at {lab}", value=ratio, unit="", note="dispersive regime needs ≪ 1" + ("; NOT dispersive here" if ratio > 0.2 else "")))
+                out.append(dict(name=f"dispersive shift χ at {lab} (exact diagonalisation)", value=1e3 * chi_exact, unit="MHz",
+                                note="(E11 − E10) − (E01 − E00) from the dressed spectrum; valid even near the crossing"))
+                if ratio < 0.2:
+                    out.append(dict(name=f"Purcell factor (Δ/g)² at {lab}", value=(delta / g) ** 2 if g else float("nan"), unit="", note="T1,Purcell = (Δ/g)² / κ; multiply by 1/κ of your resonator"))
     elif pl == "nv":
         b = np.array([np.sin(p["theta"]) * np.cos(p["phi"]), np.sin(p["theta"]) * np.sin(p["phi"]), np.cos(p["theta"])])
         proj = models.NV_AXES @ b

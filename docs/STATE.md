@@ -108,6 +108,24 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
 - `kill`/`pkill` may be blocked by the sandbox classifier; background jobs via `nohup ... &` plus `until grep` waiters work.
 - Shell heredocs: never nest an `EOF` heredoc inside another `EOF` heredoc (this file was first written that way and the shell choked).
 
+### Sat evening: judge critiques and fixes (results)
+- Two fresh-eyes critiques (design lead, SC-qubit PI) rated the UI 4/10 and credibility 6/10. Their specs are being implemented
+  (verdict band hero, hypothesis race, evidence map with legend outside + numbered look-here badges, residual strip, held-out overlay,
+  avoided-crossing zoom, pull plot, spec-sheet cards, IBM Plex typography, hide toast/log/internals). New module `ui/evidence.py`.
+- Live-run bug found and fixed: Plotly charts redrawn inside `st.empty()` need a UNIQUE key per redraw (`key=f"map_live_{n}"`), otherwise
+  StreamlitDuplicateElementId/Key is raised inside the progress callback. `agent._emit` now swallows callback exceptions so a UI error can
+  never abort a fit. AppTest does NOT catch this class of bug: verify live runs with `scripts/screenshot.py ... --click "Identify circuit"`
+  against a server started on a spare port (the user's own server on 8501 does not reload library modules; restart it after backend edits).
+- Extractor: faint peaks (3–4σ) are now kept when an adjacent column has a peak within ~60 MHz (continuity). Demo A 0-1 detection went from
+  ~50 to 64 of 78 rendered columns. Root cause of the "look here where data exists" complaint was partly real dropouts in the synthetic map
+  and partly faint-edge misses; hand-picked demos now render with at most one dropout segment (`ui/demos.py`).
+- Demo C spur changed to a single weak 7.1 GHz tone (the old 6.2 GHz tone with sidebands mimicked a transmon ladder and the fast preset
+  locked onto it; a "resonator" then explained the real line). Fixed transmon maps are inherently ambiguous against spur families.
+- Physics: offset now reported modulo period near the data centre; χ computed by exact diagonalisation at Φ = 0 and Φ = ½ with a
+  "NOT dispersive" flag when g/Δ > 0.2; first-order 1/f flux-noise Tφ at the steepest point for 1 and 5 µΦ₀; flat lines the qubit crosses
+  without splitting are labelled "uncoupled mode / pump tone"; report carries `holdout_columns`; summary text uses the same numbers as tiles.
+- `?demo=C&load=1` URL parameters select a demo and auto-load its saved result (pitch links, screenshots).
+
 ## 5. Pending / in progress (check before starting new work)
 - (done Sat ~19:30) Circuit blind rerun with the validity-fixed generator: family **7/10**, params <5 % 2/10 (unchanged causes: fixed-transmon
   EJ/EC degeneracy without a 2-photon line; tunable+resonator mistaken for fluxonium in 2 maps; one faint fluxonium -> transmon+res).
