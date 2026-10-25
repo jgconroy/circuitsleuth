@@ -353,6 +353,16 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
   tight-σ numbers (3.03 ± 0.06 …) came from c_local 0.012 with 27 % inliers.  README / Devpost text / figure updated to the new numbers.
   NOTE for the user: the Devpost "Accomplishments" sentence quotes these numbers; update it if it was pasted before ~04:30.
 
+### Sun ~05:40 PDT: demo sweep (user asleep ~05:10–08:10), study guide
+- `scratchpad/demo_sweep.py`: every preset on every platform with the live fast preset (classifier on for circuits).  Explained fraction:
+  A 0.96 live (precomputed 0.98; the fast live run misses the resonator → "tunable transmon", precomputed is what the demo shows),
+  B 1.00, C 0.90 (one 7.1 GHz spur, now ONE card after the unexplained-feature merge), D (seed 1) 1.00, E 0.80 (real data; artefacts),
+  atom L 0.99 / M 0.98, ion J 1.00 / K 0.99, NV F 0.99 / G 0.99, dot H 1.00 / I 0.99.  Nothing needed fixing beyond the merge.
+- `agent.unexplained_features` merges tracks whose frequency ranges overlap within flat_tol (`merged_tracks` count kept).
+- `docs/study_guide.md` (subagent, ~12.7k words): pipeline, every plot, platforms, CS/stats glossary, results, 30 judge Q&As.
+- Testing whether maxiter 40–50 makes the live fast run of A accept the resonator (`scratchpad/chk_A_live.log`); adopt in the app's fast
+  preset only if C stays under ~2 min.
+
 ## 5. Pending / in progress (check before starting new work)
 - (done Sat ~19:30) Circuit blind rerun with the validity-fixed generator: family **7/10**, params <5 % 2/10 (unchanged causes: fixed-transmon
   EJ/EC degeneracy without a 2-photon line; tunable+resonator mistaken for fluxonium in 2 maps; one faint fluxonium -> transmon+res).
