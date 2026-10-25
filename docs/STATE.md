@@ -168,6 +168,14 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
 ### Sun ~01:00: Lanthanum classifier adopted
 - 190k maps / 30 epochs / width 2, crossing_visible target: fam_acc 0.936, crossing acc 0.874, param rmse 0.216 (was 0.888 / 0.587 / 0.230). Now `artifacts/classifier.pt`.
 
+### Sun ~02:00: autopilot + discrimination
+- `circuitsleuth/loop.py` run_loop(): digital twin = all extracted points of the full map; start with the first 40 % of columns; each round
+  identify(points, x=full grid) → design candidates on the full grid → add the best block's columns → refit. `scripts/run_loop.py A --fast`
+  precomputes `artifacts/loop_A.json` for the circuit demo (replay in the app); NV/dot/ion/atom run live in seconds. tests/test_loop.py (NV) passes.
+- `design.discriminate()`: single control value separating the best and runner-up families (σ units), preferring in-window/in-band; appended
+  to next_measurements as kind "discriminate" and folded into the confidence text.
+- Posterior sampling + coverage script are being built by a subagent (fit.sample_posterior, design_panel.posterior_figure, scripts/coverage.py).
+
 ## 5. Pending / in progress (check before starting new work)
 - (done Sat ~19:30) Circuit blind rerun with the validity-fixed generator: family **7/10**, params <5 % 2/10 (unchanged causes: fixed-transmon
   EJ/EC degeneracy without a 2-photon line; tunable+resonator mistaken for fluxonium in 2 maps; one faint fluxonium -> transmon+res).

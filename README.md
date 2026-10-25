@@ -93,6 +93,12 @@ NV centres and quantum dots, each with hidden demo circuits and a "surprise" ran
   information gain in bits (log-determinant ratio of the information matrix, discounted by line visibility and cost), names the
   parameter each sweep tightens most, and shows the parameter correlation matrix, which is where the EJ–EC degeneracy of a
   transmon shows up as a ±1 entry. This is Bayesian experimental design under the Laplace approximation, computed in 0.1 s.
+- **Model discrimination.** When two circuit families both fit, it names the single control value where their predicted
+  lines differ most (in units of the measurement precision), preferring a column inside the current window and band.
+- **Autopilot.** Closed-loop spectroscopy on a digital twin: start from the first 40 % of the sweep, identify, let the
+  information-gain design choose the next block of control values, measure it from the full map, refit, repeat. One
+  function reads the twin; a lab replaces it with an instrument driver. Live in seconds on NV / dot / ion / atom maps;
+  precomputed and replayable for the superconducting demo.
 - **Exports.** JSON report, fitted curves as CSV, the annotated map as HTML, and a scqubits snippet that rebuilds the fitted
   circuit in two lines.
 - **Real instrument files.** HDF5 (pick the 2-D dataset and axis vectors), 2-D CSV grids, point lists, NPZ, or a screenshot
