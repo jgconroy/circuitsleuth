@@ -273,7 +273,7 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
   `link_tracks` max_tol now scales with df_tol (5.6×; atoms were fragmented at the 0.45 MHz cap).  Only x0/f0 bounds are narrowed for atoms.
   Worst case 23 now right in the observable curvatures; 7/17/75 still wrong (second component not found in the tracks).
 - Test: `tests/test_platforms.py::test_geometric_priors_recover_dot_and_stark_parameters`.  8-map laptop reruns (Sun ~00:55): dot **8/8**
-  (was 5/8), atom 6/8 by demo.py's curvature rule, ion 7/8, NV 7/8.  Pending: QEC v4 reruns of dot and atom; `tests/test_agent.py` v5 (background).
+  (was 5/8), atom 6/8 by demo.py's curvature rule, ion 7/8, NV 7/8.  QEC v4 reruns (Sun ~00:15, `artifacts/qec_blind_{dot,atom}_v4.jsonl`): **dot 58 % → 78 %**, **atom 57 % → 63 %** within 5 %. Pending: `tests/test_agent.py` v5 (background).
 
 ## 5. Pending / in progress (check before starting new work)
 - (done Sat ~19:30) Circuit blind rerun with the validity-fixed generator: family **7/10**, params <5 % 2/10 (unchanged causes: fixed-transmon

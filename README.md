@@ -204,8 +204,8 @@ a map takes about 2 min with the 'fast' preset and 5–6 min with 'normal' (whic
 |---|---|---|---|---|
 | trapped ion | 200 / 200 | 86 % (was 74 % before the relabel step) | 1 s | radial frequency when the radial sidebands are faint |
 | NV centre | 200 / 200 | 72 % | 4 s | field direction 5–8 % off (near-degenerate orientations) |
-| quantum dot | 200 / 200 | 59 % → rerun pending with the geometric prior | 1 s | steep V with 10–30 visible points among spurs |
-| Rydberg atom | 200 / 200 | 57 % → rerun pending with the geometric prior | 2 s | components swapped or search stuck at a bound |
+| quantum dot | 200 / 200 | 78 % (was 58 % before the geometric prior) | 1 s | steep V with fewer than ~20 visible points among spurs |
+| Rydberg atom | 200 / 200 | 63 % (was 57 %) | 1 s | second Stark component lost among spurs; curvatures 5–8 % off |
 
 Parameters are judged with the symmetry-aware metrics of `run_blind.py` (NV field vector up to the tetrahedral symmetry, Rydberg
 Stark curvatures α·κ², offsets modulo the period). Tables: `artifacts/qec_blind_*.jsonl`; `python scripts/summarize_blind.py <files>`
