@@ -70,7 +70,7 @@ def correlation_matrix(F0: np.ndarray, names: list[str]):
     return np.clip(corr, -1, 1), cov
 
 
-def design_next_measurements(report: dict, band: tuple[float, float] | None = None, block: int = 6, top: int = 5, sigma_f: float | None = None) -> dict:
+def design_next_measurements(report: dict, band: tuple[float, float] | None = None, block: int = 6, top: int = 5, sigma_f: float | None = None, measured_x=None) -> dict:
     """Rank candidate sweeps (line, column block) by expected information gain.
 
     Returns dict(candidates=[{line, x_lo, x_hi, f_lo, f_hi, gain_bits, gain_per_column_bits, best_parameter,
@@ -87,6 +87,13 @@ def design_next_measurements(report: dict, band: tuple[float, float] | None = No
     gain_map: dict[str, np.ndarray] = {}
     cands = []
     n = len(x_cols)
+    unmeasured = np.ones(n, bool)
+    if measured_x is not None and len(measured_x):
+        mx = np.asarray(sorted(measured_x), float)
+        dx = float(np.median(np.diff(x_cols))) if n > 1 else 1.0
+        for c in range(n):
+            if np.min(np.abs(mx - x_cols[c])) < 0.5 * dx:
+                unmeasured[c] = False
     for li, name in enumerate(lines):
         inband = np.isfinite(L0[li]) & (L0[li] > band[0]) & (L0[li] < band[1])
         per_col = np.zeros(n)
@@ -100,7 +107,7 @@ def design_next_measurements(report: dict, band: tuple[float, float] | None = No
         # contiguous blocks of `block` columns
         for a in range(0, n, max(block // 2, 1)):
             b = min(a + block, n)
-            cols = [c for c in range(a, b) if inband[c]]
+            cols = [c for c in range(a, b) if inband[c] and unmeasured[c]]
             if len(cols) < max(3, block // 2):
                 continue
             FS = reg.copy()
