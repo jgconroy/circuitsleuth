@@ -527,7 +527,7 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
 
 def res_summary(res: fit.FitResult) -> dict:
     s = res.summary()
-    s["params_pretty"] = {k: f"{v:.4g} ± {res.sigma.get(k, float('nan')):.2g}" + (" GHz" if k in fit.LOG_PARAMS and k != "period" else "") for k, v in res.params.items()}
+    s["params_pretty"] = {k: f"{v:.4g} ± {res.sigma.get(k, float('nan')):.2g}" + ((" " + models.param_unit(res.hyp.family, k)) if models.param_unit(res.hyp.family, k) and k not in ("period", "offset", "x0") else "") for k, v in res.params.items()}
     return s
 
 

@@ -88,6 +88,17 @@ PLATFORMS = {
 }
 
 
+PARAM_UNITS = {"EJ": "GHz", "EC": "GHz", "EL": "GHz", "EJmax": "GHz", "fr": "GHz", "g": "GHz", "D": "GHz", "E": "GHz", "t_c": "GHz",
+               "lever_arm": "GHz per unit", "f_rad0": "MHz", "volt_scale": "MHz per √unit", "alpha1": "MHz/(V/cm)²", "alpha2": "MHz/(V/cm)²",
+               "dfs": "MHz", "f0": "MHz", "theta": "rad", "phi": "rad", "d": "", "period": "control units", "offset": "control units", "x0": "control units"}
+
+
+def param_unit(family: str, name: str) -> str:
+    if name == "field_scale":
+        return "G per unit" if family == "nv_ensemble" else "V/cm per unit"
+    return PARAM_UNITS.get(name, "")
+
+
 def to_MHz(family_or_platform: str) -> float:
     """Multiply a frequency difference in the platform's native unit by this to get MHz."""
     pl = family_or_platform if family_or_platform in PLATFORMS else platform_of(family_or_platform)
