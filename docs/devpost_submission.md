@@ -8,7 +8,7 @@ qĤolmes turns a raw spectroscopy map into a verified Hamiltonian: it identifies
 
 ## Inspiration
 
-Every superconducting-qubit lab starts a new chip the same way: a two-tone spectroscopy map, a screen full of lines, and a person guessing which circuit made them and what its energies are. Get that wrong and every calibration after it is wrong too. We have done this by hand, and we have watched the same hours be spent in labs that work with NV centres, quantum dots, trapped ions and Rydberg atoms. The inspiration was simple: the map already contains the Hamiltonian. Shazam for quantum chips.
+I work in a circuit QED lab, and every new chip starts the same way for me: a two-tone spectroscopy map comes off the fridge, I stare at a screen full of lines, and I start guessing which circuit made them and what its energies are. It is slow, it is easy to get wrong, and if I get it wrong every calibration I do afterwards inherits the mistake. I have lost whole days to this, and when I talked to people who work with NV centres, quantum dots, trapped ions and Rydberg atoms, they described the same ritual with different lines. That was the inspiration: the map already contains the Hamiltonian, so I wanted a tool that reads it out the way a physicist would, by trying real models against the data and being honest about what does not fit.
 
 ## What it does
 
