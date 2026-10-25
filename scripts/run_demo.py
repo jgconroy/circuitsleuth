@@ -6,9 +6,10 @@ sys.path.insert(0, ".")
 
 
 def main():
-    import app  # noqa: E402  (pulls in the DEMOS table; Streamlit calls are no-ops outside a server)
-    key = [k for k in app.DEMOS if k.startswith(sys.argv[1])][0]
-    truth, r = app.make_demo(key)
+    from ui.demos import DEMOS, make_demo  # noqa: E402
+    platform = next(pl for pl, d in DEMOS.items() if any(k.startswith(sys.argv[1]) for k in d))
+    key = [k for k in DEMOS[platform] if k.startswith(sys.argv[1])][0]
+    truth, r = make_demo(platform, key)
     fast = "--fast" in sys.argv
     cfg = agent.AgentConfig(maxiter=30, n_starts=1, popsize=12, top_k=2, coupled_trials=1, workers=4) if fast else agent.AgentConfig(maxiter=60, workers=4)
     t0 = time.time()

@@ -128,9 +128,12 @@ about 0.3 and fragments of 0-2 are available. With the paper's flux axis (period
 
 | parameter | CircuitSleuth | paper's fit |
 |---|---|---|
-| EJ | 3.23 ± 0.20 GHz | 3.0 GHz |
-| EC | 0.80 ± 0.05 GHz | 0.84 GHz |
-| EL | 0.98 ± 0.04 GHz | 1.0 GHz |
+| EJ | 2.83 ± 0.06 GHz | 3.0 GHz |
+| EC | 0.93 ± 0.03 GHz | 0.84 GHz |
+| EL | 0.93 ± 0.03 GHz | 1.0 GHz |
+
+(An earlier extractor setting gave 3.23 / 0.80 / 0.98; the digitised half-map is marginal data, so the result moves at the
+10 % level with extraction choices and the stated σ are optimistic by a factor of a few. Both runs land within 10 % of the paper.)
 
 Without the axis prior the period is unconstrained by this half-map (the fit reports it and asks for a sweep
 near Φ = ½ below 1.2 GHz, which is exactly where the paper's inset lives).
