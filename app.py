@@ -217,7 +217,7 @@ with data_box:
         _idx = next((i for i, o in enumerate(_opts) if _want and o.startswith(str(_want))), 0)
         name = st.selectbox("Hidden Circuit", _opts, index=_idx)
         source_name = name
-        seed = st.number_input("Random Seed (Surprise Only)", 0, 10_000, 7) if DEMOS[platform][name] is None else None
+        seed = st.number_input("Random Seed (Surprise Only)", 0, 10_000, 1) if DEMOS[platform][name] is None else None
         truth, r = make_demo(platform, name, seed)
         image, x, f = r["image"], r["x"], r["f"]
         if DEMOS[platform][name] == "real":

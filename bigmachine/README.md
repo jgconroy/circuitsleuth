@@ -58,3 +58,17 @@ each map takes several minutes in one process, so 200 maps on 28 workers is abou
 - Memory: thumbnails are 16 KB each (200k maps = 3.3 GB in RAM during training, 2× while loading). Fine on lanthanum;
   on QEC1 keep `--n` at or below 150000.
 - If a run dies, just run `start` again with the same arguments.
+
+## Overnight, self-regulating training (use this when you have a fixed number of hours)
+
+```
+python overnight.py start --hours 6.5 --workers 30 --width 3      # lanthanum
+python overnight.py start --hours 6.0 --workers 16 --width 2      # QEC1 (a second candidate with the current architecture)
+python overnight.py status
+python overnight.py stop
+```
+The worker measures the machine, spends ~40 % of the budget generating maps (resumable shards), trains for the epochs that fit
+with a proper one-cycle schedule, keeps the best held-out model as `classifier_best.pt` + `classifier_best.json`, and stops itself
+10 minutes before the deadline.  `overnight_log.txt` and `overnight_summary.json` tell the story.  In the morning copy
+`classifier_best.pt` and `classifier_best.json` back as `artifacts/classifier.pt` / `classifier.json` if `fam_acc` beats the current
+`artifacts/classifier.json`.
