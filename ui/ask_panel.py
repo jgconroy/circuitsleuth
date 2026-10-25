@@ -60,7 +60,7 @@ def _render(report: dict, platform_key: str) -> None:
     from circuitsleuth import ask
 
     with st.container():  # inside a container st.chat_input renders inline instead of pinned to the page bottom
-        theme.md(theme.section(f"Ask {theme.BRAND_NAME}", "Claude with the physics engine as tools",
+        theme.md(theme.section(f"Ask {theme.BRAND_NAME}", "",
                                "Every number in an answer comes from a tool call on the fitted model, never from the language model; the tools used are listed under each answer."))
         if not isinstance(report, dict) or report.get("status") != "ok" or "best" not in report:
             theme.md(theme.caption("Identify a device first."))

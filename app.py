@@ -146,7 +146,6 @@ def finish_map(image, x, f, key: str, unit_select: bool = True):
 data_box = st.sidebar.expander("Data", expanded=True)
 search_box = st.sidebar.expander("Search", expanded=False)
 explain_box = st.sidebar.expander("Explain", expanded=False)
-st.sidebar.caption("Shazam for quantum chips. Every number comes from the physics fit: the CNN only proposes hypotheses, the language model only narrates.")
 st.sidebar.caption("Many devices? `python batch.py <folder>` writes one row per map.")
 
 with data_box:
@@ -632,8 +631,7 @@ if rep and rep.get("status") == "ok":
     # ---- C. hypotheses tested (the race in its final state)
     race_rows = st.session_state.get("race_rows") or [dict(name=h["hypothesis"], status="fitted", score=float(h["track_score"]), best=[]) for h in rep["hypotheses"]]
     _post = {h["hypothesis"]: h.get("posterior") for h in rep["hypotheses"] if h.get("posterior") is not None}
-    theme.md(theme.section("Hypotheses tested", f"{len(rep['hypotheses'])} candidates · score = explained track weight − penalties"
-                           + (" · P = Bayesian model probability (Laplace evidence, Occam factor included)" if _post else "")))
+    theme.md(theme.section("Hypotheses tested", f"{len(rep['hypotheses'])} candidates" + (" · score and Bayesian probability" if _post else " · score")))
     theme.md(theme.race_html(race_rows, finished=True, winner=best["hypothesis"], posterior=_post or None))
     if mp.get("families") and len(mp["families"]) > 1:
         theme.md(theme.caption("Model posterior by family: " + " · ".join(f"{theme.title_case(k.replace('_', ' '))} {v:.3g}" if v >= 1e-3 else f"{theme.title_case(k.replace('_', ' '))} < 10⁻³" for k, v in mp["families"].items())
@@ -832,8 +830,7 @@ if rep and rep.get("status") == "ok":
     truth_rep = st.session_state.get("truth")
     design_rows = [(theme.param_html(k), theme.num(best["params"][k], theme.UNITS.get(k, "")), theme.num(dv, theme.UNITS.get(k, "")), f"{100 * (best['params'][k] - dv) / abs(dv):+.1f}%".replace("-", "−") if dv else "–")
                    for k, dv in design_values.items() if k in best["params"]]
-    theme.md(theme.section("Diagnostics", f"{len(rep['unexplained'])} unexplained features · error bars · checks",
-                           "What the model leaves on the table, whether the stated uncertainties are honest, and how the fit compares with what you know."))
+    theme.md(theme.section("Diagnostics", "", "What the model leaves on the table, whether the stated uncertainties are honest, and how the fit compares with what you know."))
     tab_unexpl, tab_post, tab_truth, tab_log = st.tabs(["Unexplained Features", "Posterior Check", "Truth and Design", "Run Log"])
     with tab_unexpl:
         if rep["unexplained"]:
@@ -901,7 +898,7 @@ if rep and rep.get("status") == "ok":
         pass
 
     # ---- H. details & export
-    theme.md(theme.section("Details & export", "take it with you", "The full report as JSON, the fitted curves as CSV, the annotated map as a standalone HTML file, and the scqubits code to reproduce the model."))
+    theme.md(theme.section("Details & export"))
     try:
         csv_text = derived.curves_csv(rep)
     except Exception:  # noqa: BLE001
