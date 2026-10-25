@@ -838,9 +838,11 @@ if rep and rep.get("status") == "ok":
         pc1, pc2 = st.columns([1.2, 1])
         pc1.plotly_chart(_dp3.posterior_figure(_post, pair=pair), key="posterior_fig", **PLOT)
         rows_p = []
+        _sd, _lsd = _post["sd"], _post["laplace_sd"]
         for i, n in enumerate(_post["names"]):
-            lap = _post["laplace_sd"][i] if i < len(_post["laplace_sd"]) else float("nan")
-            rows_p.append({"parameter": n, "posterior σ": f"{_post['sd'][i]:.3g}", "Laplace σ": f"{lap:.3g}", "ratio": f"{_post['sd'][i] / lap:.2f}" if lap else "–"})
+            psd = _sd[n] if isinstance(_sd, dict) else _sd[i]
+            lap = (_lsd.get(n, float("nan")) if isinstance(_lsd, dict) else _lsd[i]) if _lsd is not None else float("nan")
+            rows_p.append({"parameter": n, "posterior σ": f"{psd:.3g}", "Laplace σ": f"{lap:.3g}", "ratio": f"{psd / lap:.2f}" if lap else "–"})
         pc2.dataframe(rows_p, hide_index=True, width="stretch")
         pc2.caption(f"acceptance {_post['acceptance_rate']:.2f} · {_post['n_kept']} kept samples · {_post['seconds']:.1f} s")
     elif _post and _post.get("error"):
