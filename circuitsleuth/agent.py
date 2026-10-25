@@ -144,6 +144,21 @@ def unexplained_features(pts_all, ids, inlier_all, flat, qubit_line=None) -> lis
     return out
 
 
+def prune_look_here(look: list[dict], x_range: tuple[float, float], band: tuple[float, float], max_area_frac: float = 0.2) -> list[dict]:
+    """A suggestion is only useful if it points somewhere specific: drop boxes covering more than
+    `max_area_frac` of the map and the weak thermal 1-2 line unless its box is small."""
+    area = max((x_range[1] - x_range[0]) * (band[1] - band[0]), 1e-12)
+    keep = []
+    for o in look:
+        a = (o["x_hi"] - o["x_lo"]) * (o["f_hi"] - o["f_lo"]) / area
+        if a > max_area_frac:
+            continue
+        if o["line"] == "1-2" and a > 0.05:
+            continue
+        keep.append(o)
+    return keep
+
+
 def next_measurements(res: fit.FitResult, pts_all, band, x_grid, c_local, line_weights=None) -> list[dict]:
     """Where to look next: predicted lines inside the band with no data, lines just outside the band,
     and the specific line that would pin down any poorly determined parameter."""
@@ -190,9 +205,10 @@ def next_measurements(res: fit.FitResult, pts_all, band, x_grid, c_local, line_w
                 if b_ - a < 3:
                     continue
                 out.append(dict(kind="look_here", line=name, x_lo=round(float(xs[a]), 4), x_hi=round(float(xs[b_ - 1]), 4), f_lo=round(float(fs[a:b_].min()), 3), f_hi=round(float(fs[a:b_].max()), 3), why=why))
-    # keep the most useful suggestions: 0-1 first, then by run length
+    # keep the most useful suggestions: 0-1 first, then by run length; drop boxes that would cover the map
     prio = {"0-1": 0, "0-2": 1, "0-2/2ph": 2, "1-2": 3, "0-3": 4}
     look = [o for o in out if o["kind"] == "look_here"]
+    look = prune_look_here(look, (float(np.min(x_grid)), float(np.max(x_grid))), band)
     look.sort(key=lambda o: (prio.get(o["line"], 9), -(o["x_hi"] - o["x_lo"])))
     out = [o for o in out if o["kind"] != "look_here"] + look[:4]
     # poorly determined parameters
@@ -407,12 +423,21 @@ def identify(image: np.ndarray | None = None, x: np.ndarray | None = None, f: np
             continue
         cbest.lines = fit.predict_lines(hc, cbest.params, x_grid)
         accepted = csc > base_score + cfg.coupled_margin
+        reason = f"gain {csc - base_score:+.3f} < margin {cfg.coupled_margin}"
         g_sig = cbest.sigma.get("g", float("nan"))
-        if np.isfinite(g_sig) and cbest.params.get("g", 0) < 2 * g_sig:
-            accepted = False
+        if accepted and np.isfinite(g_sig) and cbest.params.get("g", 0) < 2 * g_sig:
+            accepted, reason = False, "coupling g not significant"
+        if accepted:
+            # a resonator must buy its place with FLUX-DEPENDENT evidence (a bend, a crossing, a dispersive pull):
+            # explaining one more flat line is not evidence, any tone does that
+            dyn_mask = ~flat
+            if dyn_mask.sum() >= 10:
+                gain_dyn = fit.track_score(points[dyn_mask], ids[dyn_mask], flat[dyn_mask], cinl[dyn_mask]) - fit.track_score(points[dyn_mask], ids[dyn_mask], flat[dyn_mask], base_inl[dyn_mask])
+                if gain_dyn < 0.02:
+                    accepted, reason = False, f"no flux-dependent evidence of coupling (gain on flux-dependent features {gain_dyn:+.3f}); the extra line could be any tone"
         results.append((cbest, csc if accepted else min(csc, base_score - 1e-6), cinl))
         _emit(progress, "fit_done", hypothesis=hc.label, score=csc, summary=cbest.summary(), lines={k: v.tolist() for k, v in cbest.lines.items()},
-              note=("accepted" if accepted else f"rejected: gain {csc - base_score:+.3f} < margin {cfg.coupled_margin} or coupling not significant"))
+              note=("accepted" if accepted else "rejected: " + reason))
     results.sort(key=lambda r: -r[1])
     best, best_score, best_inl = results[0]
 

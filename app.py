@@ -12,6 +12,11 @@ import streamlit as st
 from circuitsleuth import agent, classify, derived, explain, extract, fit, synth
 from ui import importers, plots, schematic, theme
 
+try:  # the evidence figures are written by another engineer; the app works without them
+    from ui import evidence
+except Exception:  # noqa: BLE001
+    evidence = None
+
 st.set_page_config(page_title="CircuitSleuth", layout="wide", initial_sidebar_state="expanded")
 theme.inject()
 
@@ -89,7 +94,8 @@ def show_history() -> None:
             st.session_state["history"] = []
         hist = st.session_state.get("history", [])
         if hist:
-            slot.dataframe(hist, hide_index=True, width="stretch")
+            cols = ("time", "data source", "platform", "best hypothesis", "key parameters", "score")
+            slot.markdown(theme.table_html(cols, [[h.get(c, "") for c in cols] for h in hist], muted=(1, 4), numeric=(0, 5)), unsafe_allow_html=True)
         else:
             slot.caption("No runs yet in this session.")
 
@@ -140,7 +146,7 @@ with data_box:
     platform_label = st.selectbox("Platform", [models.PLATFORMS[k]["label"] for k in models.PLATFORMS], index=0)
     platform = next(k for k, v in models.PLATFORMS.items() if v["label"] == platform_label)
     platform_families = list(models.PLATFORMS[platform]["families"])
-    xlabel = "control (" + models.PLATFORMS[platform]["control_label"] + ")"
+    xlabel = models.PLATFORMS[platform]["control_label"]  # e.g. "flux bias (arbitrary units)"
 is_circuit = platform == "circuit"
 with search_box:
     weights_available = classify.DEFAULT_PATH.exists() and is_circuit
@@ -195,7 +201,10 @@ with data_box:
     source = st.radio("Data", ["Demo circuit", "Upload points CSV (x, f[, weight])", "Upload map (.npz or image)",
                                "Upload 2-D grid CSV (first row = control values, first column = frequencies)"], label_visibility="collapsed")
     if source == "Demo circuit":
-        name = st.selectbox("Hidden circuit", list(DEMOS[platform]))
+        _opts = list(DEMOS[platform])
+        _want = st.query_params.get("demo")
+        _idx = next((i for i, o in enumerate(_opts) if _want and o.startswith(str(_want))), 0)
+        name = st.selectbox("Hidden circuit", _opts, index=_idx)
         source_name = name
         seed = st.number_input("Random seed (surprise only)", 0, 10_000, 7) if DEMOS[platform][name] is None else None
         truth, r = make_demo(platform, name, seed)
@@ -279,244 +288,474 @@ with data_box:
 
 # ------------------------------------------------------------------ main
 theme.header()
-st.markdown("Upload a two-tone spectroscopy map. CircuitSleuth proposes circuit hypotheses, fits each against the detected "
-            "features with a robust physics model (checked against scqubits), verifies on held-out flux columns, lists what it "
-            "**cannot** explain, and tells you **where to measure next**.")
 
 if image is None:
     st.info("Pick a demo circuit or upload data in the sidebar.")
     show_history()
     st.stop()
 
-left, right = st.columns([1.15, 1])
-with left:
-    pts_preview = points if points is not None else extract.extract_points(image, x, f)
-    map_slot = st.empty()
-    map_slot.plotly_chart(plots.map_figure(image, x, f, points=pts_preview, title=f"input map · {len(pts_preview)} detected features", xlabel=xlabel), **PLOT)
-    map_caption = st.empty()
-with right:
-    if param_bounds:
-        st.markdown(theme.pill("known") + theme.pills((f"{n} = {known_store[n]['value']:.4g}" + (" fixed" if known_store[n]["tol"] == 0 else f" ± {known_store[n]['tol']:g}%")
-                                                       for n in param_bounds), "amber"), unsafe_allow_html=True)
-    with st.container(border=True):
-        st.subheader("Run")
-        run = st.button("Identify circuit", type="primary", width="stretch")
-        saved_path = None
-        if source == "Demo circuit":
-            key = name.split(" ")[0]
-            if key in SAVED and os.path.exists(SAVED[key]):
-                saved_path = SAVED[key]
-        load_saved = st.button("Load precomputed result (normal preset)", width="stretch", disabled=saved_path is None,
-                               help="The same pipeline run earlier with the 'normal' effort preset; identical output, no waiting.")
-        status = st.empty()
-        table = st.empty()
-        spark_caption = st.empty()
-        spark = st.empty()
-        log_slot = st.empty()
 
+def _ev(fn_name: str, *args):
+    """Call ui.evidence.<fn_name>(*args) if the module and function exist; None on any failure (never breaks the page)."""
+    fn = getattr(evidence, fn_name, None) if evidence is not None else None
+    if fn is None:
+        return None
+    try:
+        return fn(*args)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def sch_values(best: dict) -> dict[str, str]:
+    """Display strings for the fitted values written next to the schematic symbols."""
+    p = best["params"]
+    out = {}
+    for k in ("EJ", "EC", "EL", "EJmax", "fr", "g", "D", "E", "t_c"):
+        if k in p:
+            out[k] = f"{p[k]:.4g} GHz"
+    if "d" in p:
+        out["d"] = f"d = {p['d']:.3g}"
+    if "theta" in p and "phi" in p:
+        out["theta"] = f"{p['theta']:.2f}, {p['phi']:.2f} rad"
+    return out
+
+
+def ham_table_html(best: dict) -> str:
+    rows = [(k, theme.num(v, theme.UNITS.get(k, ""), (best.get("sigma") or {}).get(k))) for k, v in best["params"].items()]
+    return theme.table_html(("parameter", "value ± σ"), rows, numeric=(1,))
+
+
+def spec_groups(rep: dict, dq: list[dict]) -> dict[str, list[tuple[str, str, str]]]:
+    """Three spec-sheet groups. ui.evidence.spec_card_data(report) is used when present; otherwise the derived quantities
+    are grouped by keyword and the control-axis calibration is appended from the fitted parameters."""
+    best = rep["best"]
+    groups: dict[str, list] = {"Qubit": [], "Control axis": [], "Readout": []}
+    data = _ev("spec_card_data", rep)
+    if isinstance(data, dict) and data:
+        for g, items in data.items():
+            key = next((k for k in groups if k.lower().startswith(str(g).lower()[:4])), "Qubit")
+            for it in items or []:
+                if isinstance(it, dict):
+                    groups[key].append((str(it.get("name", it.get("label", ""))), theme.num(it.get("value"), it.get("unit", "")) if not isinstance(it.get("value"), str) else it["value"], str(it.get("note", ""))))
+                elif isinstance(it, (list, tuple)) and len(it) >= 2:
+                    groups[key].append((str(it[0]), str(it[1]), str(it[2]) if len(it) > 2 else ""))
+        return groups
+
+    def group_of(name: str) -> str:
+        n = name.lower()
+        if any(k in n for k in ("resonator", "detuning δ", "g / δ", "dispersive", "purcell", "χ")):
+            return "Readout"
+        if any(k in n for k in ("sweet spot", "control unit", "flux sensitivity", "field per control", "zero-field control", "lever arm", "zero-detuning", "axial field")):
+            return "Control axis"
+        return "Qubit"
+
+    for d in dq or []:
+        groups[group_of(d["name"])].append((d["name"], theme.num(d.get("value"), d.get("unit", "")), d.get("note", "")))
+    p, sig = best["params"], best.get("sigma") or {}
+    cal = [("flux period", "period", "control units", "one flux quantum in control units"), ("flux offset (Φ = 0 at)", "offset", "control units", "control value of the Φ = 0 sweet spot"),
+           ("zero of the control axis", "x0", "control units", "")]
+    for label, k, unit, note_txt in cal:
+        if k in p:
+            groups["Control axis"].insert(0, (label, theme.num(p[k], unit, sig.get(k)), note_txt))
+    return groups
+
+
+def truth_rows(best: dict, truth: dict) -> list[list]:
+    """fitted ± σ | truth | within 2σ (offset modulo the period; NV field angles compared through their symmetry-equivalent projections)."""
+    tp = dict(truth["params"], period=truth.get("period", 1.0), offset=truth.get("offset", 0.0))
+    p, sig = best["params"], best.get("sigma") or {}
+    rows = []
+    for k, v in p.items():
+        tv = tp.get(k)
+        if tv is None:
+            rows.append([k, theme.num(v, theme.UNITS.get(k, ""), sig.get(k)), "–", ""])
+            continue
+        s = sig.get(k, float("nan"))
+        tol = 2 * s if (s is not None and np.isfinite(s) and s > 0) else 0.01 * abs(tv)
+        if k == "offset" and "period" in p and p["period"]:
+            P = float(p["period"])
+            diff = abs(((v - tv + P / 2) % P) - P / 2)
+        elif k in ("theta", "phi") and best["family"] == "nv_ensemble" and {"theta", "phi"} <= set(tp):
+            diff = float(np.max(np.abs(models.nv_projections(p["theta"], p["phi"]) - models.nv_projections(tp["theta"], tp["phi"]))))
+            tol = max(tol, 0.02)
+        else:
+            diff = abs(v - tv)
+        ok = diff <= tol
+        rows.append([k, theme.num(v, theme.UNITS.get(k, ""), sig.get(k)), theme.num(tv, theme.UNITS.get(k, "")), "✓" if ok else "✗"])
+    return rows
+
+
+# the precomputed result for the selected demo (if any); ?load=1 in the URL loads it on page open (screenshots, pitch links)
+saved_path = None
+if source == "Demo circuit":
+    key = name.split(" ")[0]
+    if key in SAVED and os.path.exists(SAVED[key]):
+        saved_path = SAVED[key]
+auto_load = bool(saved_path and st.query_params.get("load") == "1" and "report" not in st.session_state)
+prev_rep = st.session_state.get("report")
+has_result = auto_load or bool(prev_rep and prev_rep.get("status") == "ok")
+pts_preview = points if points is not None else extract.extract_points(image, x, f)
+
+if param_bounds:
+    theme.md(theme.pill("known") + theme.pills((f"{n} = {known_store[n]['value']:.4g}" + (" fixed" if known_store[n]["tol"] == 0 else f" ± {known_store[n]['tol']:g}%")
+                                                for n in param_bounds), "amber"))
+if not has_result:
+    # ---- landing state: the input map on the left, the run card with the pipeline stepper on the right
+    st.markdown("Upload a two-tone spectroscopy map. CircuitSleuth proposes circuit hypotheses, fits each against the detected "
+                "features with a robust physics model (checked against scqubits), verifies on held-out flux columns, lists what it "
+                "**cannot** explain, and tells you **where to measure next**.")
+    left, right = st.columns([1.15, 1])
+    with left:
+        map_slot = st.empty()
+        map_slot.plotly_chart(plots.map_figure(image, x, f, points=pts_preview, title=f"input map · {len(pts_preview)} detected features", xlabel=xlabel), key="map_initial", **PLOT)
+        map_caption = st.empty()
+    with right:
+        with st.container(border=True):
+            theme.md(theme.eyebrow("Run"))
+            run = st.button("Identify circuit", type="primary", width="stretch")
+            load_saved = st.button("Load precomputed result (normal preset)", width="stretch", disabled=saved_path is None,
+                                   help="The same pipeline run earlier with the 'normal' effort preset; identical output, no waiting.")
+            theme.md(theme.eyebrow("What happens when you press Identify"))
+            step_slot = st.empty()
+            step_slot.markdown(theme.stepper_html(0), unsafe_allow_html=True)
+            theme.md(theme.caption("Extract the spectral features, propose circuit hypotheses, fit each with the physics model, verify on held-out columns, report."))
+        status = st.empty()
+        race_slot = st.empty()
+else:
+    # ---- a result exists: a compact run strip; the evidence map below replaces the raw input map
+    c_run, c_step = st.columns([1.5, 1.2], vertical_alignment="center")
+    with c_run:
+        b1, b2 = st.columns(2)
+        run = b1.button("Identify circuit", type="primary", width="stretch")
+        load_saved = b2.button("Load precomputed result (normal preset)", width="stretch", disabled=saved_path is None,
+                               help="The same pipeline run earlier with the 'normal' effort preset; identical output, no waiting.")
+    with c_step:
+        step_slot = st.empty()
+        step_slot.markdown(theme.stepper_html(5), unsafe_allow_html=True)
+    status = st.empty()
+    last = st.session_state.get("last_status")
+    if last:
+        status.markdown(theme.status_html(*last), unsafe_allow_html=True)
+    map_slot = st.empty()  # live map during a re-run
+    map_caption = st.empty()
+    race_slot = st.empty()
+
+if auto_load:
+    load_saved = True
 if load_saved and saved_path:
     st.session_state["report"] = json.load(open(saved_path))
     st.session_state["truth"] = truth
-    status.markdown(theme.status_html("loaded", f"{saved_path} (precomputed; runtime was {st.session_state['report'].get('runtime_s', '?')} s)", "green"),
-                    unsafe_allow_html=True)
+    st.session_state["run_log"] = []
+    st.session_state["race_rows"] = None
+    st.session_state["last_status"] = ("loaded", "Loaded demo result (precomputed)", "green")
     remember_run(st.session_state["report"], source_name, platform_label, note="precomputed")
+    st.rerun()
 
 if run:
     cfg = agent.AgentConfig(use_classifier=use_clf, try_coupled=try_coupled if is_circuit else "never", workers=workers, families=tuple(families),
                             flux_calibrated=flux_calibrated and is_circuit, param_bounds=dict(param_bounds), **preset)
-    rows: list[dict] = []
-    history: list[tuple[int, float]] = []
+    rows: list[dict] = []  # hypothesis race, in the order tried
     log: list[str] = []
-    state = dict(last=0.0, iter=0, t0=time.time())
+    state = dict(last=0.0, t0=time.time(), draw=0, active=None, stage=0)
+
+    def row_for(h: str) -> dict:
+        for r in rows:
+            if r["name"] == h:
+                return r
+        r = dict(name=h, status="queued", score=None, best=[])
+        rows.append(r)
+        return r
 
     def say(label: str, text: str, kind: str = "") -> None:
-        status.markdown(theme.status_html(label, text, kind), unsafe_allow_html=True)
-        log.append(f"{time.time() - state['t0']:6.1f} s  {label:<10} {text}")
-        log_slot.markdown(theme.log_html(log), unsafe_allow_html=True)
+        t = time.time() - state["t0"]
+        status.markdown(theme.status_html(label, text, kind, t=t), unsafe_allow_html=True)  # the log collapses to its last line
+        log.append(f"{t:6.1f} s  {label:<10} {text}")
+
+    def step(stage: int) -> None:
+        state["stage"] = stage
+        step_slot.markdown(theme.stepper_html(stage, running=stage < 5), unsafe_allow_html=True)
+
+    def draw_race() -> None:
+        race_slot.markdown(theme.race_html(rows, active=state["active"]), unsafe_allow_html=True)
 
     def redraw(p: dict, title: str) -> None:
-        map_slot.plotly_chart(plots.map_figure(image, x, f, points=pts_preview, lines=p["lines"], x_grid=x, title=title, xlabel=xlabel), **PLOT)
+        state["draw"] += 1  # a fresh key per redraw: the placeholder replaces the element, keys never collide
+        map_slot.plotly_chart(plots.map_figure(image, x, f, points=pts_preview, lines=p["lines"], x_grid=x, title=title, xlabel=xlabel), key=f"map_live_{state['draw']}", **PLOT)
         if p.get("params"):
             map_caption.markdown(theme.pills(f"{k} = {v:.4g}" for k, v in p["params"].items()), unsafe_allow_html=True)
-        if history:
-            spark_caption.markdown(theme.caption(f"search loss · {p['hypothesis']} · iteration {history[-1][0]}"), unsafe_allow_html=True)
-            spark.plotly_chart(plots.convergence_figure(history), **PLOT)
+        draw_race()
 
     def progress(kind, p):
         if kind == "features":
+            step(1)
             say("features", f"{p['n_points']} features in {p['n_tracks']} tracks · flux-independent lines at {', '.join(f'{v:.2f}' for v in p['flat_lines']) or 'none'} GHz")
         elif kind == "proposals":
+            step(2)
+            for h in p["hypotheses"]:
+                row_for(h["h"])
+            draw_race()
             say("proposals", "hypotheses to test: " + "; ".join(f"{h['h']}" + (f" (p={h['prob']:.2f})" if h.get("prob") else "") for h in p["hypotheses"]))
         elif kind == "fit_start":
+            step(2)
+            r = row_for(p["hypothesis"])
+            r.update(status="fitting", best=[])  # the best-so-far sparkline resets for every hypothesis
+            state["active"] = p["hypothesis"]
+            draw_race()
             say("fitting", f"{p['hypothesis']} on {p['n_points']} features", "amber")
         elif kind == "fit_progress":
-            state["iter"] += 1
-            history.append((state["iter"], float(p["loss"])))
+            r = row_for(p["hypothesis"])
+            loss = float(p["loss"])
+            r["best"].append(min(loss, r["best"][-1]) if r["best"] else loss)
             now = time.time()
             if now - state["last"] > 0.7:  # throttle the live redraw
                 state["last"] = now
-                redraw(p, f"{p['hypothesis']} · searching · loss {p['loss']:.3f}")
+                redraw(p, f"{p['hypothesis']} · searching · loss {loss:.3f}")
         elif kind == "fit_done":
             s = p["summary"]
-            rows.append(dict(hypothesis=p["hypothesis"], score=round(p["score"], 3), explained=f"{100*s['inlier_frac']:.0f}%", rms_MHz=s["rms_inliers_MHz"], note=p.get("note", "")))
-            table.dataframe(rows, width="stretch", hide_index=True)
+            note = p.get("note", "") or ""
+            r = row_for(p["hypothesis"])
+            r.update(score=float(p["score"]), status="accepted" if note == "accepted" else ("rejected" if note.startswith("rejected") else "fitted"))
+            state["active"] = None
             redraw(dict(p, params=s.get("params")), f"{p['hypothesis']} · fitted · score {p['score']:.3f}")
-            say("fitted", f"{p['hypothesis']}: score {p['score']:.3f}, {100*s['inlier_frac']:.0f}% explained, RMS {s['rms_inliers_MHz']:.1f} MHz" + (f" · {p['note']}" if p.get("note") else ""), "blue")
+            say("fitted", f"{p['hypothesis']}: score {p['score']:.3f}, {100*s['inlier_frac']:.0f}% explained, RMS {s['rms_inliers_MHz']:.1f} MHz" + (f" · {note}" if note else ""), "blue")
         elif kind == "calibration":
             say("symmetry", f"flux period ≈ {p['period']:.3g} control units; sweet spots at " + ", ".join(f"{a['x']:.3g} ({a['type']})" for a in p["axes"][:3]))
         elif kind == "skip":
+            row_for(p["hypothesis"]).update(status="skipped")
+            draw_race()
             say("skip", f"{p['hypothesis']}: {p['reason']}")
         elif kind == "revise":
             say("revise", p["reason"], "amber")
         elif kind == "verify":
+            step(4)
             ho = p["holdout"]
             if ho:
                 say("hold-out", f"{100*ho['inlier_frac']:.0f}% of features in untouched flux columns explained, RMS {ho['rms_MHz']:.1f} MHz", "blue")
         elif kind == "warning":
             say("warning", p.get("message", ""), "red")
+        elif kind == "done":
+            step(5)
 
     t0 = time.time()
     rep = agent.identify(image, x, f, points=points, band=band, config=cfg, progress=progress)
+    step(5)
+    if rep.get("status") == "ok":
+        win = rep["best"]["hypothesis"]
+        for r in rows:
+            if r["name"] == win:
+                r["status"] = "accepted"
+            elif r["status"] == "fitting":
+                r["status"] = "fitted"
+    say("done", f"{time.time()-t0:.0f} s · {speed} preset" + (" · constrained" if param_bounds else ""), "green")
     st.session_state["report"] = rep
     st.session_state["truth"] = truth
-    say("done", f"{time.time()-t0:.0f} s", "green")
+    st.session_state["run_log"] = list(log)
+    st.session_state["race_rows"] = [dict(r, best=[]) for r in rows]
+    st.session_state["last_status"] = ("done", f"identified in {time.time()-t0:.0f} s · {speed} preset" + (" · constrained" if param_bounds else ""), "green")
     remember_run(rep, source_name, platform_label, note=f"{speed}" + (", constrained" if param_bounds else ""))
+    st.rerun()  # redraw in the result layout: verdict band + evidence map replace the input map
 
 # ------------------------------------------------------------------ results
 rep = st.session_state.get("report")
 if rep and rep.get("status") == "ok":
     best = rep["best"]
+    fam, coupled = best["family"], bool(best.get("coupled"))
     xg = np.array(rep["x_grid"], float)
-    theme.rule()
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Best hypothesis", best["hypothesis"])
-    c2.metric("Flux-dependent features explained", f"{100*best.get('explained_dynamic', best['track_score']):.0f}%", help="Fraction of detected line segments (spurs excluded) that lie on a predicted transition")
+    conf = best.get("confidence") if isinstance(best.get("confidence"), dict) else {}
     ho = best.get("holdout") or {}
-    c3.metric("Held-out columns explained", f"{100*ho['inlier_frac']:.0f}%" if ho else "n/a", help="Columns excluded from the fit, predicted by the model")
-    c4.metric("Residual (RMS)", f"{best['rms_inliers_MHz']:.1f} MHz")
+    is_circ_fam = models.platform_of(fam) == "circuit"
+    flux_dep = bool(models.FAMILIES[fam]["flux_dependent"])
+
+    # ---- B. verdict band
+    level = conf.get("level") or "not assessed"
+    eyebrow_txt = (f'IDENTIFIED · <span class="cs-num">{len(rep["hypotheses"])}</span> hypotheses · <span class="cs-num">{rep.get("runtime_s", "?")}</span> s · confidence {theme.esc(level)}')
+    kpis: list[tuple[str, str]] = []
+    if ho:
+        n_test = ho.get("n_test_points")
+        n_txt = f' · <span class="cs-num">{int(n_test)}</span> held-out points' if n_test is not None else ""
+        kpis.append((f'{ho["rms_MHz"]:.1f}<span class="u">MHz</span>', f"held-out RMS{n_txt}"))
+        kpis.append((f'{100*ho["inlier_frac"]:.0f}<span class="u">%</span>', "held-out explained"))
+    else:
+        kpis.append((f'{best["rms_inliers_MHz"]:.1f}<span class="u">MHz</span>', "in-sample RMS"))
+        kpis.append((f'{100*best["inlier_frac"]:.0f}<span class="u">%</span>', "features explained"))
+    gap = conf.get("gap")
+    if isinstance(gap, (int, float)):
+        kpis.append((f"{gap:+.3f}".replace("-", "−"), "margin to runner-up family"))
+    else:
+        kpis.append(("—", "margin · single family"))
+    right = (schematic.schematic_svg(fam, coupled, values=sch_values(best)) + theme.eyebrow("Recovered Hamiltonian") + ham_table_html(best))
+    theme.md(theme.hero_html(eyebrow_txt, best["hypothesis"], theme.hamiltonian_html(fam, best["params"], coupled), kpis, best.get("explained_dynamic"), right))
     if best.get("note"):
-        st.markdown(theme.note(best["note"]), unsafe_allow_html=True)
-    conf = best.get("confidence")
-    if isinstance(conf, dict) and conf.get("level"):
-        kind = {"high": "green", "medium": "amber", "low": "red"}.get(conf["level"], "")
-        gap = conf.get("gap")
-        gap_text = f" (score gap {gap:+.3f})" if isinstance(gap, (int, float)) else ""  # None when only one family was considered
-        st.markdown(theme.status_html(f"confidence: {conf['level']}", f"{conf.get('text', '')}{gap_text}", kind), unsafe_allow_html=True)
-    a, b = st.columns([1.15, 1])
-    with a:
-        final_slot = st.empty()  # drawn after the operating-point tool below has chosen its markers
-    markers: list[tuple[float, float]] = []
-    with b:
-        st.markdown(schematic.schematic_svg(best["family"], bool(best.get("coupled"))), unsafe_allow_html=True)
-        st.subheader("Recovered Hamiltonian")
-        st.table([{"parameter": k, "value": v} for k, v in best["params_pretty"].items()])
-        truth = st.session_state.get("truth")
-        if truth is not None and st.toggle("Reveal hidden truth (demo)"):
-            rows = []
-            tp = dict(truth["params"], period=truth["period"], offset=truth["offset"])
-            for k, v in best["params"].items():
-                tv = tp.get(k)
-                rows.append({"parameter": k, "fit": f"{v:.4g}", "truth": f"{tv:.4g}" if tv is not None else "-", "error": f"{100*abs(v-tv)/abs(tv):.1f}%" if tv not in (None, 0) else "-"})
-            st.table(rows)
-            st.caption(f"truth: {truth['family']}{' + resonator' if truth['coupled'] else ''}; spurs at {[s['f'] for s in truth['spurs']]} GHz" + (f" · {truth['note']}" if truth.get("note") else ""))
-        design_rows = [(k, f"{best['params'][k]:.4g}", f"{dv:.4g}", f"{100 * (best['params'][k] - dv) / abs(dv):+.1f}%" if dv else "–")
-                       for k, dv in design_values.items() if k in best["params"]]
-        if design_rows:
-            st.subheader("Fit vs design")
-            st.markdown(theme.table_html(("parameter", "fit", "design", "deviation"), design_rows, numeric=(1, 2, 3)), unsafe_allow_html=True)
-        st.subheader("Derived quantities")
-        dq = rep.get("derived")
-        if dq is None:  # older saved reports: compute on the fly
+        theme.md(theme.note(best["note"]))
+    # ---- H. two sentences of plain English (template or Claude; exception text never reaches the page)
+    ex_key = (best["hypothesis"], json.dumps(best["params"], sort_keys=True), bool(use_llm))
+    cache = st.session_state.get("explain_cache")
+    if not cache or cache[0] != ex_key:
+        with st.spinner("writing summary …"):
             try:
-                dq = derived.derived_quantities(best, (float(xg.min()), float(xg.max())))
-            except Exception as e:
-                dq = []
-                st.caption(f"derived quantities unavailable: {type(e).__name__}: {e}")
-        if dq:
-            st.markdown(theme.table_html(("quantity", "value", "note"), [(d["name"], fmt_sig(d.get("value"), d.get("unit", "")), d.get("note", "")) for d in dq],
-                                         muted=(2,), numeric=(1,)), unsafe_allow_html=True)
-        else:
-            st.caption("No derived quantities for this result.")
-        fam = best["family"]
-        if models.platform_of(fam) == "circuit" and models.FAMILIES[fam]["flux_dependent"]:
-            band_rep = rep.get("band_GHz") or [float(f[0]), float(f[-1])]
-            target = st.number_input("Target f01 (GHz)", value=float(round(0.5 * (band_rep[0] + band_rep[1]), 2)), step=0.05, format="%.3f",
-                                     help="Where to bias the device: control values at which the fitted 0-1 transition equals this frequency.")
-            try:
-                sols = derived.control_for_frequency(best, float(target), (float(xg.min()), float(xg.max())))
-            except Exception:
-                sols = []
-            if sols:
-                st.markdown(f"f01 = {target:.3f} GHz at control = " + ", ".join(f"{s:.3f}" for s in sols).replace("-", "−"))
-                markers = [(float(s), float(target)) for s in sols]
-            else:
-                st.markdown(theme.caption(f"the fitted 0-1 line does not reach {target:.3f} GHz inside the measured control range"), unsafe_allow_html=True)
-        st.subheader("Hypotheses tested")
-        st.plotly_chart(plots.hypothesis_bars(rep["hypotheses"]), **PLOT)
-        with st.expander("Scores as a table"):
-            st.dataframe([{"hypothesis": h["hypothesis"], "score": h["track_score"], "explained": f"{100*h['inlier_frac']:.0f}%", "RMS MHz": h["rms_inliers_MHz"]} for h in rep["hypotheses"]],
-                         hide_index=True, width="stretch")
-    boxes = [n for n in rep["next_measurements"] if n["kind"] == "look_here"]
-    fig_final = plots.map_figure(image, x, f, points=np.array(rep["points"]), inlier=rep["inlier_mask"], lines=rep["lines"], x_grid=xg, xlabel=xlabel, look_here=boxes,
-                                 flat_lines=rep["flat_lines_GHz"], title=f"{best['hypothesis']} · fitted transitions, explained and unexplained features, where to look next",
-                                 markers=markers or None)
-    final_slot.plotly_chart(fig_final, **PLOT)
-    physics = plots.potential_figure(best["family"], best["params"], bool(best.get("coupled")))
-    if physics is None:  # non-circuit platforms: panels live in ui/platform_panels.py (optional)
+                ex = explain.explain(rep, use_llm=use_llm)
+            except Exception:  # noqa: BLE001
+                ex = explain.template(rep)
+        cache = (ex_key, ex)
+        st.session_state["explain_cache"] = cache
+    ex = cache[1]
+    summary = theme.two_sentences(ex.get("summary", "")) if isinstance(ex, dict) else ""
+    conf_txt = conf.get("text", "")
+    if summary or conf_txt:
+        theme.md(f'<div class="cs-block"><div class="cs-body">{theme.esc(summary)}</div>' + (f'<div class="cs-body muted">{theme.esc(conf_txt[:1].upper() + conf_txt[1:])}.</div>' if conf_txt else "") + "</div>")
+
+    # ---- C. hypotheses tested (the race in its final state)
+    race_rows = st.session_state.get("race_rows") or [dict(name=h["hypothesis"], status="fitted", score=float(h["track_score"]), best=[]) for h in rep["hypotheses"]]
+    theme.md(theme.section("Hypotheses tested", f"{len(rep['hypotheses'])} candidates · score = explained track weight − penalties"))
+    theme.md(theme.race_html(race_rows, finished=True, winner=best["hypothesis"]))
+
+    # ---- D. evidence
+    theme.md(theme.section("Evidence", "annotated map", "Explained features are filled green, unexplained ones hollow red; numbered amber boxes are where to look next."))
+    show_ev = st.toggle("Show held-out and residual evidence", value=True)
+    _look = agent.prune_look_here([n for n in rep["next_measurements"] if n["kind"] == "look_here"], (float(min(rep["x_grid"])), float(max(rep["x_grid"]))), tuple(rep["band_GHz"]))
+    rep["next_measurements"] = [n for n in rep["next_measurements"] if n["kind"] != "look_here"] + _look  # older saved reports predate the pruning
+    boxes = _look[:5]
+    ev_map_slot = st.empty()  # drawn after the operating-point tool below has chosen its markers
+    if show_ev and evidence is not None:
+        resid = _ev("residual_figure", rep)
+        if resid is not None:
+            st.plotly_chart(resid, key="ev_residual", **PLOT)
+        hold = _ev("holdout_figure", rep, image, x, f)
+        zoom = _ev("crossing_zoom_figure", rep, image, x, f)
+        if hold is not None or zoom is not None:
+            e1, e2 = st.columns(2)
+            if hold is not None:
+                e1.plotly_chart(hold, key="ev_holdout", **PLOT)
+            if zoom is not None:
+                e2.plotly_chart(zoom, key="ev_zoom", **PLOT)
+
+    # ---- E. physics
+    theme.md(theme.section("Physics", "potential and levels" if is_circ_fam else "energy levels"))
+    physics = None
+    if is_circ_fam:
+        phi_ext = 0.0
+        if flux_dep:
+            phi_ext = st.slider("External flux Φ (Φ₀)", 0.0, 0.5, 0.0, 0.01, format="%.2f", help="Redraws the potential well and its levels at this flux.")
+        physics = plots.potential_figure(fam, best["params"], coupled, phi_ext=phi_ext)
+    else:
         try:
             from ui import platform_panels
 
-            physics = {"nv_ensemble": platform_panels.nv_levels_figure, "charge_qubit": platform_panels.dqd_figure}[best["family"]](best["params"])
-        except Exception:
+            physics = {"nv_ensemble": platform_panels.nv_levels_figure, "charge_qubit": platform_panels.dqd_figure}[fam](best["params"])
+        except Exception:  # noqa: BLE001
             physics = None
     if physics is not None:
-        st.subheader("Circuit physics")
-        st.plotly_chart(physics, **PLOT)
-    st.subheader("What the model cannot explain")
-    if rep["unexplained"]:
-        for u in rep["unexplained"]:
-            st.markdown(f"- **{u['f_lo']:.2f}–{u['f_hi']:.2f} GHz** ({u['n_points']} points, {'flat' if u['flat'] else 'flux-dependent'}): {u['interpretation']}")
-    else:
-        st.markdown("Every detected feature is accounted for.")
-    st.subheader("Where to look next")
-    if rep["next_measurements"]:
-        for n in rep["next_measurements"]:
-            if n["kind"] == "look_here":
-                st.markdown(f"- **Sweep {n['f_lo']:.2f}–{n['f_hi']:.2f} GHz** for control values {n['x_lo']:.3g} to {n['x_hi']:.3g}: {n['why']}")
-            elif n["kind"] == "extend_band":
-                st.markdown(f"- **Extend the band to {n['f_lo']:.2f}–{n['f_hi']:.2f} GHz**: {n['why']}")
+        st.plotly_chart(physics, key="physics", **PLOT)
+
+    # ---- F. spec sheet
+    dq = rep.get("derived")
+    if dq is None:  # older saved reports: compute on the fly
+        try:
+            dq = derived.derived_quantities(best, (float(xg.min()), float(xg.max())))
+        except Exception:  # noqa: BLE001
+            dq = []
+    groups = spec_groups(rep, dq)
+    theme.md(theme.section("Spec sheet", "derived quantities", "Hover a row for the note behind it."))
+    markers: list[tuple[float, float]] = []
+    s1, s2, s3 = st.columns(3)
+    with s1, st.container(border=True):
+        theme.md(theme.eyebrow("Qubit"))
+        theme.md(theme.spec_rows_html(groups["Qubit"]))
+        if is_circ_fam and flux_dep:
+            band_rep = rep.get("band_GHz") or [float(f[0]), float(f[-1])]
+            target = st.number_input("Target f01 (GHz)", value=float(round(0.5 * (band_rep[0] + band_rep[1]), 2)), step=0.05, format="%.3f",
+                                     help="Where to bias the device: control values at which the fitted 0→1 transition equals this frequency.")
+            try:
+                sols = derived.control_for_frequency(best, float(target), (float(xg.min()), float(xg.max())))
+            except Exception:  # noqa: BLE001
+                sols = []
+            if sols:
+                theme.md(theme.spec_rows_html([("control for this f01", ", ".join(f"{s:.3f}" for s in sols).replace("-", "−"), "also drawn as amber diamonds on the map")]))
+                markers = [(float(s), float(target)) for s in sols]
             else:
-                st.markdown(f"- **Constrain {n['parameter']}** (currently " + (f"±{100*n['rel_sigma']:.0f}%" if n['rel_sigma'] < 5 else "unconstrained") + f"): {n['why']}")
+                theme.md(theme.caption(f"the fitted 0→1 line does not reach {target:.3f} GHz inside the measured control range"))
+    with s2, st.container(border=True):
+        theme.md(theme.eyebrow("Control axis"))
+        theme.md(theme.spec_rows_html(groups["Control axis"]))
+    with s3, st.container(border=True):
+        theme.md(theme.eyebrow("Readout"))
+        theme.md(theme.spec_rows_html(groups["Readout"]) if groups["Readout"] else '<div class="cs-spec-empty">no readout resonator in the accepted model</div>')
+
+    # the annotated map, now that the operating points are known
+    fig_final = plots.map_figure(image, x, f, points=np.array(rep["points"]), inlier=rep["inlier_mask"], lines=rep["lines"], x_grid=xg, xlabel=xlabel, look_here=boxes,
+                                 flat_lines=rep["flat_lines_GHz"], title=f"{best['hypothesis']} · fitted transitions over the measured map", markers=markers or None)
+    ev_map_slot.plotly_chart(fig_final, key="map_final", **PLOT)
+
+    # ---- F. where to look next (numbered to match the map badges) and what the model cannot explain
+    theme.md(theme.section("Where to look next", f"{len(rep['next_measurements'])} suggestions"))
+    cards = []
+    for i, b in enumerate(boxes, start=1):
+        cards.append(theme.card_html(str(i), f"sweep · {plots.pretty(b['line'])} line", theme.frange_html(b["f_lo"], b["f_hi"]),
+                                     f"control {b['x_lo']:.3g} → {b['x_hi']:.3g}".replace("-", "−"), b["why"]))
+    for n in rep["next_measurements"]:
+        if n["kind"] == "extend_band":
+            cards.append(theme.card_html("↕", "extend the band", theme.frange_html(n["f_lo"], n["f_hi"]), f"{plots.pretty(n['line'])} line, outside the measured band", n["why"], muted_badge=True))
+        elif n["kind"] == "constrain_parameter":
+            rel = n["rel_sigma"]
+            cards.append(theme.card_html("σ", f"constrain {n['parameter']}", f"{theme.esc(n['parameter'])} <span class='u'>{f'±{100*rel:.0f}%' if rel < 5 else 'unconstrained'}</span>",
+                                         "poorly determined by the current data", n["why"], muted_badge=True))
+    if cards:
+        theme.md(theme.grid_html(cards))
     else:
-        st.markdown("No obvious gaps: every predicted line inside the band has data under it.")
-    st.subheader("Plain-English summary")
-    with st.spinner("writing summary …"):
-        ex = explain.explain(rep, use_llm=use_llm)
-    st.write(ex["summary"])
-    if ex["caveats"]:
-        st.markdown("**Caveats**\n" + "\n".join(f"- {c}" for c in ex["caveats"]))
-    if ex["next_steps"]:
-        st.markdown("**Next steps**\n" + "\n".join(f"- {c}" for c in ex["next_steps"]))
-    st.caption(f"summary source: {ex.get('source')}" + (f" · {ex['llm_error']}" if ex.get("llm_error") else ""))
-    # exports
+        theme.md('<div class="cs-body muted cs-block">No obvious gaps: every predicted line inside the band has data under it.</div>')
+    theme.md(theme.section("What the model cannot explain", f"{len(rep['unexplained'])} features"))
+    if rep["unexplained"]:
+        theme.md(theme.grid_html([theme.card_html(None, "flux-independent line" if u["flat"] else "flux-dependent feature", theme.frange_html(u["f_lo"], u["f_hi"]),
+                                                  f"{u['n_points']} points · {100*u.get('unexplained_frac', 1):.0f}% off any predicted line", u["interpretation"]) for u in rep["unexplained"]]))
+    else:
+        theme.md('<div class="cs-body muted cs-block">Every detected feature is accounted for.</div>')
+
+    # ---- G. checks: hidden truth (demos) and design values
+    truth_rep = st.session_state.get("truth")
+    design_rows = [(k, theme.num(best["params"][k], theme.UNITS.get(k, "")), theme.num(dv, theme.UNITS.get(k, "")), f"{100 * (best['params'][k] - dv) / abs(dv):+.1f}%".replace("-", "−") if dv else "–")
+                   for k, dv in design_values.items() if k in best["params"]]
+    if truth_rep is not None or design_rows:
+        theme.md(theme.section("Checks", "truth and design"))
+    if truth_rep is not None and st.toggle("Reveal hidden truth (demo)"):
+        rows_t = truth_rows(best, truth_rep)
+        theme.md(theme.table_html(("parameter", "fitted ± σ", "truth", "within 2σ"), rows_t, numeric=(1, 2), classes=lambda r, c: ("ok" if rows_t[r][3] == "✓" else "bad") if c == 3 else ""))
+        theme.md(theme.caption(f"truth: {truth_rep['family']}{' + resonator' if truth_rep.get('coupled') else ''}; spurs at {[s['f'] for s in truth_rep.get('spurs', [])]} GHz"
+                               + (f" · {truth_rep['note']}" if truth_rep.get("note") else "")))
+        pull = _ev("pull_figure", rep, dict(truth_rep["params"], period=truth_rep.get("period", 1.0), offset=truth_rep.get("offset", 0.0)))
+        if pull is not None:
+            st.plotly_chart(pull, key="ev_pull", **PLOT)
+    if design_rows:
+        theme.md(theme.eyebrow("Fit vs design"))
+        theme.md(theme.table_html(("parameter", "fit", "design", "deviation"), design_rows, numeric=(1, 2, 3)))
+
+    # ---- H. details & export
+    theme.md(theme.section("Details & export"))
     try:
         csv_text = derived.curves_csv(rep)
-    except Exception:
+    except Exception:  # noqa: BLE001
         csv_text = None
     e1, e2, e3 = st.columns(3)
     e1.download_button("Download report (JSON)", agent.to_json(rep), file_name="circuitsleuth_report.json", mime="application/json", width="stretch")
     e2.download_button("Download fitted curves (CSV)", csv_text or "", file_name="circuitsleuth_curves.csv", mime="text/csv", disabled=csv_text is None, width="stretch")
     e3.download_button("Download annotated map (HTML)", fig_final.to_html(include_plotlyjs="cdn"), file_name="circuitsleuth_map.html", mime="text/html", width="stretch")
     with st.expander("Reproduce in scqubits"):
-        st.markdown(theme.caption("Copy scqubits snippet: the copy button appears at the top right of the block when you hover over it."), unsafe_allow_html=True)
+        theme.md(theme.caption("Copy scqubits snippet: the copy button appears at the top right of the block when you hover over it."))
         code = rep.get("scqubits_code")
         if not code:
             try:
                 code = derived.scqubits_code(best)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 code = f"# unavailable: {type(e).__name__}: {e}"
         st.code(code, language="python")
+    with st.expander("Run log"):
+        run_log = st.session_state.get("run_log") or []
+        if run_log:
+            theme.md(theme.log_html(run_log))
+        else:
+            st.caption("No live log: this result was loaded from a precomputed run.")
+    show_history()
 elif rep:
     st.error(rep.get("error"))
-
-show_history()
+    show_history()
+else:
+    show_history()

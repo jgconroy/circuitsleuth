@@ -271,15 +271,6 @@
    "f_lo": 7.741,
    "f_hi": 8.94,
    "why": "the model predicts the 0-2 line here but nothing was detected"
-  },
-  {
-   "kind": "look_here",
-   "line": "1-2",
-   "x_lo": -1.0,
-   "x_hi": 1.0,
-   "f_lo": 3.523,
-   "f_hi": 7.213,
-   "why": "the model predicts the 1-2 line here but nothing was detected; a weak thermal population line, visible with higher power or a pre-pulse"
   }
  ],
  "lines": {

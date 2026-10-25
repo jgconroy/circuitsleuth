@@ -4,7 +4,20 @@ primaryColor = "#fab219"
 backgroundColor = "#111214"
 secondaryBackgroundColor = "#1a1a19"
 textColor = "#f0efec"
-font = "sans serif"
+# IBM Plex Sans for headings and body, IBM Plex Mono for every number; the CSS in ui/theme.py loads the same families.
+font = "IBM Plex Sans:https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap, sans-serif"
+headingFont = "IBM Plex Sans:https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap, sans-serif"
+codeFont = "IBM Plex Mono:https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap, monospace"
+codeFontSize = "14px"
+baseRadius = "6px"
+buttonRadius = "6px"
+borderColor = "rgba(240,239,236,0.08)"
+dataframeBorderColor = "rgba(240,239,236,0.08)"
+showWidgetBorder = true
+showSidebarBorder = true
+
+[client]
+toolbarMode = "minimal"
 
 [browser]
 gatherUsageStats = false

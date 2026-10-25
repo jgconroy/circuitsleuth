@@ -22,7 +22,7 @@ with sync_playwright() as p:
         time.sleep(wait)
         if not mid:
             for _ in range(240):  # wait for the run to finish (metrics appear)
-                if page.locator("text=Best hypothesis").count() > 0:
+                if page.locator("text=Details & export").count() > 0:  # the results strip exists only after a run
                     break
                 time.sleep(2)
             time.sleep(3)

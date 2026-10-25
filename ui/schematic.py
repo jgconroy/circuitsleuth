@@ -1,35 +1,49 @@
-"""Hand-drawn inline SVG circuit schematics.
+"""Hand-drawn inline SVG circuit schematics with the fitted values written next to each component.
 
-All drawings share one geometry: two horizontal rails (top y = 25, bottom y = 105) with the circuit elements
-as vertical branches between them.  Stroke #f0efec 2 px, no fills except the amber Josephson-junction box.
+All circuit drawings share one geometry: two horizontal rails (top y = 44, bottom y = 124) with the elements as vertical
+branches between them, a label row under the bottom rail and a value row under the labels.  Strokes are 1.5 px on screen
+whatever the scale (vector-effect: non-scaling-stroke), no fills except the amber Josephson-junction box.  Fitted values
+fade in one after the other (150 ms stagger) through a <style> block inside the SVG.
 """
 from __future__ import annotations
+
+import html
 
 STROKE = "#f0efec"
 ACCENT = "#fab219"
 MUTED = "#c3c2b7"
 INK = "#111214"
-FONT = "Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
-TOP, BOT = 25, 105  # rail heights
+MONO = "'IBM Plex Mono', ui-monospace, Menlo, monospace"
+TOP, BOT = 44, 124  # rail heights
+LAB, VAL = BOT + 20, BOT + 37  # label and value baselines
+H = BOT + 48
+TARGET_W = 440  # on-screen width the type sizes are tuned for
 
-_MARKER = ('<defs><marker id="cs-ah" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">'
+_MARKER = ('<defs><marker id="cs-ah" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse">'
            f'<path d="M0,0 L8,4 L0,8 z" fill="{STROKE}" stroke="none"/></marker>'
-           '<marker id="cs-ah-amber" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">'
+           '<marker id="cs-ah-amber" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse">'
            f'<path d="M0,0 L8,4 L0,8 z" fill="{ACCENT}" stroke="none"/></marker></defs>')
+_STYLE = ("<style>.cs-sch line,.cs-sch polyline,.cs-sch path,.cs-sch rect,.cs-sch circle{vector-effect:non-scaling-stroke}"
+          ".cs-sch .cs-v{opacity:0;animation:cs-vin .45s ease-out forwards}"
+          "@keyframes cs-vin{from{opacity:0}to{opacity:1}}</style>")
 
 
-def _svg(body: str, w: int, h: int = 130) -> str:
-    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="100%" '
-            f'style="max-height:140px;display:block;margin:.2rem auto .4rem" fill="none" stroke="{STROKE}" stroke-width="2" '
-            f'stroke-linecap="round" stroke-linejoin="round" font-family="{FONT}" font-size="13">{_MARKER}{body}</svg>')
+def _svg(body: str, w: int, h: int = H, max_width: int = TARGET_W) -> str:
+    fs = 14.0 * w / max_width  # 14 px on screen when the drawing is shown at max_width
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" class="cs-sch" viewBox="0 0 {w} {h}" width="100%" '
+            f'style="max-width:{max_width}px;display:block;margin:0 auto;height:auto" fill="none" stroke="{STROKE}" stroke-width="1.5" '
+            f'stroke-linecap="round" stroke-linejoin="round" font-family="{MONO}" font-size="{fs:.2f}">{_STYLE}{_MARKER}{body}</svg>')
 
 
 def _wire(x1, y1, x2, y2, color=STROKE) -> str:
     return f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{color}"/>'
 
 
-def _text(x, y, s, anchor="middle", color=MUTED, size=13) -> str:
-    return f'<text x="{x}" y="{y}" text-anchor="{anchor}" fill="{color}" stroke="none" font-size="{size}">{s}</text>'
+def _text(x, y, s, anchor="middle", color=MUTED, size=None, cls="", delay_ms: int | None = None) -> str:
+    sz = f' font-size="{size}"' if size else ""
+    c = f' class="{cls}"' if cls else ""
+    d = f' style="animation-delay:{delay_ms}ms"' if delay_ms is not None else ""
+    return f'<text x="{x}" y="{y}" text-anchor="{anchor}" fill="{color}" stroke="none"{sz}{c}{d}>{html.escape(str(s))}</text>'
 
 
 def _cap_v(x, yt=TOP, yb=BOT, half=15, gap=8) -> str:
@@ -56,94 +70,120 @@ def _jj_v(x, yt=TOP, yb=BOT, s=26) -> str:
             + _wire(x, y0 + s, x, yb))
 
 
-def _ind_v(x, yt=TOP, yb=BOT, n=5, amp=7, h=40) -> str:
-    """Inductor as a zigzag on a vertical branch."""
+def _ind_v(x, yt=TOP, yb=BOT, n=4, h=40) -> str:
+    """Inductor as a run of coil arcs (not a zigzag, which reads as a resistor) on a vertical branch."""
     ym = (yt + yb) / 2
-    y0, step = ym - h / 2, h / (2 * n)
-    pts = [(x, y0)] + [(x + (amp if i % 2 == 0 else -amp), y0 + (i + 0.5) * step) for i in range(2 * n)] + [(x, y0 + h)]
-    poly = " ".join(f"{px:.1f},{py:.1f}" for px, py in pts)
-    return _wire(x, yt, x, y0) + f'<polyline points="{poly}"/>' + _wire(x, y0 + h, x, yb)
+    y0, r = ym - h / 2, h / (2 * n)
+    arcs = "".join(f" a{r:.1f},{r:.1f} 0 0 1 0,{2 * r:.1f}" for _ in range(n))
+    return _wire(x, yt, x, y0) + f'<path d="M {x},{y0}{arcs}"/>' + _wire(x, y0 + h, x, yb)
 
 
 def _ground(x, y=BOT) -> str:
-    return _wire(x, y, x, y + 7) + _wire(x - 10, y + 7, x + 10, y + 7) + _wire(x - 6, y + 12, x + 6, y + 12) + _wire(x - 2, y + 17, x + 2, y + 17)
+    return _wire(x, y, x, y + 6) + _wire(x - 9, y + 6, x + 9, y + 6) + _wire(x - 5.5, y + 10, x + 5.5, y + 10) + _wire(x - 2, y + 14, x + 2, y + 14)
 
 
 def _flux(x, y, label="Φ") -> str:
     """Flux threading a loop: an upward arrow with its label to the left."""
-    return f'<line x1="{x}" y1="{y + 15}" x2="{x}" y2="{y - 15}" marker-end="url(#cs-ah)"/>' + _text(x - 7, y + 5, label, "end", STROKE, 14)
+    return f'<line x1="{x}" y1="{y + 15}" x2="{x}" y2="{y - 15}" marker-end="url(#cs-ah)"/>' + _text(x - 7, y + 4, label, "end", STROKE)
 
 
 def _rails(xl, xr) -> str:
     return _wire(xl, TOP, xr, TOP) + _wire(xl, BOT, xr, BOT)
 
 
-def _resonator(x1: int) -> tuple[str, int]:
-    """Coupling capacitor from the qubit's top node at x1 to an LC resonator on the right. Returns (svg, right edge)."""
+def _labelled(x, label, key, values, order, anchor="middle") -> str:
+    """Component label on the label row with its fitted value (if known) fading in on the value row."""
+    s = _text(x, LAB, label, anchor)
+    v = (values or {}).get(key)
+    if v:
+        order.append(key)
+        s += _text(x, VAL, v, anchor, ACCENT, cls="cs-v", delay_ms=150 * len(order))  # staggered fade-in, 150 ms apart
+    return s
+
+
+def _resonator(x1: int, values, order) -> tuple[str, int]:
+    """Coupling capacitor from the qubit's top node at x1 to an L‖C readout resonator on the right. Returns (svg, right edge)."""
     xc0, xc1 = x1, x1 + 60  # coupling capacitor between the two top nodes
     xl, xr = xc1, xc1 + 110  # resonator rails
-    body = (_cap_h(TOP, xc0, xc1) + _text((xc0 + xc1) / 2, TOP - 12, "g")
+    xm = (xc0 + xc1) / 2
+    g_val = (values or {}).get("g")
+    g_txt = f'<text x="{xm}" y="{TOP - 16}" text-anchor="middle" fill="{MUTED}" stroke="none">g'
+    if g_val:
+        order.append("g")
+        g_txt += f' <tspan class="cs-v" style="animation-delay:{150 * len(order)}ms" fill="{ACCENT}">{html.escape(g_val)}</tspan>'
+    g_txt += "</text>"
+    body = (_cap_h(TOP, xc0, xc1) + g_txt
             + _rails(xl, xr) + _wire(x1, BOT, xl, BOT)
             + _ind_v(xl + 30) + _cap_v(xr - 30)
-            + _text((xl + xr) / 2, BOT + 20, "fr"))
+            + _labelled((xl + xr) / 2, "fr  (L‖C)", "fr", values, order))
     return body, xr + 20
 
 
-def _qubit(family: str) -> tuple[str, int, int]:
+def _qubit(family: str, values, order) -> tuple[str, int, int]:
     """The bare circuit between two rails. Returns (svg, left rail x, right rail x)."""
     if family == "transmon":
-        xl, xr = 70, 230
-        body = _rails(xl, xr) + _cap_v(110) + _jj_v(190) + _ground(150) + _text(86, 69, "EC", "end") + _text(212, 69, "EJ", "start")
+        xl, xr = 60, 240
+        body = (_rails(xl, xr) + _cap_v(105) + _jj_v(195) + _ground(150)
+                + _labelled(105, "EC", "EC", values, order) + _labelled(195, "EJ", "EJ", values, order))
         return body, xl, xr
     if family == "tunable_transmon":
-        xl, xr = 50, 250
+        xl, xr = 40, 260
         # SQUID loop: two junction branches joined by short wires, hung from the rails at x = 200
-        body = (_rails(xl, xr) + _cap_v(85) + _text(61, 69, "EC", "end") + _ground(135)
-                + _wire(200, TOP, 200, 42) + _wire(165, 42, 235, 42) + _wire(165, 88, 235, 88) + _wire(200, 88, 200, BOT)
-                + _jj_v(165, 42, 88, 20) + _jj_v(235, 42, 88, 20) + _flux(206, 65)
-                + _text(200, BOT + 20, "EJmax, d"))
+        body = (_rails(xl, xr) + _cap_v(80) + _ground(135)
+                + _wire(200, TOP, 200, TOP + 17) + _wire(165, TOP + 17, 235, TOP + 17) + _wire(165, BOT - 17, 235, BOT - 17) + _wire(200, BOT - 17, 200, BOT)
+                + _jj_v(165, TOP + 17, BOT - 17, 20) + _jj_v(235, TOP + 17, BOT - 17, 20) + _flux(206, (TOP + BOT) / 2)
+                + _labelled(80, "EC", "EC", values, order) + _labelled(200, "EJmax · d", "EJmax", values, order))
         return body, xl, xr
     if family == "fluxonium":
-        xl, xr = 40, 260
-        body = (_rails(xl, xr) + _cap_v(75) + _jj_v(150) + _ind_v(225) + _ground(112) + _flux(190, 65)
-                + _text(75, BOT + 20, "EC") + _text(150, BOT + 20, "EJ") + _text(225, BOT + 20, "EL"))
+        xl, xr = 30, 270
+        body = (_rails(xl, xr) + _cap_v(70) + _jj_v(150) + _ind_v(230) + _ground(110) + _flux(190, (TOP + BOT) / 2)
+                + _labelled(70, "EC", "EC", values, order) + _labelled(150, "EJ", "EJ", values, order) + _labelled(230, "EL", "EL", values, order))
         return body, xl, xr
     raise KeyError(family)
 
 
-def _nv_ensemble() -> str:
-    ox, oy = 140, 108
+def _nv_ensemble(values, order) -> str:
+    ox, oy = 130, BOT
     body = (f'<circle cx="{ox}" cy="{oy}" r="3.5" fill="{STROKE}" stroke="none"/>'
-            + f'<line x1="{ox}" y1="{oy}" x2="{ox}" y2="26" marker-end="url(#cs-ah)"/>'
-            + _text(ox + 9, 40, "NV axis", "start", STROKE) + _text(ox + 9, 57, "D, E", "start")
-            + f'<line x1="{ox}" y1="{oy}" x2="{ox + 76}" y2="46" stroke="{ACCENT}" marker-end="url(#cs-ah-amber)"/>'
-            + _text(ox + 84, 44, "B", "start", ACCENT, 14)
+            + f'<line x1="{ox}" y1="{oy}" x2="{ox}" y2="{TOP}" marker-end="url(#cs-ah)"/>'
+            + _text(ox + 9, TOP + 12, "NV axis", "start", STROKE)
+            + f'<line x1="{ox}" y1="{oy}" x2="{ox + 80}" y2="{TOP + 22}" stroke="{ACCENT}" marker-end="url(#cs-ah-amber)"/>'
+            + _text(ox + 88, TOP + 20, "B", "start", ACCENT)
             + f'<path d="M {ox},{oy - 30} A 30,30 0 0 1 {ox + 23},{oy - 19}" stroke-dasharray="3 3" stroke="{MUTED}"/>'
-            + _text(ox + 17, oy - 34, "θ", "start"))
+            + _text(ox + 20, oy - 34, "θ", "start")
+            + _labelled(70, "D", "D", values, order) + _labelled(160, "E", "E", values, order) + _labelled(250, "θ, φ", "theta", values, order))
+    return _svg(body, 320)
+
+
+def _charge_qubit(values, order) -> str:
+    yc = (TOP + BOT) / 2 + 6
+    body = (f'<circle cx="105" cy="{yc}" r="22"/><circle cx="195" cy="{yc}" r="22"/>'
+            + f'<circle cx="105" cy="{yc}" r="4" fill="{ACCENT}" stroke="none"/>'
+            + f'<rect x="142" y="{yc - 18}" width="16" height="36" rx="2"/>'
+            + _wire(80, TOP, 220, TOP) + _wire(150, TOP, 150, TOP - 16) + _text(158, TOP - 6, "ε", "start", STROKE)
+            + _labelled(105, "dot L", "", values, order) + _labelled(195, "dot R", "", values, order) + _labelled(150, "t_c", "t_c", values, order))
     return _svg(body, 300)
 
 
-def _charge_qubit() -> str:
-    body = (f'<circle cx="105" cy="80" r="22"/><circle cx="195" cy="80" r="22"/>'
-            + f'<circle cx="105" cy="80" r="4" fill="{ACCENT}" stroke="none"/>'
-            + '<rect x="142" y="62" width="16" height="36" rx="2"/>' + _text(150, BOT + 20, "t_c")
-            + _wire(80, 36, 220, 36) + _wire(150, 36, 150, 16) + _text(158, 22, "ε", "start", STROKE, 14)
-            + _text(105, BOT + 20, "dot L") + _text(195, BOT + 20, "dot R"))
-    return _svg(body, 300)
-
-
-def schematic_svg(family: str, coupled: bool = False) -> str:
-    """Inline SVG for a circuit family; coupled=True appends a capacitively coupled LC readout resonator."""
+def schematic_svg(family: str, coupled: bool = False, values: dict | None = None) -> str:
+    """Inline SVG for a circuit family; coupled=True appends a capacitively coupled L‖C readout resonator.
+    `values` maps parameter keys (EJ, EC, EL, EJmax, d, fr, g, D, E, theta, t_c) to display strings written next to the symbols."""
+    values = dict(values or {})
+    if "EJmax" in values and "d" in values:
+        values["EJmax"] = f"{values['EJmax']} · {values['d']}"
+    order: list[str] = []
     if family == "nv_ensemble":
-        return _nv_ensemble()
-    if family == "charge_qubit":
-        return _charge_qubit()
-    try:
-        body, xl, xr = _qubit(family)
-    except KeyError:
-        return _svg(_text(150, 70, family, "middle", STROKE), 300)
-    width = xr + 40
-    if coupled:
-        res, width = _resonator(xr)
-        body += res
-    return _svg(body, width)
+        svg = _nv_ensemble(values, order)
+    elif family == "charge_qubit":
+        svg = _charge_qubit(values, order)
+    else:
+        try:
+            body, xl, xr = _qubit(family, values, order)
+        except KeyError:
+            return _svg(_text(150, (TOP + BOT) / 2, family, "middle", STROKE), 300)
+        width = xr + 30
+        if coupled:
+            res, width = _resonator(xr, values, order)
+            body += res
+        svg = _svg(body, width)
+    return svg
