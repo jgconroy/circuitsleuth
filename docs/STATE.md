@@ -16,8 +16,8 @@ Companion files: `README.md` (public story), `docs/devpost.md` (submission text)
   QEC1 = 20 cores (shared), Windows 11, `(dtc)` env py3.11. Package for them: `dist/circuitsleuth_bigmachine(.zip)`
   built by `python scripts/make_bigmachine_pkg.py` from `bigmachine/`. The user said these machines are NOT usable for the
   final build, only for side computations (training / benchmarks).
-- Anthropic API key is in `.env` (git-ignored) but the account had **no credits** as of Sat Oct 24 ~13:00; `explain.py` falls back
-  to a template automatically. GitHub CLI is logged in (`gh auth status` ok).
+- Anthropic API key is in `.env` (git-ignored); credits were added Sun ~02:30 and the Claude Opus 5.5 structured-output explainer works
+  (~12 s per report, prompt ~6.5k chars; max_tokens 8000 with effort low because thinking shares the budget). Template fallback remains. GitHub CLI is logged in (`gh auth status` ok).
 - The user prefers short writeups; deliver deep work with brief messages.
 
 ## 1. What the product does (one paragraph)

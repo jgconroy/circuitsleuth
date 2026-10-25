@@ -22,8 +22,16 @@ def _load_env():
 
 
 def trimmed(report: dict) -> dict:
-    drop = {"lines", "x_grid", "inlier_mask", "points", "track_ids"}
-    return {k: v for k, v in report.items() if k not in drop}
+    """The report without bulk arrays: what the narrator needs, not the pixels."""
+    drop = {"lines", "x_grid", "inlier_mask", "points", "track_ids", "holdout_columns"}
+    out = {k: v for k, v in report.items() if k not in drop}
+    if isinstance(out.get("design"), dict):
+        d = out["design"]
+        out["design"] = dict(candidates=d.get("candidates", [])[:3], discriminate=d.get("discriminate"), current_sigma=d.get("current_sigma"))
+    out["hypotheses"] = [{k: h[k] for k in ("hypothesis", "track_score", "inlier_frac", "rms_inliers_MHz") if k in h} for h in out.get("hypotheses", [])]
+    out["unexplained"] = out.get("unexplained", [])[:6]
+    out["derived"] = out.get("derived", [])[:24]
+    return out
 
 
 def template(report: dict) -> dict:
@@ -64,9 +72,9 @@ def template(report: dict) -> dict:
 
 SYSTEM = """You are CircuitSleuth's explainer. You receive a JSON report produced by a physics fit of a
 superconducting-qubit two-tone spectroscopy map, plus a template draft. Write for an experimentalist at
-the fridge. Rules: never invent or round numbers beyond what the report contains; every number you quote
-must appear in the report. If the report says a parameter is poorly determined, say so plainly. Keep the
-summary under 120 words; give at most 5 caveats and 5 concrete next steps."""
+the fridge. Rules: never invent a number; every value you quote must come from the report, quoted to 3 or 4 significant
+figures (round, do not copy long decimals) with its unit. If the report says a parameter is poorly determined,
+say so plainly. Keep the summary under 120 words; give at most 5 caveats and 5 concrete next steps."""
 
 
 def _schema():
@@ -93,7 +101,8 @@ def explain(report: dict, use_llm: bool = True, model: str = MODEL) -> dict:
         client = anthropic.Anthropic()
         resp = client.messages.parse(
             model=model,
-            max_tokens=2000,
+            max_tokens=8000,  # adaptive thinking shares this budget; 2000 truncated the JSON
+            output_config={"effort": "low"},
             system=SYSTEM,
             messages=[{"role": "user", "content": "Report:\n" + json.dumps(trimmed(report), default=str) + "\n\nTemplate draft you may improve on:\n" + json.dumps(base)}],
             output_format=_schema(),
