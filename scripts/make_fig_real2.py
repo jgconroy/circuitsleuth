@@ -36,7 +36,7 @@ for key, lab, lw in (("0-1", "0→1", 2.6), ("0-2/2ph", "0→2 two-photon", 1.8)
 m = inl & (P[:, 0] >= 0) & (P[:, 0] <= 0.35) & (P[:, 1] >= 2.6) & (P[:, 1] <= 5)
 ax.scatter(P[m, 0], P[m, 1], s=14, color=GREEN, edgecolor="none", zorder=5, label=f"features used by the fit ({int(m.sum())})")
 ax.set_xlim(0.0, 0.35); ax.set_ylim(2.6, 5.0)
-ax.set_xlabel("external flux Φ (Φ₀), axis as published"); ax.set_ylabel("drive frequency (GHz)")
+ax.set_xlabel("External flux Φ (Φ₀), axis as published"); ax.set_ylabel("Drive frequency (GHz)")
 ax.set_title("Fluxonium device A, Nguyen et al. PRX 9, 041041 (2019): map digitised from the paper's figure", fontsize=11, color=MUTED, loc="left")
 leg = ax.legend(loc="lower left", fontsize=9, facecolor=SURF, edgecolor="none", labelcolor=TEXT)
 at.axis("off")
@@ -52,14 +52,7 @@ for name, v, s_, pv in rows:
     at.text(0.40, y, f"{v:.2f} ± {s_:.2f}" if s_ else f"{v:.2f}", fontsize=11, color=AMBER, family="monospace", transform=at.transAxes)
     at.text(0.84, y, f"{pv:.2f}", fontsize=11, color="#86b6ef", family="monospace", transform=at.transAxes); y -= 0.085
 y -= 0.03
-for line in ("No tuning for this dataset: the same code",
-             "and settings as the synthetic demos.",
-             "",
-             "The fit is pinned by the clean 0→1 segment",
-             "between Φ = 0 and 0.27; the vertical streaks",
-             "are artefacts of the published figure and are",
-             "left unexplained on purpose."):
-    at.text(0.0, y, line, fontsize=9.5, color=MUTED, transform=at.transAxes); y -= 0.065
+at.text(0.0, y, "Published map, no tuning.", fontsize=10, color=MUTED, transform=at.transAxes)
 fig.tight_layout()
 fig.savefig("artifacts/fig_real_fit_vs_paper.png", dpi=160)
 print("wrote artifacts/fig_real_fit_vs_paper.png")
