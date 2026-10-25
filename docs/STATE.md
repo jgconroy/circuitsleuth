@@ -78,7 +78,7 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
   confusion (2), one faint fluxonium. Runtime 5-9 min/map when the laptop is shared. A rerun with the validity fix was
   started Sat ~12:30 (log in the session scratchpad; writes `artifacts/blind_results.json`) - first 3 rows identical to before.
 - NV (8 maps): family **8/8**, params within tolerance **6/8** (misses: E off by ~3 MHz, field_scale 12 %). ~4 s/map.
-- DQD (8 maps): family **8/8**, params within tolerance **6/8** after the generalised relabel step (Sun ~00:50; was 5/8; the two misses have 10–25 usable features). ~4 s/map.
+- DQD (8 maps): family **8/8**, params within tolerance **6/8** after the generalised relabel step (Sat ~23:40 PDT; was 5/8; the two misses have 10–25 usable features). ~4 s/map.
 ### Proposer (CNN)
 - v1: 20k maps, 12 epochs: fam acc 0.857, "coupled" acc 0.552 (unlearnable target), param rmse 0.241 (`artifacts/classifier_v1.*`).
 - v2 (adopted, `artifacts/classifier.pt`): 40k maps, 20 epochs: fam acc **0.888**, coupled acc 0.587, param rmse 0.230.
@@ -150,7 +150,7 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
   Known parameters to get α. Recovery: curvatures within 1 %, dfs 11.95 (12), x0 0.1207 (0.12).
 - Frequency units are per platform (`PLATFORMS[...]["freq_unit"/"freq_label"]`, MHz for ion/atom); all numeric code is unit-agnostic.
 - URL params now: `?platform=ion&demo=J`, `?demo=A&load=1`.
-- Blind (8 maps each): ion family 8/8, params **7/8** after the generalised relabel step (Sun ~00:50; was 5/8: volt_scale halved); atom family 8/8, curvatures/dfs/x0 within tolerance 5/8. ~4 s/map.
+- Blind (8 maps each): ion family 8/8, params **7/8** after the generalised relabel step (Sat ~23:40 PDT; was 5/8: volt_scale halved); atom family 8/8, curvatures/dfs/x0 within tolerance 5/8. ~4 s/map.
 - Unit bug fixed: RMS-to-MHz conversion now uses `models.to_MHz(family)` (1 for MHz platforms); the ion/atom hero had shown 1000× values.
 
 ### Sat ~midnight status
@@ -231,7 +231,7 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
 - Verified: `scripts/apptest_quick.py` (no exceptions), headless autopilot replay + posterior sampling (no exceptions), Playwright
   screenshots of landing, loaded demo A (full page) and a live NV run. `scripts/screenshot.py` waits for "Identify Circuit" now.
 
-### Sun ~00:40 PDT: final-stretch additions (in progress; see "Pending")
+### Sat ~23:50 PDT: final-stretch additions (see "Pending" for what is still running)
 - **Bayesian model comparison** (`fit.mixture_loglik`, `fit.log_evidence`, `fit.model_posterior`): Laplace evidence per hypothesis under a
   Gaussian + uniform-background likelihood (σ = c_local, ε = 0.1), Gauss-Newton Hessian with inlier responsibilities, σ capped at half the
   prior box, log-uniform priors on energies.  Computed in `agent.identify` (step 6) on ONE common point set (dynamic features when ≥ 20 %,
