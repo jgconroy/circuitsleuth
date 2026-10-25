@@ -137,6 +137,8 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
 - `agent.prune_look_here` drops suggestion boxes covering >20 % of the map and the thermal 1-2 line unless tiny; applied in the app too.
 - Demo A regenerated: EJmax 25.01±0.10, EC 0.2998, d 0.300, fr 7.002, g 0.0996, period 1.300, offset 0.200 (offset now reported mod period).
 - README screenshot `artifacts/ui_results.png` is the new loaded-A page.
+- Resonator scenario (tests/test_agent.py -k resonator_and_spur) re-passed under the flux-dependent-evidence rule (12 min): EJmax 25.3, EC 0.296, fr 7.003, g 0.099.
+- Demo B regenerated: EJ 5.998, EC 1.000, EL 0.600, offset −0.300. A full `tests/test_agent.py` run with the FINAL code has not completed yet (one with the new extractor but the old acceptance rule was running Sat ~22:00); rerun it when the laptop is idle and record the result here.
 
 ## 5. Pending / in progress (check before starting new work)
 - (done Sat ~19:30) Circuit blind rerun with the validity-fixed generator: family **7/10**, params <5 % 2/10 (unchanged causes: fixed-transmon
