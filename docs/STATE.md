@@ -360,8 +360,9 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
   atom L 0.99 / M 0.98, ion J 1.00 / K 0.99, NV F 0.99 / G 0.99, dot H 1.00 / I 0.99.  Nothing needed fixing beyond the merge.
 - `agent.unexplained_features` merges tracks whose frequency ranges overlap within flat_tol (`merged_tracks` count kept).
 - `docs/study_guide.md` (subagent, ~12.7k words): pipeline, every plot, platforms, CS/stats glossary, results, 30 judge Q&As.
-- Testing whether maxiter 40–50 makes the live fast run of A accept the resonator (`scratchpad/chk_A_live.log`); adopt in the app's fast
-  preset only if C stays under ~2 min.
+- Live fast run of A at maxiter 40 found the resonator (explained 0.99, 210 s) but maxiter 50 did not (0.81, 165 s): resonator acceptance
+  with the fast preset is luck-dependent (single coupled trial), so the preset stays at 30 and the demo uses the precomputed A.  If a judge
+  runs A live and it comes back without the resonator, say "fast preset; the saved result used the normal preset" (runbook section D).
 
 ## 5. Pending / in progress (check before starting new work)
 - (done Sat ~19:30) Circuit blind rerun with the validity-fixed generator: family **7/10**, params <5 % 2/10 (unchanged causes: fixed-transmon
