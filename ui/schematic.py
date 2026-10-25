@@ -46,7 +46,7 @@ def _sub(base: str, sub: str, rest: str = "") -> str:
 
 LABEL_SVG = {  # component labels typeset for the label row
     "EC": _sub("E", "C"), "EJ": _sub("E", "J"), "EL": _sub("E", "L"), "EJmax · d": _sub("E", "J,max", " · d"), "fr  (L‖C)": _sub("f", "r", "  (L‖C)"),
-    "t_c": _sub("t", "c"), "f_rad0": _sub("f", "r,0"), "√V scale": _sub("κ", "V"), "Δ_fs": _sub("Δ", "fs"),
+    "t_c": _sub("t", "c"), "f_rad0": _sub("f", "r,0"), "√V scale": _sub("κ", "V"), "Δ_fs": _sub("Δ", "fs"), "ω_r": _sub("ω", "r"), "ω_z": _sub("ω", "z"),
 }
 
 
@@ -185,7 +185,7 @@ def _trapped_ion(values, order) -> str:
             + f'<line x1="150" y1="{yc}" x2="196" y2="{yc}" stroke="{ACCENT}" marker-end="url(#cs-ah-amber)"/>' + _text(200, yc + 4, "ω_z", "start", ACCENT)
             + f'<line x1="150" y1="{yc}" x2="150" y2="{yc - 26}" stroke="{MUTED}" marker-end="url(#cs-ah)"/>' + _text(156, yc - 20, "ω_r", "start", MUTED)
             + _text(63, yc + 50, "V", "middle", STROKE) + _text(237, yc + 50, "V", "middle", STROKE)
-            + _labelled(150, "f_rad0", "f_rad0", values, order) + _labelled(240, "√V scale", "volt_scale", values, order))
+            + _labelled(95, "f_rad0", "f_rad0", values, order) + _labelled(205, "√V scale", "volt_scale", values, order))
     return _svg(body, 310)
 
 
