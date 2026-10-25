@@ -30,10 +30,10 @@ Works for the recorded video and for a live screen share. Total on-camera time a
 
 Each step: what you do, what is on screen, what you say. The lines are written to be spoken; keep a relaxed pace and let the screen carry the numbers.
 
-**Step 1 (0:00–0:20) Tab 1, top of page.**
+**Step 1 (0:00–0:15) Tab 1, top of page.**
 Do: nothing, just hover over the verdict band.
 Screen: the big title, the Hamiltonian with amber numbers in parentheses, the KPI tiles, the schematic.
-Say: "This is qĤolmes. Every lab that brings up a new quantum chip starts with the same picture, a spectroscopy map full of lines, and then spends hours working out by hand which circuit made them and what its energies are. qĤolmes reads that off the map. What you are looking at is the result for one device: the circuit it identified, the Hamiltonian with the fitted energies written in, how well it predicts the columns it never saw, and a Bayes factor against the next-best family. Every number here comes from a physics fit that is checked against scqubits in the test suite, not from a neural network."
+Say: "This is qĤolmes. Every new quantum chip starts as a spectroscopy map full of lines, and someone spends hours working out which circuit made them and what its energies are. qĤolmes reads that off the map. This is the result for one device: the circuit it identified, the Hamiltonian with the fitted energies written in, how well it predicts the columns it never saw, and a Bayes factor against the next-best family, all from a physics fit checked against scqubits."
 
 **Step 2 (0:20–0:40) Tab 1, scroll down past "Hypotheses Tested" to "Evidence".**
 Do: scroll until the large annotated map is in view, pause two seconds, then on to the two small panels (held-out columns; avoided crossings).
