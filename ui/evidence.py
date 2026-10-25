@@ -58,6 +58,8 @@ def _style(fig: go.Figure, height: int, title: str | None = None, legend: bool =
         hoverlabel=dict(bgcolor="#222221", bordercolor=GRID, font=dict(family=MONO, size=12, color=TEXT)),
     )
     if title:
+        from ui.theme import title_case as _tc
+        title = title if "=" in title else _tc(title)
         fig.update_layout(title=dict(text=title, x=0, xanchor="left", y=0.985, yanchor="top", font=dict(size=14, color=MUTED, family=FONT)))
     axis = dict(gridcolor=GRID, zeroline=False, linecolor=GRID, showline=True, ticks="outside", tickcolor=GRID,
                 tickfont=dict(size=12, color=MUTED, family=MONO), title_font=dict(size=13, color=MUTED, family=FONT))

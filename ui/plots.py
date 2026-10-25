@@ -59,6 +59,8 @@ def _style(fig: go.Figure, height: int, title: str | None = None, legend: bool =
         hoverlabel=dict(bgcolor="#222221", bordercolor=GRID, font=dict(family=MONO, size=12, color=TEXT)),
     )
     if title:
+        from ui.theme import title_case as _tc
+        title = title if "=" in title else _tc(title)  # formula titles keep their symbols
         fig.update_layout(title=dict(text=title, x=0, xanchor="left", y=0.985, yanchor="top", font=dict(size=14, color=MUTED, family=FONT)))
     axis = dict(gridcolor=GRID, zeroline=False, linecolor=GRID, showline=True, ticks="outside", tickcolor=GRID,
                 tickfont=dict(size=12, color=MUTED, family=MONO), title_font=dict(size=13, color=MUTED, family=FONT))
@@ -196,23 +198,23 @@ def potential_figure(family: str, params: dict, coupled: bool = False, phi_ext: 
     try:
         from circuitsleuth import models
 
-        tail = f"  ·  readout resonator fr = {params['fr']:.3g} GHz" if coupled and "fr" in params else ""
+        tail = f"  ·  readout resonator f<sub>r</sub> = {params['fr']:.3g} GHz" if coupled and "fr" in params else ""
         if family in ("transmon", "tunable_transmon"):
             EC = float(params["EC"])
             if family == "tunable_transmon":
                 EJ = float(models.tunable_EJ(params["EJmax"], params["d"], np.array([phi_ext]))[0])
-                name = f"EJ(Φ = {phi_ext:.2f}) = {EJ:.3g} GHz (EJmax = {float(params['EJmax']):.3g})"
+                name = f"E<sub>J</sub>(Φ = {phi_ext:.2f}) = {EJ:.3g} GHz (E<sub>J,max</sub> = {float(params['EJmax']):.3g})"
                 levels = np.asarray(models.qubit_energies(family, params, np.array([phi_ext]), nlev=4))[0]
             else:
                 EJ = float(params["EJ"])
-                name = f"EJ = {EJ:.3g} GHz"
+                name = f"E<sub>J</sub> = {EJ:.3g} GHz"
                 levels = np.asarray(models.qubit_energies(family, params, np.array([0.0]), nlev=4))[0]
             phi = np.linspace(-np.pi, np.pi, 400)
             U = -EJ * np.cos(phi)
             fig = go.Figure()
             segs = _draw_well(fig, phi, U, levels)
             _arrows(fig, levels, segs, 0.0)
-            _style(fig, 360, title=f"U(φ) = −EJ cos φ  ·  {name}, EC = {EC:.3g} GHz{tail}", legend=False, margin=dict(l=62, r=16, t=40, b=48))
+            _style(fig, 360, title=f"U(φ) = −E<sub>J</sub> cos φ  ·  {name}, E<sub>C</sub> = {EC:.3g} GHz{tail}", legend=False, margin=dict(l=62, r=16, t=40, b=48))
             _ticks(fig, -np.pi, np.pi, title_text="phase φ")
             top = max(EJ, float(levels.max()) + 0.1 * EJ)
             fig.update_yaxes(title_text="energy (GHz)", range=[-1.08 * EJ, 1.08 * top])
@@ -225,7 +227,7 @@ def potential_figure(family: str, params: dict, coupled: bool = False, phi_ext: 
             fig = go.Figure()
             segs = _draw_well(fig, phi, U, levels, xmax=3 * np.pi)
             _arrows(fig, levels, segs, 2 * np.pi * phi_ext if phi_ext < 0.45 else 0.0)
-            _style(fig, 360, title=f"U(φ) = ½ EL φ² − EJ cos(φ − 2πΦ) at Φ = {phi_ext:.2f}  ·  EJ = {EJ:.3g}, EC = {EC:.3g}, EL = {EL:.3g} GHz{tail}", legend=False,
+            _style(fig, 360, title=f"U(φ) = ½ E<sub>L</sub> φ² − E<sub>J</sub> cos(φ − 2πΦ) at Φ = {phi_ext:.2f}  ·  E<sub>J</sub> = {EJ:.3g}, E<sub>C</sub> = {EC:.3g}, E<sub>L</sub> = {EL:.3g} GHz{tail}", legend=False,
                    margin=dict(l=62, r=16, t=40, b=48))
             _ticks(fig, -3 * np.pi, 3 * np.pi, title_text="phase φ")
             Umin, Emax = float(U.min()), float(levels.max())

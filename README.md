@@ -1,4 +1,6 @@
-# CircuitSleuth
+# Ĥolmes
+
+*Formerly CircuitSleuth; the Python package, repository and script names keep the old name. Brand kit: `docs/BRAND.md`, assets in `static/brand/`.*
 
 **Shazam for quantum chips.** Give it a two-tone spectroscopy map of a superconducting qubit and it tells you
 *what circuit you built*, recovers the Hamiltonian parameters and the flux calibration, overlays the fitted
@@ -9,7 +11,7 @@ Built in 36 hours at Cal Hacks 13.0 (Oct 2026).
 ![real data](artifacts/fig_real.png)
 
 *Above: a published fluxonium spectroscopy map (Nguyen et al., PRX 9, 041041, 2019, device A), digitised
-from the paper's vector PDF. CircuitSleuth was told nothing except "this is a map between 0 and 5 GHz".*
+from the paper's vector PDF. Ĥolmes was told nothing except "this is a map between 0 and 5 GHz".*
 
 ![synthetic demo](artifacts/fig_demo_A.png)
 
@@ -41,7 +43,7 @@ extraction, robust fitting, hold-out verification, unexplained-feature and next-
 Every superconducting-qubit lab does this by hand: stare at a spectroscopy map, guess the circuit, open
 scqubits or a home-made script, tweak EJ/EC/EL until the lines land on the data, argue about which
 features are pump leakage, then decide what to sweep next. It takes hours to days per device and it is the
-first thing you do with every new chip. CircuitSleuth automates the whole loop, and keeps the parts a
+first thing you do with every new chip. Ĥolmes automates the whole loop, and keeps the parts a
 physicist needs: honest uncertainties, explicit unexplained features, and a verification step that never
 sees the data it is tested on.
 
@@ -88,7 +90,7 @@ NV centres and quantum dots, each with hidden demo circuits and a "surprise" ran
   maximum flux sensitivity, tuning range, qubit–resonator detuning, dispersive shift and Purcell factor; for NV centres the
   strain splitting and per-orientation axial field; for quantum dots the gap in µeV and the lever arm.
 - **Operating points.** Type a target f01 and get the control values that reach it (marked on the map).
-- **Optimal next measurement.** Beyond the heuristic "look here" boxes, CircuitSleuth computes the Fisher information of the
+- **Optimal next measurement.** Beyond the heuristic "look here" boxes, Ĥolmes computes the Fisher information of the
   fit from every explained feature and ranks candidate sweeps (a transition over a block of control values) by expected
   information gain in bits (log-determinant ratio of the information matrix, discounted by line visibility and cost), names the
   parameter each sweep tightens most, and shows the parameter correlation matrix, which is where the EJ–EC degeneracy of a
@@ -140,7 +142,7 @@ Input: Fig. 2 of the paper digitised from the vector PDF (`scripts/prep_nguyen20
 the published map is too noisy for any feature to survive extraction, so only the 0-1 line from Φ = 0 to
 about 0.3 and fragments of 0-2 are available. With the paper's flux axis (period held at 1):
 
-| parameter | CircuitSleuth | paper's fit |
+| parameter | Ĥolmes | paper's fit |
 |---|---|---|
 | EJ | 3.03 ± 0.06 GHz | 3.0 GHz |
 | EC | 0.86 ± 0.02 GHz | 0.84 GHz |

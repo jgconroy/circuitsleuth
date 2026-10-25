@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="8 16 184 170" role="img" aria-label="Ĥolmes logo">
+  <title>Ĥolmes logo</title>
+  <g transform="translate(100 100) scale(1.16) translate(-100 -115)">
+    <path d="M24 92 C56 80 144 80 176 92 C154 103 46 103 24 92 Z" fill="#D99A1E"/>
+    <path d="M64 88 C62 60 70 44 86 46 C94 47 98 52 100 55 C102 52 106 47 114 46 C130 44 138 60 136 88 Z" fill="#D99A1E"/>
+    <path d="M63 76 L137 76 L136 88 L64 88 Z" fill="#8A5A0C"/>
+    <path d="M100 55 L100 68" stroke="#8A5A0C" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <path d="M54 100 H78 V132 H122 V100 H146 V186 H122 V154 H78 V186 H54 Z" fill="#12223D"/>
+  </g>
+</svg>

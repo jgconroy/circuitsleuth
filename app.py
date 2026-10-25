@@ -1,4 +1,4 @@
-"""CircuitSleuth - Streamlit UI.  Run:  streamlit run app.py"""
+"""Ĥolmes (formerly CircuitSleuth) - Streamlit UI.  Run:  streamlit run app.py"""
 from __future__ import annotations
 
 import io
@@ -17,7 +17,14 @@ try:  # the evidence figures are written by another engineer; the app works with
 except Exception:  # noqa: BLE001
     evidence = None
 
-st.set_page_config(page_title="CircuitSleuth", layout="wide", initial_sidebar_state="expanded")
+_HERE = os.path.dirname(os.path.abspath(__file__))
+try:  # brand icon in the browser tab (static/brand comes from the brand kit; falls back to an emoji)
+    from PIL import Image as _PILImage
+
+    _ICON = _PILImage.open(os.path.join(_HERE, "static", "brand", "icon-192.png"))
+except Exception:  # noqa: BLE001
+    _ICON = "🎩"
+st.set_page_config(page_title="Ĥolmes: Hamiltonians, Deduced From Spectra", page_icon=_ICON, layout="wide", initial_sidebar_state="expanded")
 theme.inject()
 
 from ui.demos import DEMOS, SAVED, make_demo  # noqa: E402
@@ -88,7 +95,7 @@ def remember_run(rep: dict | None, source_name: str, platform_label: str, note: 
 
 
 def show_history() -> None:
-    with st.expander("This session"):
+    with st.expander("This Session"):
         slot = st.empty()
         if st.button("Clear"):
             st.session_state["history"] = []
@@ -103,10 +110,10 @@ def show_history() -> None:
 def index_axes(image: np.ndarray, key: str, need_x: bool = True, need_f: bool = True):
     """Axis ranges typed in by hand when a file carries none (screenshots, bare HDF5 arrays)."""
     c1, c2 = st.columns(2)
-    x_lo = c1.number_input("x axis min", value=-1.0, key=f"{key}_xlo") if need_x else -1.0
-    x_hi = c2.number_input("x axis max", value=1.0, key=f"{key}_xhi") if need_x else 1.0
-    f_lo = c1.number_input("f axis min (GHz)", value=3.0, key=f"{key}_flo") if need_f else 3.0
-    f_hi = c2.number_input("f axis max (GHz)", value=9.0, key=f"{key}_fhi") if need_f else 9.0
+    x_lo = c1.number_input("Control Axis Min", value=-1.0, key=f"{key}_xlo") if need_x else -1.0
+    x_hi = c2.number_input("Control Axis Max", value=1.0, key=f"{key}_xhi") if need_x else 1.0
+    f_lo = c1.number_input("Frequency Axis Min (GHz)", value=3.0, key=f"{key}_flo") if need_f else 3.0
+    f_hi = c2.number_input("Frequency Axis Max (GHz)", value=9.0, key=f"{key}_fhi") if need_f else 9.0
     return np.linspace(x_lo, x_hi, image.shape[1]), np.linspace(f_lo, f_hi, image.shape[0])
 
 
@@ -116,16 +123,16 @@ def finish_map(image, x, f, key: str, unit_select: bool = True):
     x, f = np.asarray(x, float).ravel(), np.asarray(f, float).ravel()
     unit = "GHz"
     if unit_select:
-        unit = st.selectbox("Frequency unit", FREQ_UNITS, index=0, key=f"{key}_unit", help="The frequency axis is converted to GHz before the fit.")
+        unit = st.selectbox("Frequency Unit", FREQ_UNITS, index=0, key=f"{key}_unit", help="The frequency axis is converted to GHz before the fit.")
         f = f * importers.FREQ_TO_GHZ[unit]
     image, x, f = importers.orient(image, x, f)
     f_lo, f_hi, x_lo, x_hi = float(f[0]), float(f[-1]), float(x[0]), float(x[-1])
     tag = f"{key}_{unit}_{image.shape[0]}x{image.shape[1]}"  # a new slider whenever the data or the unit changes
     f_win = x_win = None
     if f_hi > f_lo:
-        f_win = st.slider("Frequency window (GHz)", f_lo, f_hi, (f_lo, f_hi), step=(f_hi - f_lo) / 200, format="%.3f", key=f"{tag}_fwin")
+        f_win = st.slider("Frequency Window (GHz)", f_lo, f_hi, (f_lo, f_hi), step=(f_hi - f_lo) / 200, format="%.3f", key=f"{tag}_fwin")
     if x_hi > x_lo:
-        x_win = st.slider("Control window", x_lo, x_hi, (x_lo, x_hi), step=(x_hi - x_lo) / 200, format="%.3g", key=f"{tag}_xwin")
+        x_win = st.slider("Control Window", x_lo, x_hi, (x_lo, x_hi), step=(x_hi - x_lo) / 200, format="%.3g", key=f"{tag}_xwin")
     image, x, f, ok = importers.crop(image, x, f, f_win, x_win)
     if not ok:
         st.warning("Window too small: at least 10 frequency rows and 3 control columns are needed, so the full map is used.")
@@ -145,7 +152,8 @@ st.sidebar.caption("Many devices? `python batch.py <folder>` writes one row per 
 with data_box:
     _plat_keys = list(models.PLATFORMS)
     _want_pl = st.query_params.get("platform")  # ?platform=ion picks the platform (pitch links, screenshots)
-    platform_label = st.selectbox("Platform", [models.PLATFORMS[k]["label"] for k in _plat_keys], index=_plat_keys.index(_want_pl) if _want_pl in _plat_keys else 0)
+    platform_label = st.selectbox("Platform", [models.PLATFORMS[k]["label"] for k in _plat_keys], index=_plat_keys.index(_want_pl) if _want_pl in _plat_keys else 0,
+                                  format_func=theme.title_case)
     platform = next(k for k, v in models.PLATFORMS.items() if v["label"] == platform_label)
     platform_families = list(models.PLATFORMS[platform]["families"])
     xlabel = models.PLATFORMS[platform]["control_label"]  # e.g. "flux bias (arbitrary units)"
@@ -153,26 +161,27 @@ with data_box:
 is_circuit = platform == "circuit"
 with search_box:
     weights_available = classify.DEFAULT_PATH.exists() and is_circuit
-    speed = st.select_slider("Search effort", ["fast", "normal", "thorough"], value="fast")
-    use_clf = st.checkbox("Use CNN proposer to seed the search", value=weights_available, disabled=not weights_available,
+    speed = st.select_slider("Search Effort", ["fast", "normal", "thorough"], value="fast", format_func=str.capitalize)
+    use_clf = st.checkbox("Use CNN Proposer to Seed the Search", value=weights_available, disabled=not weights_available,
                           help="Trained on synthetic circuit maps; only proposes hypotheses and starting points. All numbers come from the physics fit.")
-    try_coupled = st.selectbox("Try a readout-resonator model", ["auto", "always", "never"], index=0, disabled=not is_circuit)
-    families = st.multiselect("Candidate circuits", platform_families, default=platform_families) or platform_families
-    workers = st.slider("CPU workers", 1, 8, 4)
-    flux_calibrated = st.checkbox("Flux axis is already in flux quanta (Φ/Φ₀)", value=False, disabled=not is_circuit,
+    try_coupled = st.selectbox("Try a Readout-Resonator Model", ["auto", "always", "never"], index=0, disabled=not is_circuit, format_func=str.capitalize)
+    families = st.multiselect("Candidate Circuits", platform_families, default=platform_families,
+                              format_func=lambda k: theme.title_case(models.FAMILIES[k]["label"])) or platform_families
+    workers = st.slider("CPU Workers", 1, 8, 4)
+    flux_calibrated = st.checkbox(r"Flux Axis Is Already in Flux Quanta ($\Phi/\Phi_0$)", value=False, disabled=not is_circuit,
                                   help="Tick when the x axis is calibrated: the fit then holds period = 1 and offset = 0 instead of fitting them.")
     # known parameters: design values or a single-tone resonator scan narrow the search to value ± tolerance
     param_bounds: dict[str, tuple[float, float]] = {}
     known_store: dict = st.session_state.setdefault("known_store", {})
-    if st.toggle("Known parameters", key="known_toggle", help="Constrain parameters you already know (design values, a single-tone resonator scan). "
+    if st.toggle("Known Parameters", key="known_toggle", help="Constrain parameters you already know (design values, a single-tone resonator scan). "
                                                                "The fit then searches only inside value ± tolerance; a tolerance of 0 % fixes the value."):
         KCOLS = [0.9, 0.4, 1.1, 0.8]  # name | tick | value | tolerance
-        for c, t in zip(st.columns(KCOLS, gap="small"), ("known", "", "value", "± %")):
+        for c, t in zip(st.columns(KCOLS, gap="small"), ("Known", "", "Value", "± %")):
             c.markdown(theme.caption(t), unsafe_allow_html=True)
         for n in known_param_names(platform_families, is_circuit):
             prev = known_store.get(n, {})
             c0, c1, c2, c3 = st.columns(KCOLS, gap="small", vertical_alignment="center")
-            c0.markdown(f'<div class="cs-param">{n}</div>', unsafe_allow_html=True)
+            c0.markdown(f"${theme.param_tex(n)}$")
             k = c1.checkbox("known", value=bool(prev.get("known", False)), key=f"known_{n}", label_visibility="collapsed")
             v = c2.number_input("value", value=float(prev.get("value", known_default(n))), format="%.4g", key=f"known_val_{n}", label_visibility="collapsed")
             t = c3.number_input("± tolerance (%)", min_value=0.0, max_value=100.0, value=float(prev.get("tol", 10.0)), step=1.0, format="%g", key=f"known_tol_{n}",
@@ -184,13 +193,13 @@ preset = PRESETS[speed]
 with explain_box:
     use_llm = st.checkbox("Explain with Claude", value=True)
     design_values: dict[str, float] = {}
-    if st.toggle("Compare with design values", key="design_toggle", help="Enter the design values of the identified circuit; the result then shows the deviation of every fitted parameter."):
+    if st.toggle("Compare with Design Values", key="design_toggle", help="Enter the design values of the identified circuit; the result then shows the deviation of every fitted parameter."):
         prev_rep = st.session_state.get("report")
         if prev_rep and prev_rep.get("status") == "ok":
             pb = prev_rep["best"]
             st.caption(f"Design values for {pb['hypothesis']}; leave a field empty to skip it.")
             for n in pb["params"]:
-                dv = st.number_input(n, value=None, placeholder="design value", format="%.4g", key=f"design_{pb['family']}_{int(bool(pb.get('coupled')))}_{n}")
+                dv = st.number_input(f"${theme.param_tex(n)}$", value=None, placeholder="design value", format="%.4g", key=f"design_{pb['family']}_{int(bool(pb.get('coupled')))}_{n}")
                 if dv is not None:
                     design_values[n] = float(dv)
         else:
@@ -201,23 +210,23 @@ image = x = f = points = None
 band = None
 source_name = "—"
 with data_box:
-    source = st.radio("Data", ["Demo circuit", "Upload points CSV (x, f[, weight])", "Upload map (.npz or image)",
-                               "Upload 2-D grid CSV (first row = control values, first column = frequencies)"], label_visibility="collapsed")
-    if source == "Demo circuit":
+    source = st.radio("Data", ["Demo Circuit", "Upload Points CSV (x, f[, weight])", "Upload Map (.npz or Image)",
+                               "Upload 2-D Grid CSV (First Row = Control Values, First Column = Frequencies)"], label_visibility="collapsed")
+    if source == "Demo Circuit":
         _opts = list(DEMOS[platform])
         _want = st.query_params.get("demo")
         _idx = next((i for i, o in enumerate(_opts) if _want and o.startswith(str(_want))), 0)
-        name = st.selectbox("Hidden circuit", _opts, index=_idx)
+        name = st.selectbox("Hidden Circuit", _opts, index=_idx)
         source_name = name
-        seed = st.number_input("Random seed (surprise only)", 0, 10_000, 7) if DEMOS[platform][name] is None else None
+        seed = st.number_input("Random Seed (Surprise Only)", 0, 10_000, 7) if DEMOS[platform][name] is None else None
         truth, r = make_demo(platform, name, seed)
         image, x, f = r["image"], r["x"], r["f"]
         if DEMOS[platform][name] == "real":
             band = (0.05, float(f[-1]))
-            flux_calibrated = st.checkbox("Use the paper's flux axis (Φ/Φ₀) for this map", value=True)
+            flux_calibrated = st.checkbox(r"Use the Paper's Flux Axis ($\Phi/\Phi_0$) for This Map", value=True)
             st.caption("Real data: the right half of the published map is very noisy; the paper's own fit gives EJ=3, EC=0.84, EL=1 GHz.")
-    elif source.startswith("Upload points"):
-        up = st.file_uploader("CSV with columns x, f, (weight)", type=["csv", "txt"])
+    elif source.startswith("Upload Points"):
+        up = st.file_uploader("CSV with Columns x, f (, weight)", type=["csv", "txt"])
         if up is not None:
             source_name = up.name
             arr = np.genfromtxt(io.StringIO(up.getvalue().decode()), delimiter=",", skip_header=1 if up.getvalue()[:1].isalpha() else 0)
@@ -226,8 +235,8 @@ with data_box:
                 arr = np.column_stack([arr, np.ones(len(arr))])
             points = arr[:, :3]
             image, x, f = agent.rasterize(points)
-    elif source.startswith("Upload 2-D grid"):
-        up = st.file_uploader("CSV grid: control values across the first row, frequencies down the first column", type=["csv", "txt"])
+    elif source.startswith("Upload 2-D Grid"):
+        up = st.file_uploader("CSV Grid: Control Values Across the First Row, Frequencies Down the First Column", type=["csv", "txt"])
         if up is not None:
             source_name = up.name
             try:
@@ -236,11 +245,11 @@ with data_box:
                 st.error(f"Could not parse the grid: {e}")
                 image = None
             else:
-                if st.checkbox("Transpose (frequency is along columns)", key="grid_T"):
+                if st.checkbox("Transpose (Frequency Is Along Columns)", key="grid_T"):
                     image, x0, f0 = image.T, f0, x0
                 image, x, f = finish_map(image, x0, f0, "grid")
     else:
-        up = st.file_uploader("NPZ (keys image, x, f) or a screenshot PNG/JPG of a map", type=["npz", "png", "jpg", "jpeg", "h5", "hdf5"],
+        up = st.file_uploader("NPZ (Keys image, x, f) or a Screenshot PNG/JPG of a Map", type=["npz", "png", "jpg", "jpeg", "h5", "hdf5"],
                               help="HDF5 (.h5/.hdf5) files are accepted too: pick the 2-D dataset that holds the map and, when present, the 1-D datasets of the two axes.")
         if up is not None:
             source_name = up.name
@@ -248,7 +257,7 @@ with data_box:
             if lower.endswith(".npz"):
                 d = np.load(io.BytesIO(up.getvalue()))
                 image, x0, f0 = np.asarray(d["image"], float), np.asarray(d["x"], float).ravel(), np.asarray(d["f"], float).ravel()
-                if st.checkbox("Transpose (frequency is along columns)", key="npz_T"):
+                if st.checkbox("Transpose (Frequency Is Along Columns)", key="npz_T"):
                     image = image.T
                 if not importers.axes_match(image, x0, f0):
                     st.warning(f"The map is {image.shape[0]}×{image.shape[1]} but x has {len(x0)} and f has {len(f0)} entries; index ranges are used instead.")
@@ -265,16 +274,16 @@ with data_box:
                     st.warning("No 2-D numeric dataset found in this file.")
                 else:
                     opts = [f"{k}  ({v[0]} × {v[1]})" for k, v in two.items()]
-                    pick = st.selectbox("Map dataset (2-D)", opts, key="h5_map")
+                    pick = st.selectbox("Map Dataset (2-D)", opts, key="h5_map")
                     path = list(two)[opts.index(pick)]
                     image = importers.h5_read(data, path)
-                    if st.checkbox("Transpose (frequency is along columns)", key="h5_T"):
+                    if st.checkbox("Transpose (Frequency Is Along Columns)", key="h5_T"):
                         image = image.T
                     nf_, nx_ = image.shape
                     x_opts = ["index range"] + [k for k, v in one.items() if v[0] == nx_]
                     f_opts = ["index range"] + [k for k, v in one.items() if v[0] == nf_]
-                    xk = st.selectbox("Control axis dataset (1-D)", x_opts, index=min(1, len(x_opts) - 1), key=f"h5_x_{path}_{nx_}")
-                    fk = st.selectbox("Frequency axis dataset (1-D)", f_opts, index=min(1, len(f_opts) - 1), key=f"h5_f_{path}_{nf_}")
+                    xk = st.selectbox("Control Axis Dataset (1-D)", x_opts, index=min(1, len(x_opts) - 1), key=f"h5_x_{path}_{nx_}")
+                    fk = st.selectbox("Frequency Axis Dataset (1-D)", f_opts, index=min(1, len(f_opts) - 1), key=f"h5_f_{path}_{nf_}")
                     xi, fi = index_axes(image, "h5", need_x=xk == "index range", need_f=fk == "index range")
                     x0 = xi if xk == "index range" else importers.h5_read(data, xk)
                     f0 = fi if fk == "index range" else importers.h5_read(data, fk)
@@ -284,7 +293,7 @@ with data_box:
 
                 im = np.asarray(Image.open(io.BytesIO(up.getvalue())).convert("L"), float)
                 image = im[::-1]  # row 0 is the top of the picture -> highest frequency
-                if st.checkbox("Transpose (frequency is along columns)", key="img_T"):
+                if st.checkbox("Transpose (Frequency Is Along Columns)", key="img_T"):
                     image = image.T
                 x0, f0 = index_axes(image, "img")  # the axis ranges read off the picture, in GHz
                 image, x, f = finish_map(image, x0, f0, "img", unit_select=False)
@@ -315,7 +324,7 @@ def sch_values(best: dict) -> dict[str, str]:
     out = {}
     for k in ("EJ", "EC", "EL", "EJmax", "fr", "g", "D", "E", "t_c"):
         if k in p:
-            out[k] = f"{p[k]:.4g} GHz"
+            out[k] = f"{p[k]:.3g} GHz"  # three figures keep neighbouring labels apart; the table has the full values
     if "d" in p:
         out["d"] = f"d = {p['d']:.3g}"
     if "theta" in p and "phi" in p:
@@ -324,7 +333,7 @@ def sch_values(best: dict) -> dict[str, str]:
 
 
 def ham_table_html(best: dict) -> str:
-    rows = [(k, theme.num(v, theme.UNITS.get(k, ""), (best.get("sigma") or {}).get(k))) for k, v in best["params"].items()]
+    rows = [(theme.param_html(k), theme.num(v, theme.UNITS.get(k, ""), (best.get("sigma") or {}).get(k))) for k, v in best["params"].items()]
     return theme.table_html(("parameter", "value ± σ"), rows, numeric=(1,))
 
 
@@ -371,7 +380,7 @@ def truth_rows(best: dict, truth: dict) -> list[list]:
     for k, v in p.items():
         tv = tp.get(k)
         if tv is None:
-            rows.append([k, theme.num(v, theme.UNITS.get(k, ""), sig.get(k)), "–", ""])
+            rows.append([theme.param_html(k), theme.num(v, theme.UNITS.get(k, ""), sig.get(k)), "–", ""])
             continue
         s = sig.get(k, float("nan"))
         tol = 2 * s if (s is not None and np.isfinite(s) and s > 0) else 0.01 * abs(tv)
@@ -384,13 +393,13 @@ def truth_rows(best: dict, truth: dict) -> list[list]:
         else:
             diff = abs(v - tv)
         ok = diff <= tol
-        rows.append([k, theme.num(v, theme.UNITS.get(k, ""), sig.get(k)), theme.num(tv, theme.UNITS.get(k, "")), "✓" if ok else "✗"])
+        rows.append([theme.param_html(k), theme.num(v, theme.UNITS.get(k, ""), sig.get(k)), theme.num(tv, theme.UNITS.get(k, "")), "✓" if ok else "✗"])
     return rows
 
 
 # the precomputed result for the selected demo (if any); ?load=1 in the URL loads it on page open (screenshots, pitch links)
 saved_path = None
-if source == "Demo circuit":
+if source == "Demo Circuit":
     key = name.split(" ")[0]
     if key in SAVED and os.path.exists(SAVED[key]):
         saved_path = SAVED[key]
@@ -404,7 +413,7 @@ if param_bounds:
                                                 for n in param_bounds), "amber"))
 if not has_result:
     # ---- landing state: the input map on the left, the run card with the pipeline stepper on the right
-    st.markdown("Upload a two-tone spectroscopy map. CircuitSleuth proposes circuit hypotheses, fits each against the detected "
+    st.markdown(f"Upload a two-tone spectroscopy map. {theme.BRAND_NAME} proposes circuit hypotheses, fits each against the detected "
                 "features with a robust physics model (checked against scqubits), verifies on held-out flux columns, lists what it "
                 "**cannot** explain, and tells you **where to measure next**.")
     left, right = st.columns([1.15, 1])
@@ -415,10 +424,10 @@ if not has_result:
     with right:
         with st.container(border=True):
             theme.md(theme.eyebrow("Run"))
-            run = st.button("Identify circuit", type="primary", width="stretch")
-            load_saved = st.button("Load precomputed result (normal preset)", width="stretch", disabled=saved_path is None,
+            run = st.button("Identify Circuit", type="primary", width="stretch")
+            load_saved = st.button("Load Precomputed Result (Normal Preset)", width="stretch", disabled=saved_path is None,
                                    help="The same pipeline run earlier with the 'normal' effort preset; identical output, no waiting.")
-            theme.md(theme.eyebrow("What happens when you press Identify"))
+            theme.md(theme.eyebrow("What Happens When You Press Identify"))
             step_slot = st.empty()
             step_slot.markdown(theme.stepper_html(0), unsafe_allow_html=True)
             theme.md(theme.caption("Extract the spectral features, propose circuit hypotheses, fit each with the physics model, verify on held-out columns, report."))
@@ -429,8 +438,8 @@ else:
     c_run, c_step = st.columns([1.5, 1.2], vertical_alignment="center")
     with c_run:
         b1, b2 = st.columns(2)
-        run = b1.button("Identify circuit", type="primary", width="stretch")
-        load_saved = b2.button("Load precomputed result (normal preset)", width="stretch", disabled=saved_path is None,
+        run = b1.button("Identify Circuit", type="primary", width="stretch")
+        load_saved = b2.button("Load Precomputed Result (Normal Preset)", width="stretch", disabled=saved_path is None,
                                help="The same pipeline run earlier with the 'normal' effort preset; identical output, no waiting.")
     with c_step:
         step_slot = st.empty()
@@ -587,7 +596,14 @@ if rep and rep.get("status") == "ok":
     else:
         kpis.append(("—", "margin · single family"))
     right = (schematic.schematic_svg(fam, coupled, values=sch_values(best)) + theme.eyebrow("Recovered Hamiltonian") + ham_table_html(best))
-    theme.md(theme.hero_html(eyebrow_txt, best["hypothesis"], theme.hamiltonian_html(fam, best["params"], coupled), kpis, best.get("explained_dynamic"), right))
+    with st.container(border=True, key="hero"):
+        h_l, h_r = st.columns([3, 2], gap="large")
+        with h_l:
+            theme.md(theme.hero_top_html(eyebrow_txt, best["hypothesis"]))
+            st.latex(theme.hamiltonian_tex(fam, best["params"], coupled))
+            theme.md(theme.hero_bottom_html(kpis, best.get("explained_dynamic")))
+        with h_r:
+            theme.md(right)
     if best.get("note"):
         theme.md(theme.note(best["note"]))
     # ---- H. two sentences of plain English (template or Claude; exception text never reaches the page)
@@ -614,7 +630,7 @@ if rep and rep.get("status") == "ok":
 
     # ---- D. evidence
     theme.md(theme.section("Evidence", "annotated map", "Explained features are filled green, unexplained ones hollow red; numbered amber boxes are where to look next."))
-    show_ev = st.toggle("Show held-out and residual evidence", value=True)
+    show_ev = st.toggle("Show Held-Out and Residual Evidence", value=True)
     _look = agent.prune_look_here([n for n in rep["next_measurements"] if n["kind"] == "look_here"], (float(min(rep["x_grid"])), float(max(rep["x_grid"]))), tuple(rep["band_GHz"]),
                                   vis=models.line_weights(rep["best"]["family"]))
     rep["next_measurements"] = [n for n in rep["next_measurements"] if n["kind"] != "look_here"] + _look  # older saved reports predate the pruning
@@ -639,7 +655,7 @@ if rep and rep.get("status") == "ok":
     if is_circ_fam:
         phi_ext = 0.0
         if flux_dep:
-            phi_ext = st.slider("External flux Φ (Φ₀)", 0.0, 0.5, 0.0, 0.01, format="%.2f", help="Redraws the potential well and its levels at this flux.")
+            phi_ext = st.slider(r"External Flux $\Phi$ ($\Phi_0$)", 0.0, 0.5, 0.0, 0.01, format="%.2f", help="Redraws the potential well and its levels at this flux.")
         physics = plots.potential_figure(fam, best["params"], coupled, phi_ext=phi_ext)
     else:
         try:
@@ -668,7 +684,7 @@ if rep and rep.get("status") == "ok":
         theme.md(theme.spec_rows_html(groups["Qubit"]))
         if is_circ_fam and flux_dep:
             band_rep = rep.get("band_GHz") or [float(f[0]), float(f[-1])]
-            target = st.number_input("Target f01 (GHz)", value=float(round(0.5 * (band_rep[0] + band_rep[1]), 2)), step=0.05, format="%.3f",
+            target = st.number_input(r"Target $f_{01}$ (GHz)", value=float(round(0.5 * (band_rep[0] + band_rep[1]), 2)), step=0.05, format="%.3f",
                                      help="Where to bias the device: control values at which the fitted 0→1 transition equals this frequency.")
             try:
                 sols = derived.control_for_frequency(best, float(target), (float(xg.min()), float(xg.max())))
@@ -745,10 +761,10 @@ if rep and rep.get("status") == "ok":
              'reads the twin is the one a lab replaces with an instrument driver.</div>')
     ap1, ap2 = st.columns([1, 1])
     _fams_ap = tuple(families) if families else tuple(models.PLATFORMS[platform]["families"])
-    _loop_key = (name.split(" ")[0] if source == "Demo circuit" else "")
+    _loop_key = (name.split(" ")[0] if source == "Demo Circuit" else "")
     _saved_loop = f"artifacts/loop_{_loop_key}.json" if _loop_key else ""
-    run_ap = ap1.button("Run autopilot (3 rounds, live)", width="stretch", help="Seconds on NV / dots / ions / atoms; a few minutes for superconducting circuits")
-    load_ap = ap2.button("Replay saved autopilot", width="stretch", disabled=not (_saved_loop and os.path.exists(_saved_loop)))
+    run_ap = ap1.button("Run Autopilot (3 Rounds, Live)", width="stretch", help="Seconds on NV / dots / ions / atoms; a few minutes for superconducting circuits")
+    load_ap = ap2.button("Replay Saved Autopilot", width="stretch", disabled=not (_saved_loop and os.path.exists(_saved_loop)))
     if run_ap:
         from circuitsleuth import loop as _loop
         ap_status = st.empty()
@@ -786,12 +802,13 @@ if rep and rep.get("status") == "ok":
             tbl = []
             for k, v in rr["params"].items():
                 sg = rr["sigma"].get(k, float("nan"))
-                tbl.append({"parameter": k, "value": f"{v:.4g}", "± σ": f"{sg:.2g}", "σ / value": f"{abs(sg / v):.1%}" if v else "–"})
-            c_ap2.dataframe(tbl, hide_index=True, width="stretch")
+                tbl.append([theme.param_html(k), theme.num(v, theme.UNITS.get(k, ""), sg), f"{abs(sg / v):.1%}" if v else "–"])
+            with c_ap2:
+                theme.md(theme.table_html(("parameter", "value ± σ", "σ / value"), tbl, numeric=(1, 2)))
             if apr.get("truth"):
                 tp = apr["truth"]["params"]
                 hits = [k for k in rr["params"] if k in tp]
-                st.caption("hidden truth: " + ", ".join(f"{k} = {tp[k]:.4g}" for k in hits))
+                st.markdown("Hidden truth: " + ", ".join(f"${theme.param_tex(k)} = {tp[k]:.4g}$" for k in hits))
     theme.md(theme.section("What the model cannot explain", f"{len(rep['unexplained'])} features"))
     if rep["unexplained"]:
         theme.md(theme.grid_html([theme.card_html(None, "flux-independent line" if u["flat"] else "flux-dependent feature", theme.frange_html(u["f_lo"], u["f_hi"]),
@@ -805,7 +822,7 @@ if rep and rep.get("status") == "ok":
                    for k, dv in design_values.items() if k in best["params"]]
     if truth_rep is not None or design_rows:
         theme.md(theme.section("Checks", "truth and design"))
-    if truth_rep is not None and st.toggle("Reveal hidden truth (demo)"):
+    if truth_rep is not None and st.toggle("Reveal Hidden Truth (Demo)"):
         rows_t = truth_rows(best, truth_rep)
         theme.md(theme.table_html(("parameter", "fitted ± σ", "truth", "within 2σ"), rows_t, numeric=(1, 2), classes=lambda r, c: ("ok" if rows_t[r][3] == "✓" else "bad") if c == 3 else ""))
         theme.md(theme.caption(f"truth: {truth_rep['family']}{' + resonator' if truth_rep.get('coupled') else ''}; spurs at {[s['f'] for s in truth_rep.get('spurs', [])]} GHz"
@@ -820,8 +837,8 @@ if rep and rep.get("status") == "ok":
     # ---- G2. posterior sampling: are the error bars honest?
     theme.md(theme.section("Posterior check", "Metropolis sampling of the robust likelihood"))
     theme.md('<div class="cs-body muted cs-block">The reported σ come from the Jacobian at the optimum (Laplace), scaled by 1.8 because synthetic coverage runs '
-             'showed the raw value under-covers. Sampling the actual likelihood shows the shape of the uncertainty, including the EJ–EC valley.</div>')
-    if st.button("Sample the posterior (about 10 s)", width="stretch", key="btn_posterior"):
+             'showed the raw value under-covers. Sampling the actual likelihood shows the shape of the uncertainty, including the E<sub>J</sub>–E<sub>C</sub> valley.</div>')
+    if st.button("Sample the Posterior (About 10 s)", width="stretch", key="btn_posterior"):
         try:
             from circuitsleuth import fit as _fit
             from ui import design_panel as _dp3
@@ -842,8 +859,9 @@ if rep and rep.get("status") == "ok":
         for i, n in enumerate(_post["names"]):
             psd = _sd[n] if isinstance(_sd, dict) else _sd[i]
             lap = (_lsd.get(n, float("nan")) if isinstance(_lsd, dict) else _lsd[i]) if _lsd is not None else float("nan")
-            rows_p.append({"parameter": n, "posterior σ": f"{psd:.3g}", "Laplace σ": f"{lap:.3g}", "ratio": f"{psd / lap:.2f}" if lap else "–"})
-        pc2.dataframe(rows_p, hide_index=True, width="stretch")
+            rows_p.append([theme.param_html(n), f"{psd:.3g}", f"{lap:.3g}", f"{psd / lap:.2f}" if lap else "–"])
+        with pc2:
+            theme.md(theme.table_html(("parameter", "posterior σ", "Laplace σ", "ratio"), rows_p, numeric=(1, 2, 3)))
         pc2.caption(f"acceptance {_post['acceptance_rate']:.2f} · {_post['n_kept']} kept samples · {_post['seconds']:.1f} s")
     elif _post and _post.get("error"):
         st.caption("posterior sampling unavailable for this result")
@@ -855,9 +873,9 @@ if rep and rep.get("status") == "ok":
     except Exception:  # noqa: BLE001
         csv_text = None
     e1, e2, e3 = st.columns(3)
-    e1.download_button("Download report (JSON)", agent.to_json(rep), file_name="circuitsleuth_report.json", mime="application/json", width="stretch")
-    e2.download_button("Download fitted curves (CSV)", csv_text or "", file_name="circuitsleuth_curves.csv", mime="text/csv", disabled=csv_text is None, width="stretch")
-    e3.download_button("Download annotated map (HTML)", fig_final.to_html(include_plotlyjs="cdn"), file_name="circuitsleuth_map.html", mime="text/html", width="stretch")
+    e1.download_button("Download Report (JSON)", agent.to_json(rep), file_name="holmes_report.json", mime="application/json", width="stretch")
+    e2.download_button("Download Fitted Curves (CSV)", csv_text or "", file_name="holmes_curves.csv", mime="text/csv", disabled=csv_text is None, width="stretch")
+    e3.download_button("Download Annotated Map (HTML)", fig_final.to_html(include_plotlyjs="cdn"), file_name="holmes_map.html", mime="text/html", width="stretch")
     with st.expander("Reproduce in scqubits"):
         theme.md(theme.caption("Copy scqubits snippet: the copy button appears at the top right of the block when you hover over it."))
         code = rep.get("scqubits_code")
@@ -867,7 +885,7 @@ if rep and rep.get("status") == "ok":
             except Exception as e:  # noqa: BLE001
                 code = f"# unavailable: {type(e).__name__}: {e}"
         st.code(code, language="python")
-    with st.expander("Run log"):
+    with st.expander("Run Log"):
         run_log = st.session_state.get("run_log") or []
         if run_log:
             theme.md(theme.log_html(run_log))

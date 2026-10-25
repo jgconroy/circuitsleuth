@@ -6,7 +6,7 @@ APP = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
 at = AppTest.from_file(APP, default_timeout=120)
 at.run()
 errs = [str(e.value)[:200] for e in at.exception]
-load = [b for b in at.button if b.label.startswith("Load precomputed")][0]
+load = [b for b in at.button if b.label.startswith("Load Precomputed")][0]
 load.click().run(timeout=300)
 errs += [str(e.value)[:200] for e in at.exception]
 print("exceptions:", errs or "none", "| metrics:", [(m.label, m.value) for m in at.metric][:2])

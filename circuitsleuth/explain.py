@@ -70,7 +70,7 @@ def template(report: dict) -> dict:
     return dict(summary=s, caveats=caveats[:5], next_steps=steps[:5], source="template")
 
 
-SYSTEM = """You are CircuitSleuth's explainer. You receive a JSON report produced by a physics fit of a
+SYSTEM = """You are the explainer of Ĥolmes (the Hamiltonian-identification tool formerly called CircuitSleuth). You receive a JSON report produced by a physics fit of a
 superconducting-qubit two-tone spectroscopy map, plus a template draft. Write for an experimentalist at
 the fridge. Rules: never invent a number; every value you quote must come from the report, quoted to 3 or 4 significant
 figures (round, do not copy long decimals) with its unit. If the report says a parameter is poorly determined,

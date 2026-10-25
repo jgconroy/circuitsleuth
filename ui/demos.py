@@ -13,31 +13,31 @@ SAVED = {  # precomputed reports (normal preset, four workers) for the slow circ
 
 DEMOS = {
     "circuit": {
-        "A · tunable transmon through a 7 GHz readout resonator, plus a pump spur": dict(
+        "A · Tunable Transmon Through a 7 GHz Readout Resonator, Plus a Pump Spur": dict(
             family="tunable_transmon", params=dict(EJmax=25.0, EC=0.3, d=0.3, fr=7.0, g=0.1), period=1.3, offset=0.2, f_lo=3.0, f_hi=9.0,
             spurs=[dict(f=5.1, amp=0.9, sideband=0.0)], seed=1),
-        "B · fluxonium": dict(family="fluxonium", params=dict(EJ=6.0, EC=1.0, EL=0.6), period=1.1, offset=-0.3, f_lo=0.3, f_hi=9.0, spurs=[], seed=3),
-        "C · fixed-frequency transmon with LO leakage": dict(family="transmon", params=dict(EJ=15.0, EC=0.28), period=1.0, offset=0.0, f_lo=3.0, f_hi=8.0,
+        "B · Fluxonium": dict(family="fluxonium", params=dict(EJ=6.0, EC=1.0, EL=0.6), period=1.1, offset=-0.3, f_lo=0.3, f_hi=9.0, spurs=[], seed=3),
+        "C · Fixed-Frequency Transmon with LO Leakage": dict(family="transmon", params=dict(EJ=15.0, EC=0.28), period=1.0, offset=0.0, f_lo=3.0, f_hi=8.0,
                                                               spurs=[dict(f=7.1, amp=0.35, sideband=0.0)], seed=2),
-        "D · surprise: random hidden circuit": None,
-        "E · REAL DATA: fluxonium device A, Nguyen et al. PRX 2019 (arXiv:1810.11006)": "real",
+        "D · Surprise: Random Hidden Circuit": None,
+        "E · REAL DATA: Fluxonium Device A, Nguyen et al. PRX 2019 (arXiv:1810.11006)": "real",
     },
     "nv": {
-        "F · NV-centre ensemble, field 34° off a <111> axis": dict(family="nv_ensemble", params=dict(D=2.870, E=0.004, theta=0.6, phi=0.3, field_scale=120.0, x0=0.1),
+        "F · NV-Centre Ensemble, Field 34° off a <111> Axis": dict(family="nv_ensemble", params=dict(D=2.870, E=0.004, theta=0.6, phi=0.3, field_scale=120.0, x0=0.1),
                                                                f_lo=2.4, f_hi=3.35, spurs=[], seed=1, linewidth=0.006),
-        "G · NV-centre ensemble, surprise field direction": None,
+        "G · NV-Centre Ensemble, Surprise Field Direction": None,
     },
     "dot": {
-        "H · double quantum dot charge qubit, t_c = 2.5 GHz": dict(family="charge_qubit", params=dict(t_c=2.5, lever_arm=9.0, x0=0.15), f_lo=1.0, f_hi=12.0, spurs=[], seed=2, linewidth=0.03),
-        "I · double quantum dot, surprise": None,
+        "H · Double-Quantum-Dot Charge Qubit, t_c = 2.5 GHz": dict(family="charge_qubit", params=dict(t_c=2.5, lever_arm=9.0, x0=0.15), f_lo=1.0, f_hi=12.0, spurs=[], seed=2, linewidth=0.03),
+        "I · Double Quantum Dot, Surprise": None,
     },
     "ion": {
-        "J · trapped ion, axial and radial sidebands vs endcap voltage": dict(family="trapped_ion", params=dict(f_rad0=3.2, volt_scale=1.8, x0=-1.3), f_lo=-6.5, f_hi=6.5, spurs=[], seed=4, linewidth=0.03),
-        "K · trapped ion, surprise trap": None,
+        "J · Trapped Ion, Axial and Radial Sidebands vs Endcap Voltage": dict(family="trapped_ion", params=dict(f_rad0=3.2, volt_scale=1.8, x0=-1.3), f_lo=-6.5, f_hi=6.5, spurs=[], seed=4, linewidth=0.03),
+        "K · Trapped Ion, Surprise Trap": None,
     },
     "atom": {
-        "L · Rydberg nD Stark map, stray-field null hidden at V = 0.12": dict(family="rydberg_atom", params=dict(alpha1=2.5, alpha2=4.0, dfs=12.0, f0=0.0, field_scale=2.5, x0=0.12), f_lo=-80.0, f_hi=20.0, spurs=[], seed=5, linewidth=0.5),
-        "M · Rydberg atom, surprise state": None,
+        "L · Rydberg nD Stark Map, Stray-Field Null Hidden at V = 0.12": dict(family="rydberg_atom", params=dict(alpha1=2.5, alpha2=4.0, dfs=12.0, f0=0.0, field_scale=2.5, x0=0.12), f_lo=-80.0, f_hi=20.0, spurs=[], seed=5, linewidth=0.5),
+        "M · Rydberg Atom, Surprise State": None,
     },
 }
 

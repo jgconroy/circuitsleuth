@@ -1,4 +1,4 @@
-# CircuitSleuth — project state and results log
+# Ĥolmes (formerly CircuitSleuth) — project state and results log
 
 Purpose of this file: a fresh Claude session (or a human) must be able to continue from here WITHOUT
 re-running anything listed as done. Update it whenever a result, decision or long run finishes.
@@ -211,6 +211,25 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
 - Unit test `tests/test_fit.py::test_fixed_transmon_relabel_alternative_breaks_two_photon_vs_12_ambiguity` (4 s): seed 0 now offers
   EC 0.2796 as the alternative; seed 1 finds it directly. Physics prior encoded: at usual two-tone powers the 2-photon line is more
   common than the thermal 1-2 line, so an isolated second flat line is read as 0-2/2.
+
+### Sat ~22:45 PDT: rebrand to Ĥolmes, Title Case, KaTeX math, sidebar fix (DONE, verified in the browser)
+- Brand kit from the user (`~/Downloads/holmes-brand.zip`) -> `docs/BRAND.md` + `static/brand/` (favicons, icons, marks, og-image). Name is
+  **Ĥolmes** (U+0124) in UI text, `holmes` in file names; the Python package / repo stay `circuitsleuth`. Header lockup = inlined
+  `holmes-mark-reverse.svg` + Playfair Display 700 wordmark (Google Fonts @import, has the Ĥ glyph) + tagline; tab icon = icon-192.png via
+  `page_icon`. Streamlit cannot add OG / manifest head tags, so those parts of the kit are not applied.
+- Title Case everywhere a title/label/bullet-like item appears: `theme.title_case()` (acronym map NV/CNN/LO/SQUID…, lone symbols such as
+  g or d untouched, hyphen and en-dash parts capitalised, tokens with digits/Greek left alone). Applied inside `section()`, `card_html`
+  kickers, `spec_rows_html` labels, race names, hero title and chart titles (not formula titles containing "="); widget labels rewritten
+  literally in app.py; demo names in ui/demos.py renamed (keys still `name.split(" ")[0]`); radio option checks updated ("Demo Circuit",
+  "Upload Points", "Upload 2-D Grid").
+- Math: the verdict band is now a `st.container(border=True, key="hero")` with two columns so the Hamiltonian is real KaTeX
+  (`theme.hamiltonian_tex`, fitted numbers in amber via \textcolor); parameter names typeset in tables (`theme.param_html`), KaTeX in the
+  sidebar known-parameter list and design-value inputs (`theme.param_tex`), `theme.mathify()` turns EJ/f01/… tokens in spec labels, card
+  text and section subtitles into sub-scripted HTML; Plotly titles/axes use <sub> (potential plots, correlation matrix, σ-vs-round legend).
+- Sidebar bug (user report: could not get the sidebar back after collapsing it): the CSS hid `[data-testid="stToolbar"]`, which is where
+  Streamlit 1.66 puts the "expand sidebar" button. Now only the toolbar actions / main menu are hidden; verified the » button is 28×28 px.
+- Verified: `scripts/apptest_quick.py` (no exceptions), headless autopilot replay + posterior sampling (no exceptions), Playwright
+  screenshots of landing, loaded demo A (full page) and a live NV run. `scripts/screenshot.py` waits for "Identify Circuit" now.
 
 ## 5. Pending / in progress (check before starting new work)
 - (done Sat ~19:30) Circuit blind rerun with the validity-fixed generator: family **7/10**, params <5 % 2/10 (unchanged causes: fixed-transmon

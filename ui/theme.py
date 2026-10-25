@@ -9,6 +9,7 @@ Every number is set in Plex Mono with tabular figures; ± and units are muted.
 from __future__ import annotations
 
 import html
+import os
 import re
 
 import streamlit as st
@@ -18,14 +19,17 @@ MONO = '"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace'
 FONT = SANS  # kept for older imports
 
 CSS = """<style>
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Playfair+Display:wght@700&display=swap');
 :root { --bg:#111214; --surface:#1a1a19; --line:rgba(240,239,236,.08); --line2:rgba(240,239,236,.16); --text:#f0efec; --muted:#c3c2b7;
   --amber:#fab219; --green:#4cae4c; --red:#d03b3b; --sans:"IBM Plex Sans","Helvetica Neue",Helvetica,Arial,sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace; }
 /* ---- chrome: no toolbar, no running indicator, no toasts, no footer, no shadows */
-#MainMenu, footer, [data-testid="stDecoration"], .stAppDeployButton, [data-testid="stToolbar"], [data-testid="stToolbarActions"],
+#MainMenu, footer, [data-testid="stDecoration"], .stAppDeployButton, [data-testid="stToolbarActions"], [data-testid="stMainMenu"],
 [data-testid="stStatusWidget"], [data-testid="stToast"], [data-testid="stToastContainer"], [data-testid="stAppToastContainer"],
 div[class*="stToast"], [data-testid="stHeaderActionElements"] { display:none !important; }
+/* the toolbar stays: it is where Streamlit puts the "expand sidebar" button once the sidebar is collapsed */
+[data-testid="stToolbar"] { background:transparent !important; }
+[data-testid="stExpandSidebarButton"] { display:inline-flex !important; visibility:visible !important; opacity:1 !important; }
 header[data-testid="stHeader"] { background:transparent; box-shadow:none; height:2.25rem; }
 .block-container { max-width:1200px; padding:24px 32px 64px; }
 section[data-testid="stSidebar"] { width:280px !important; min-width:280px !important; max-width:280px !important; }
@@ -63,6 +67,20 @@ section[data-testid="stSidebar"] .block-container { padding-top:1.25rem; }
 .cs-body { font-size:15px; line-height:24px; color:var(--text); }
 .cs-body.muted, .cs-muted { color:var(--muted); }
 .cs-wordmark { display:flex; align-items:baseline; gap:16px; flex-wrap:wrap; margin:0 0 8px; }
+.cs-brand { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin:0 0 10px; }
+.cs-brand svg { height:46px; width:auto; display:block; flex:none; }
+.cs-brand .cs-name { font-family:"Playfair Display", Georgia, "Times New Roman", serif; font-size:36px; font-weight:700; letter-spacing:0; line-height:1; color:var(--text); }
+.cs-brand .cs-tag { margin-left:6px; }
+/* ---- verdict band as a Streamlit container (so the Hamiltonian can be real KaTeX) */
+.st-key-hero { animation:cs-rise .4s ease-out both; }
+.st-key-hero [data-testid="stVerticalBlockBorderWrapper"] > div > [data-testid="stVerticalBlock"] { padding:24px !important; }
+.st-key-hero .katex-display { text-align:left; margin:2px 0 14px; padding:2px 0 6px; overflow-x:auto; overflow-y:hidden; }
+.st-key-hero .katex-display > .katex { text-align:left; white-space:nowrap; }
+.st-key-hero .katex { font-size:1.22em; color:var(--text); }
+.st-key-hero .cs-kpis { margin-top:4px; }
+.stApp .katex { font-size:1.08em; }
+section[data-testid="stSidebar"] .katex { font-size:1.0em; }
+section[data-testid="stSidebar"] .cs-param-tex p { margin:0; line-height:1.2; }
 .cs-mark { display:inline-block; width:12px; height:12px; background:var(--amber); margin-right:12px; transform:translateY(-2px); }
 .cs-name { font-family:var(--sans); font-size:28px; font-weight:600; letter-spacing:-0.02em; color:var(--text); line-height:1.1; }
 .cs-tag { font-family:var(--sans); font-size:11px; font-weight:500; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
@@ -173,8 +191,32 @@ section[data-testid="stSidebar"] .block-container { padding-top:1.25rem; }
 .cs-inline-steps { margin:0; }
 </style>"""
 
-HEADER = """<div class="cs-wordmark"><span class="cs-name"><span class="cs-mark"></span>CircuitSleuth</span>
-<span class="cs-tag">Identify the circuit behind a spectroscopy map</span></div><hr class="cs-rule">"""
+BRAND_NAME = "\u0124olmes"  # Ĥ (U+0124): the hat on H marks the Hamiltonian operator; the logo swaps it for a detective's fedora
+TAGLINE = "Hamiltonians, deduced from spectra"
+_BRAND_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static", "brand")
+_MARK_FALLBACK = (
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="8 16 184 170" role="img" aria-label="Ĥolmes logo">'
+    '<g transform="translate(100 100) scale(1.16) translate(-100 -115)">'
+    '<path d="M24 92 C56 80 144 80 176 92 C154 103 46 103 24 92 Z" fill="#D99A1E"/>'
+    '<path d="M64 88 C62 60 70 44 86 46 C94 47 98 52 100 55 C102 52 106 47 114 46 C130 44 138 60 136 88 Z" fill="#D99A1E"/>'
+    '<path d="M63 76 L137 76 L136 88 L64 88 Z" fill="#8A5A0C"/>'
+    '<path d="M100 55 L100 68" stroke="#8A5A0C" stroke-width="3" stroke-linecap="round" fill="none"/>'
+    '<path d="M54 100 H78 V132 H122 V100 H146 V186 H122 V154 H78 V186 H54 Z" fill="#FFFFFF"/></g></svg>')
+
+
+def brand_mark_svg() -> str:
+    """The logo mark for dark backgrounds (white H), inlined so the header needs no static-file route."""
+    try:
+        with open(os.path.join(_BRAND_DIR, "holmes-mark-reverse.svg"), encoding="utf-8") as fh:
+            svg = fh.read()
+        svg = re.sub(r"<\?xml[^>]*>", "", svg)
+        return re.sub(r"\s+", " ", svg).strip()
+    except OSError:
+        return _MARK_FALLBACK
+
+
+HEADER = (f'<div class="cs-brand" aria-label="{BRAND_NAME}">{brand_mark_svg()}<span class="cs-name">{BRAND_NAME}</span>'
+          f'<span class="cs-tag">{TAGLINE}</span></div><hr class="cs-rule">')
 
 UNITS = {"EJ": "GHz", "EC": "GHz", "EL": "GHz", "EJmax": "GHz", "fr": "GHz", "g": "GHz", "D": "GHz", "E": "GHz", "t_c": "GHz",
          "theta": "rad", "phi": "rad", "field_scale": "per unit", "lever_arm": "GHz / unit", "d": "", "period": "", "offset": "", "x0": "",
@@ -205,8 +247,8 @@ def esc(s) -> str:
 # ------------------------------------------------------------------ small pieces
 def section(title: str, eyebrow: str = "", sub: str = "") -> str:
     eb = f'<div class="cs-eyebrow">{esc(eyebrow)}</div>' if eyebrow else ""
-    sb = f'<div class="cs-sub">{esc(sub)}</div>' if sub else ""
-    return f'<div class="cs-section">{eb}<h2 class="cs-h2">{esc(title)}</h2>{sb}</div>'
+    sb = f'<div class="cs-sub">{mathify(esc(sub))}</div>' if sub else ""
+    return f'<div class="cs-section">{eb}<h2 class="cs-h2">{esc(title_case(title))}</h2>{sb}</div>'
 
 
 def eyebrow(text: str, amber: bool = False) -> str:
@@ -330,7 +372,7 @@ def race_html(rows: list[dict], active: str | None = None, finished: bool = Fals
             status_txt = status
         width = 0.0 if score is None else max(0.0, min(100.0, 100.0 * max(float(score), 0.0) / top))
         sc = "" if score is None else f"{float(score):.3f}".replace("-", "−")
-        top_html = (f'<div class="top"><span class="name" title="{esc(name)}">{esc(name)}</span><div class="bar"><div style="width:{width:.1f}%"></div></div>'
+        top_html = (f'<div class="top"><span class="name" title="{esc(name)}">{esc(title_case(name))}</span><div class="bar"><div style="width:{width:.1f}%"></div></div>'
                     f'<span class="score">{sc}</span><span class="status {esc(status_txt)}">{esc(status_txt)}</span></div>')
         spark = ""
         if is_active:
@@ -405,7 +447,7 @@ def spec_rows_html(rows: list[tuple[str, str, str]]) -> str:
     for label, value, note_txt in rows:
         title = f' title="{esc(note_txt)}"' if note_txt else ""
         v = value if (isinstance(value, str) and value.startswith("<")) else esc(value)
-        out.append(f'<div class="cs-spec-row"{title}><span class="l">{esc(label)}</span><span class="v">{v}</span></div>')
+        out.append(f'<div class="cs-spec-row"{title}><span class="l">{mathify(esc(title_case(label)))}</span><span class="v">{v}</span></div>')
     return "".join(out)
 
 
@@ -414,10 +456,10 @@ def card_html(badge: str | None, kicker: str, big: str, sub: str, why: str, mute
     """A compact recommendation / finding card: badge + eyebrow kicker on top, a large mono figure (`big`, HTML allowed),
     a mono sub-line (control range, point count) and one line of why."""
     b = f'<span class="cs-badge{" muted" if muted_badge else ""}">{esc(badge)}</span>' if badge is not None else ""
-    k = f'<div class="cs-eyebrow">{esc(kicker)}</div>' if kicker else ""
+    k = f'<div class="cs-eyebrow">{mathify(esc(title_case(kicker)))}</div>' if kicker else ""
     big_html = f'<div class="f">{big}</div>' if big else ""
-    sub_html = f'<div class="x">{esc(sub)}</div>' if sub else ""
-    why_html = f'<div class="why">{esc(why)}</div>' if why else ""
+    sub_html = f'<div class="x">{mathify(esc(sub))}</div>' if sub else ""
+    why_html = f'<div class="why">{mathify(esc(why))}</div>' if why else ""
     return f'<div class="cs-card cs-look"><div class="head">{b}{k}</div>{big_html}{sub_html}{why_html}</div>'
 
 
@@ -437,3 +479,159 @@ def two_sentences(text: str) -> str:
         return ""
     parts = re.split(r"(?<=[.!?])\s+(?=[A-Z0-9])", text)
     return " ".join(parts[:2]).strip()
+
+
+# ------------------------------------------------------------------ Title Case, typeset parameter names, LaTeX Hamiltonians
+_SMALL_WORDS = {"a", "an", "the", "of", "in", "at", "for", "to", "on", "by", "vs", "per", "and", "or", "with", "from", "into", "over", "as",
+                "is", "are", "its", "than", "off", "up", "via", "but", "nor", "so", "yet", "if"}
+_KEEP_WORDS = {"scqubits", "arXiv", "npz", "csv", "json", "html", "h5", "hdf5", "nD", "et", "al", "e.g", "i.e"}
+
+
+_ACRONYMS = {"nv": "NV", "cnn": "CNN", "lo": "LO", "squid": "SQUID", "rms": "RMS", "odmr": "ODMR", "dqd": "DQD", "tls": "TLS"}
+
+
+def _cap_word(w: str) -> str:
+    if not w or w in _KEEP_WORDS or any(ch.isdigit() for ch in w) or not w.isascii():
+        return w
+    if w.lower() in _ACRONYMS:
+        return _ACRONYMS[w.lower()]
+    if any(ch.isupper() for ch in w[1:]):  # CNN, GHz, EJmax, SQUID: already styled
+        return w
+    if not w[0].isalpha():
+        return w
+    if len(w) == 1 and w not in ("a", "i"):  # a lone symbol such as g or d (coupling, asymmetry) is a variable, not a word
+        return w
+    return w[0].upper() + w[1:]
+
+
+def title_case(text: str) -> str:
+    """Capitalise the first letter of every significant word (hyphenated parts too); short function words stay lower-case
+    except at the start or after a separator; tokens with digits, Greek letters or internal capitals are left alone."""
+    if not text:
+        return text
+    out = []
+    start = True
+    for tok in str(text).split(" "):
+        if not tok:
+            out.append(tok)
+            continue
+        m = re.match(r"^([\(\[\"'“‘«]*)(.*?)([\)\]\"'”’»:;,.!?…]*)$", tok)
+        pre, core, post = m.groups() if m else ("", tok, "")
+        if core in ("·", "—", "–", "-", "|", "/", "→", "↔", "vs.", ":"):
+            out.append(tok)
+            start = True
+            continue
+        if core and core.lower() in _SMALL_WORDS and not start and core.islower():
+            out.append(pre + core.lower() + post)
+        else:
+            if not any(ch.isdigit() for ch in core) and re.search(r"[-–]", core):  # held-out, qubit–resonator: capitalise each part
+                out.append(pre + "".join(x if x in "-–" else _cap_word(x) for x in re.split(r"([-–])", core)) + post)
+            else:
+                out.append(pre + _cap_word(core) + post)
+        start = bool(post and post[-1] in ":;·—–!?") or tok.endswith(":")
+    return " ".join(out)
+
+
+PARAM_HTML = {"EJ": "E<sub>J</sub>", "EC": "E<sub>C</sub>", "EL": "E<sub>L</sub>", "EJmax": "E<sub>J,max</sub>", "fr": "f<sub>r</sub>", "g": "g", "d": "d",
+              "period": "period", "offset": "offset", "D": "D", "E": "E", "theta": "θ", "phi": "φ", "field_scale": "κ", "x0": "x<sub>0</sub>",
+              "t_c": "t<sub>c</sub>", "lever_arm": "lever arm", "f_rad0": "f<sub>r,0</sub>", "volt_scale": "κ<sub>V</sub>", "alpha1": "α<sub>1</sub>",
+              "alpha2": "α<sub>2</sub>", "dfs": "Δ<sub>fs</sub>", "f0": "f<sub>0</sub>"}
+PARAM_TEX = {"EJ": r"E_J", "EC": r"E_C", "EL": r"E_L", "EJmax": r"E_{J,\max}", "fr": r"f_r", "g": r"g", "d": r"d", "period": r"\text{period}",
+             "offset": r"\text{offset}", "D": r"D", "E": r"E", "theta": r"\theta", "phi": r"\varphi", "field_scale": r"\kappa", "x0": r"x_0",
+             "t_c": r"t_c", "lever_arm": r"\text{lever arm}", "f_rad0": r"f_{r,0}", "volt_scale": r"\kappa_V", "alpha1": r"\alpha_1",
+             "alpha2": r"\alpha_2", "dfs": r"\Delta_{\mathrm{fs}}", "f0": r"f_0"}
+
+
+def param_html(name: str) -> str:
+    """Typeset parameter name for HTML tables (sub/superscripts); unknown names are escaped as they are."""
+    return f'<span class="cs-pname">{PARAM_HTML.get(name, esc(name))}</span>'
+
+
+def param_tex(name: str) -> str:
+    """LaTeX for a parameter name (KaTeX, inline): $E_{J,\\max}$."""
+    return PARAM_TEX.get(name, r"\text{" + str(name).replace("_", r"\_") + "}")
+
+
+_MATHIFY = [
+    (re.compile(r"\bE(J|C|L)max\b"), r"E<sub>\1,max</sub>"),
+    (re.compile(r"\bE([JCL])\b"), r"E<sub>\1</sub>"),
+    (re.compile(r"\bf(01|12|02|03)\b"), r"f<sub>\1</sub>"),
+    (re.compile(r"\bfr\b"), "f<sub>r</sub>"),
+    (re.compile(r"\bf_rad0\b"), "f<sub>r,0</sub>"),
+    (re.compile(r"\bt_c\b"), "t<sub>c</sub>"),
+    (re.compile(r"\bm_?j\b"), "m<sub>j</sub>"),
+    (re.compile(r"\bx0\b"), "x<sub>0</sub>"),
+    (re.compile(r"\bV0\b"), "V<sub>0</sub>"),
+    (re.compile(r"\bT1\b"), "T<sub>1</sub>"),
+    (re.compile(r"ω_([zr])\b"), r"ω<sub>\1</sub>"),
+    (re.compile(r"\bTφ\b"), "T<sub>φ</sub>"),
+    (re.compile(r"\balpha([12])\b"), r"α<sub>\1</sub>"),
+    (re.compile(r"\bvolt_scale\b"), "κ<sub>V</sub>"),
+    (re.compile(r"\bfield_scale\b"), "κ"),
+]
+
+
+def mathify(escaped_text: str) -> str:
+    """Turn ASCII parameter tokens inside already-escaped prose into typeset HTML: EJ -> E<sub>J</sub>, f01 -> f<sub>01</sub>."""
+    out = escaped_text
+    for rx, repl in _MATHIFY:
+        out = rx.sub(repl, out)
+    return out
+
+
+def _tex_num(v, sig: int = 4) -> str:
+    """A fitted number set in amber inside a KaTeX formula."""
+    txt = f"{float(v):.{sig}g}"
+    if "e" in txt:  # scientific notation -> \times 10^{}
+        m, e = txt.split("e")
+        txt = f"{m}\\times 10^{{{int(e)}}}"
+    return r"\textcolor{#fab219}{" + txt + "}"
+
+
+def hamiltonian_tex(family: str, params: dict, coupled: bool) -> str:
+    """The identified model as LaTeX (rendered by KaTeX via st.latex) with the fitted numbers substituted in amber."""
+    p = params
+    n = _tex_num
+    unit_tex = ""
+    try:
+        from circuitsleuth import models as _m
+        unit_tex = r"\quad\textcolor{#c3c2b7}{[\mathrm{" + _m.PLATFORMS[_m.platform_of(family)].get("freq_unit", "GHz") + "}]}"
+    except Exception:  # noqa: BLE001
+        unit_tex = r"\quad\textcolor{#c3c2b7}{[\mathrm{GHz}]}"
+    res = (r" + " + n(p["fr"]) + r"\,\hat a^{\dagger}\hat a + " + n(p["g"], 3) + r"\,\hat n\,(\hat a + \hat a^{\dagger})") if (coupled and "fr" in p and "g" in p) else ""
+    if family == "transmon":
+        return r"\hat H = 4\," + n(p["EC"], 3) + r"\,\hat n^{2} - " + n(p["EJ"]) + r"\,\cos\hat\varphi" + res + unit_tex
+    if family == "tunable_transmon":
+        return (r"\begin{aligned}\hat H &= 4\," + n(p["EC"], 3) + r"\,\hat n^{2} - E_J(\Phi)\,\cos\hat\varphi" + res + unit_tex + r"\\[2pt]"
+                r"E_J(\Phi) &= " + n(p["EJmax"]) + r"\,\sqrt{\cos^{2}(\pi\Phi) + " + n(p["d"], 3) + r"^{2}\,\sin^{2}(\pi\Phi)}\end{aligned}")
+    if family == "fluxonium":
+        return (r"\hat H = 4\," + n(p["EC"], 3) + r"\,\hat n^{2} + \tfrac{1}{2}\," + n(p["EL"], 3) + r"\,\hat\varphi^{2} - " + n(p["EJ"])
+                + r"\,\cos(\hat\varphi - 2\pi\Phi)" + res + unit_tex)
+    if family == "nv_ensemble":
+        return (r"\hat H = " + n(p["D"]) + r"\,\hat S_z^{2} + " + n(p["E"], 3) + r"\,(\hat S_x^{2} - \hat S_y^{2}) + \gamma_e\,\mathbf{B}\cdot\hat{\mathbf{S}}" + unit_tex)
+    if family == "charge_qubit":
+        return r"f = \sqrt{\varepsilon^{2} + (2\," + n(p["t_c"]) + r")^{2}}" + unit_tex
+    if family == "trapped_ion":
+        return (r"\begin{aligned}\omega_z &= " + n(p["volt_scale"]) + r"\,\sqrt{V - V_0},\qquad \omega_r = \sqrt{" + n(p["f_rad0"]) + r"^{2} - \omega_z^{2}/2}" + unit_tex + r"\\[2pt]"
+                r"&\text{sidebands at } \pm\omega_z,\ \pm\omega_r,\ \pm 2\omega_z\end{aligned}")
+    if family == "rydberg_atom":
+        return (r"\begin{aligned}\Delta f &= f_0 \pm \tfrac{1}{2}\," + n(p["dfs"]) + r" - \tfrac{1}{2}\,\alpha E^{2},\qquad \alpha = "
+                + n(p["alpha1"]) + r"\ \big|\ " + n(p["alpha2"]) + unit_tex + r"\\[2pt]E &= " + n(p["field_scale"]) + r"\,(V - V_0)\end{aligned}")
+    return r"\text{" + str(family).replace("_", r"\_") + "}"
+
+
+def hero_top_html(eyebrow_txt: str, title: str) -> str:
+    """Verdict band, upper left: amber eyebrow and the display title (the Hamiltonian follows as KaTeX)."""
+    return f'<div class="cs-eyebrow amber">{eyebrow_txt}</div><div class="cs-display">{esc(title_case(title))}</div>'
+
+
+def hero_bottom_html(kpis: list[tuple[str, str]], explained: float | None) -> str:
+    """Verdict band, lower left: the KPIs and the explained / unexplained bar."""
+    k = "".join(kpi_html(v, l) for v, l in kpis)
+    bar = ""
+    if explained is not None:
+        g = max(0.0, min(100.0, 100.0 * float(explained)))
+        r = 100.0 - g
+        bar = (f'<div class="cs-bar"><div class="g" style="width:{g:.1f}%"></div><div class="r" style="width:{r:.1f}%"></div></div>'
+               f'<div class="cs-bar-ends"><span class="g">{g:.0f}% explained</span><span class="r">{r:.0f}% unexplained</span></div>')
+    return f'<div class="cs-kpis">{k}</div>{bar}'

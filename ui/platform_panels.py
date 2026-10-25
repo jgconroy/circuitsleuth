@@ -22,7 +22,7 @@ MONO = '"IBM Plex Mono", ui-monospace, Menlo, monospace'
 def _layout(fig, title, xlab, ylab, height=360):
     """Surface colours, Plex Sans for words, Plex Mono for every number, legend below the plot."""
     fig.update_layout(
-        title=dict(text=title, font=dict(size=14, color=MUTED, family=FONT), x=0.0, xanchor="left"),
+        title=dict(text=(title if (not title or "=" in title) else __import__("ui.theme", fromlist=["title_case"]).title_case(title)), font=dict(size=14, color=MUTED, family=FONT), x=0.0, xanchor="left"),
         paper_bgcolor=SURFACE, plot_bgcolor=SURFACE, font=dict(family=FONT, color=TEXT, size=12),
         margin=dict(l=56, r=16, t=40, b=84), height=height,
         xaxis=dict(title=xlab, gridcolor=GRID, zerolinecolor=GRID, color=MUTED, tickfont=dict(family=MONO, size=12)),

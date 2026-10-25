@@ -16,14 +16,14 @@ with sync_playwright() as p:
         b = p.chromium.launch()
     page = b.new_page(viewport={"width": 1440, "height": height}, device_scale_factor=1)
     page.goto(url, wait_until="networkidle")
-    page.wait_for_selector("text=Identify circuit", timeout=60000)
+    page.wait_for_selector("text=Identify Circuit", timeout=60000)
     time.sleep(wait)
     if click:
         page.get_by_role("button", name=click).click()
         time.sleep(wait)
         if not mid:
             for _ in range(240):  # wait for the run to finish (metrics appear)
-                if page.locator("text=Details & export").count() > 0:  # the results strip exists only after a run
+                if page.locator("text=Details & Export").count() > 0:  # the results strip exists only after a run
                     break
                 time.sleep(2)
             time.sleep(3)

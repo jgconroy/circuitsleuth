@@ -1,4 +1,6 @@
-# CircuitSleuth — Devpost submission draft
+# Ĥolmes — Devpost submission draft
+
+*Project name on Devpost: **Ĥolmes** (U+0124 Ĥ; plain-ASCII form `holmes`). Tagline: Hamiltonians, deduced from spectra. Formerly CircuitSleuth.*
 
 **Tagline:** Shazam for quantum chips: point it at a spectroscopy map and it tells you what circuit you built, how well it knows, and what to measure next.
 
@@ -6,7 +8,7 @@
 Every superconducting-qubit lab starts a new chip the same way: a two-tone spectroscopy sweep, then hours of staring at it, guessing the circuit, hand-tuning EJ/EC/EL in a script until the theory lines land on the data, arguing about which features are pump leakage, and deciding what to sweep next. It is the most repeated, least automated step in the field, and the step where a wrong guess silently poisons every calibration after it.
 
 ## What it does
-Upload a map (image, NPZ, or a CSV of features). CircuitSleuth
+Upload a map (image, NPZ, or a CSV of features). Ĥolmes
 - finds the spectral features and separates flux-dependent lines from flux-independent spurs,
 - proposes circuit hypotheses (fixed transmon, tunable transmon, fluxonium, each with or without a readout resonator) using a small CNN trained on synthetic maps,
 - fits each hypothesis with a robust physics model (batched NumPy Hamiltonians checked against scqubits to 1e-6 GHz), including the flux-axis calibration, with the fit overlaid live on the data,

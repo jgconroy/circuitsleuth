@@ -8,8 +8,15 @@ SURFACE, TEXT, MUTED, GRID, BLUE, AMBER = "#1a1a19", "#f0efec", "#c3c2b7", "#2a2
 LINE_COLORS = {"0-1": "#d95926", "0-2": "#c98500", "0-3": "#9085e9", "0-2/2ph": "#d55181", "1-2": "#199e70", "res": "#f0efec"}
 
 
+def _p(name: str) -> str:
+    """Typeset parameter name for Plotly labels (HTML subscripts)."""
+    from ui.theme import PARAM_HTML
+
+    return PARAM_HTML.get(name, name)
+
+
 def _layout(fig, title, xlab, ylab, height):
-    fig.update_layout(title=dict(text=title, font=dict(size=14, color=TEXT), x=0.01), paper_bgcolor=SURFACE, plot_bgcolor=SURFACE,
+    fig.update_layout(title=dict(text=(title if (not title or "=" in title) else __import__("ui.theme", fromlist=["title_case"]).title_case(title)), font=dict(size=14, color=TEXT), x=0.01), paper_bgcolor=SURFACE, plot_bgcolor=SURFACE,
                       font=dict(family="IBM Plex Sans, Inter, Helvetica Neue, Arial, sans-serif", color=TEXT, size=12), margin=dict(l=56, r=16, t=40, b=84), height=height,
                       xaxis=dict(title=dict(text=xlab, standoff=8), gridcolor=GRID, zerolinecolor=GRID, color=MUTED), yaxis=dict(title=ylab, gridcolor=GRID, zerolinecolor=GRID, color=MUTED),
                       legend=dict(orientation="h", y=-0.42, x=0, bgcolor="rgba(0,0,0,0)", font=dict(size=11)))
@@ -35,7 +42,7 @@ def gain_figure(design: dict, xlabel: str = "control", height: int = 260):
 def correlation_figure(design: dict, height: int = 300):
     names, corr = design["correlation"]
     corr = np.asarray(corr, float)
-    fig = go.Figure(go.Heatmap(z=corr, x=names, y=names, zmin=-1, zmax=1, colorscale=[[0, "#1c5cab"], [0.5, SURFACE], [1, "#d03b3b"]],
+    fig = go.Figure(go.Heatmap(z=corr, x=[_p(n) for n in names], y=[_p(n) for n in names], zmin=-1, zmax=1, colorscale=[[0, "#1c5cab"], [0.5, SURFACE], [1, "#d03b3b"]],
                                text=[[f"{v:+.2f}" for v in row] for row in corr], texttemplate="%{text}", textfont=dict(size=11, family="IBM Plex Mono, monospace"),
                                hovertemplate="%{y} · %{x}: %{z:+.2f}<extra></extra>", showscale=False))
     fig = _layout(fig, "Parameter correlations (Laplace covariance of the fit)", "", "", height)
@@ -53,7 +60,7 @@ def sigma_vs_round_figure(loop_result: dict, height: int = 280):
     fig = go.Figure()
     for i, n in enumerate(names):
         y = [abs(r["sigma"].get(n, np.nan) / r["params"][n]) if r["params"][n] else np.nan for r in rows]
-        fig.add_trace(go.Scatter(x=[r["round"] for r in rows], y=y, mode="lines+markers", name=n, line=dict(color=palette[i % len(palette)], width=2), marker=dict(size=7),
+        fig.add_trace(go.Scatter(x=[r["round"] for r in rows], y=y, mode="lines+markers", name=_p(n), line=dict(color=palette[i % len(palette)], width=2), marker=dict(size=7),
                                  hovertemplate=f"{n}<br>round %{{x}}<br>σ/|value| = %{{y:.2%}}<extra></extra>"))
     fig = _layout(fig, "Relative uncertainty per autopilot round", "round (0 = initial partial sweep)", "σ / |value|", height)
     fig.update_yaxes(type="log", tickformat=".0%")
@@ -96,7 +103,7 @@ def posterior_figure(samples_dict: dict, pair: tuple[str, str] = ("EJmax", "EC")
 
     def label(n):
         u = models.param_unit(fam, n) if fam else models.PARAM_UNITS.get(n, "")
-        return f"{n} ({u})" if u else n
+        return f"{_p(n)} ({u})" if u else _p(n)
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=S[:, i], y=S[:, j], mode="markers", name="posterior samples",
@@ -117,7 +124,7 @@ def posterior_figure(samples_dict: dict, pair: tuple[str, str] = ("EJmax", "EC")
                                  hovertemplate=f"MAP<br>{pair[0]} %{{x:.5g}}<br>{pair[1]} %{{y:.5g}}<extra></extra>"))
     acc = samples_dict.get("acceptance_rate")
     sub_t = f" · {len(S)} MCMC samples" + (f", acceptance {acc:.0%}" if acc is not None else "")
-    fig = _layout(fig, f"Posterior of {pair[0]} and {pair[1]} (robust likelihood of the fit){sub_t}", label(pair[0]), label(pair[1]), height)
+    fig = _layout(fig, f"Posterior of {_p(pair[0])} and {_p(pair[1])} (robust likelihood of the fit){sub_t}", label(pair[0]), label(pair[1]), height)
     fig.update_layout(hovermode="closest", legend=dict(orientation="h", y=-0.3, x=0, bgcolor="rgba(0,0,0,0)", font=dict(size=11)))
     fig.update_xaxes(tickfont=dict(family="IBM Plex Mono, monospace", size=11, color=MUTED))
     fig.update_yaxes(tickfont=dict(family="IBM Plex Mono, monospace", size=11, color=MUTED))
