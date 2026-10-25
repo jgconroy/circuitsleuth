@@ -59,8 +59,8 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
 - `tests/test_fit.py` (6 tests, ~5 min) pass; `tests/test_agent.py` (4 end-to-end, **~28 min**) -> **4/4 pass** as of Sat ~13:00
   (after the expansion changes). Only rerun test_agent if agent/fit/extract/scoring logic changes.
 ### Real data (Nguyen 2019 fluxonium device A, paper fit EJ=3, EC=0.84, EL=1 GHz)
-- With the paper's flux axis (period held at 1): **EJ 2.83+-0.06, EC 0.93+-0.03, EL 0.93+-0.03** after the continuity-aware extractor
-  (was 3.23+-0.20 / 0.80+-0.05 / 0.98+-0.04 before it; marginal data, both within 10 % of the paper); explained 58 % of coherent
+- With the paper's flux axis (period held at 1): **EJ 3.03+-0.06, EC 0.86+-0.02, EL 0.96+-0.02** with the final extractor (faint peaks kept only
+  next to a confident neighbour); earlier settings gave 3.23/0.80/0.98 and 2.83/0.93/0.93 (marginal data; all within 10 % of the paper); explained 58 % of coherent
   segments, hold-out 78 %, RMS 16 MHz. Without the axis prior the period is unconstrained (right half of the map has no
   extractable features; `smooth_cols` does not recover it). Report: `artifacts/nguyen2019_report_calibrated.json`, figure `artifacts/fig_real.png`.
 ### Hand-picked demos (precomputed with the "normal" preset, 4 workers)

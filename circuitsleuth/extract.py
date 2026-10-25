@@ -51,13 +51,13 @@ def extract_points(image: np.ndarray, x: np.ndarray, f: np.ndarray, snr: float =
         order = np.argsort(prom)[::-1][:max_per_column]
         for k in order:
             p = peaks[k]
-            if prom[k] < snr:  # faint: require a confident-or-faint peak within ~60 MHz in an adjacent column
+            if prom[k] < snr:  # faint: keep only next to a CONFIDENT peak (>= snr) within ~60 MHz in an adjacent column
                 ok = False
                 for cc in (c - 1, c + 1):
                     if 0 <= cc < img.shape[1]:
                         lo_i, hi_i = max(p - 4, 0), min(p + 5, len(col))
                         seg = img[lo_i:hi_i, cc]
-                        if seg.size and seg.max() >= snr_lo and seg.argmax() not in (0, seg.size - 1):
+                        if seg.size and seg.max() >= snr and seg.argmax() not in (0, seg.size - 1):
                             ok = True
                             break
                 if not ok:
