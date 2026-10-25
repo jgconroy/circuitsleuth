@@ -183,7 +183,8 @@ data/demo/nguyen2019_devA.npz   digitised Fig. 2 of Nguyen et al. PRX 9, 041041 
   `scripts/coverage.py`, `tests/test_posterior.py` (2 pass, 6 s). Demo A: acceptance 0.49, posterior sd / Laplace sd ≈ 1.0–1.14.
 - Coverage (40 maps each): 1σ/2σ fractions nv 0.42/0.60, dot 0.34/0.53, ion 0.62/0.72 → raw σ ~1.5–2× too small + wrong-optimum tails.
   Decision: `AgentConfig.sigma_calibration = 1.8` multiplies reported σ (noted in README and in the app's Posterior check section).
-- App: "Posterior check" section with a sampling button (state in `st.session_state["posterior"]`).
+- App: "Posterior check" section with a sampling button (state in `st.session_state["posterior"]`); verified in AppTest on loaded demo A:
+  acceptance 0.49, 900 kept samples, ~20 s under load. `sample_posterior` returns dicts (sd, laplace_sd, map, mode keyed by parameter).
 - Big machines: the user's `sleuth` env was broken (old NumPy); a side session created `sleuth311` (python 3.11 + requirements) and the
   bench runs there. bigmachine/README.md updated accordingly. Lanthanum is running the final-code blind tables (5 platforms) in
   `circuitsleuth_bigmachine_v2`; QEC1 was at 109/200 on the OLD-code circuit table.
